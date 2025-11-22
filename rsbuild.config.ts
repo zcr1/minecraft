@@ -3,5 +3,27 @@ import { pluginReact } from '@rsbuild/plugin-react';
 
 // Docs: https://rsbuild.rs/config/
 export default defineConfig({
-  plugins: [pluginReact()],
+	plugins: [pluginReact()],
+	html: {
+		title: 'MineCraft',
+		tags: [
+			{
+				tag: 'link',
+				attrs: {
+					rel: 'stylesheet',
+					href: 'https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.css',
+				},
+				head: true,
+			},
+			// {
+			// 	tag: 'script',
+			// 	attrs: {
+			// 		src: 'https://www.googletagmanager.com/gtag/js?id=G-ZT5KEBKGMT"',
+			// 		type: 'text/javascript',
+			// 		async: true,
+			// 	},
+			// 	head: true,
+			// },
+		],
+	},
 });
