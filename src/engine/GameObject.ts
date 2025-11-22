@@ -5,8 +5,8 @@ export default class GameObject {
 	private components: Map<ComponentConstructor<any>, Component>;
 	enabled: boolean;
 
-	constructor(name: string) {
-		this.name = name;
+	constructor(name?: string) {
+		this.name = name || 'GameObject';
 		this.components = new Map();
 		this.enabled = true;
 	}
