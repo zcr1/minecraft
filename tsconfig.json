@@ -20,7 +20,11 @@
     /* type checking */
     "strict": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+
+    "paths": {
+      "engine/*": ["./src/engine/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "test"]
 }
