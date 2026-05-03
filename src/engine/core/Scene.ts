@@ -4,25 +4,24 @@ import GameObject from './GameObject';
 
 export default class Scene {
 	readonly threeScene: THREE.Scene;
-	private gameObjects: GameObject[];
+	private readonly gameObjects = new Set<GameObject>();
 
 	constructor() {
 		this.threeScene = new THREE.Scene();
 		this.threeScene.background = new THREE.Color(0x1a1a2e);
-		this.gameObjects = [];
+	}
+
+	add(gameObject: GameObject): void {
+		this.gameObjects.add(gameObject);
+	}
+
+	remove(gameObject: GameObject): void {
+		this.gameObjects.delete(gameObject);
 	}
 
 	update() {
-		for (let i = 0; i < this.gameObjects.length; i++) {
-			this.gameObjects[i].update();
+		for (const go of this.gameObjects) {
+			go.update();
 		}
-	}
-
-	add(gameObject: GameObject) {
-		this.gameObjects.push(gameObject);
-	}
-
-	remove(gameObject: GameObject) {
-		// todo implementation
 	}
 }
