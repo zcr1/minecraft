@@ -1,3 +1,4 @@
+import DebugCameraController from 'engine/components/DebugCameraController';
 import GameObject from 'engine/core/GameObject';
 import MeshComponent from 'engine/components/MeshComponent';
 import * as THREE from 'three';
@@ -21,4 +22,8 @@ export function setupScene(game: Game) {
 	const cube = new GameObject('Cube');
 	cube.addComponent(new MeshComponent(mesh));
 	game.scene.add(cube);
+
+	const cameraObj = new GameObject('DebugCamera');
+	cameraObj.addComponent(new DebugCameraController(game.camera));
+	game.scene.add(cameraObj);
 }
