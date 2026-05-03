@@ -144,6 +144,7 @@ export default class InputManager extends Singleton {
 		this.pressedButtons.clear();
 	};
 
+	// TODO: normalize deltaMode
 	private onMouseMove = (e: MouseEvent) => {
 		this._mouseX = e.offsetX;
 		this._mouseY = e.offsetY;

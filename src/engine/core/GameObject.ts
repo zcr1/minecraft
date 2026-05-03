@@ -25,7 +25,7 @@ export default class GameObject {
 		const type = component.constructor as new () => T;
 
 		if (this.components.has(type)) {
-			throw new Error(`${this.name} already has component ${type}`);
+			throw new Error(`${this.name} already has component ${type.name}`);
 		}
 
 		this.components.set(type, component);
@@ -35,10 +35,10 @@ export default class GameObject {
 		const component = this.components.get(type);
 
 		if (!component) {
-			throw new Error(`${this.name} does not have component ${type}`);
+			throw new Error(`${this.name} does not have component ${type.name}`);
 		}
 
-		return component;
+		return component as T;
 	}
 
 	removeComponent<T extends Component>(type: ComponentConstructor<T>) {

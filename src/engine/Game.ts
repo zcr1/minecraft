@@ -25,6 +25,10 @@ export default class Game {
 	}
 
 	start() {
+		if (this.rafId !== 0) {
+			return;
+		}
+
 		const loop = () => {
 			this.rafId = requestAnimationFrame(loop);
 			this.scene.update();

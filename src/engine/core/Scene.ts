@@ -4,7 +4,7 @@ import GameObject from './GameObject';
 
 export default class Scene {
 	readonly threeScene: THREE.Scene;
-	gameObjects: GameObject[];
+	private gameObjects: GameObject[];
 
 	constructor() {
 		this.threeScene = new THREE.Scene();
@@ -16,5 +16,13 @@ export default class Scene {
 		for (let i = 0; i < this.gameObjects.length; i++) {
 			this.gameObjects[i].update();
 		}
+	}
+
+	add(gameObject: GameObject) {
+		this.gameObjects.push(gameObject);
+	}
+
+	remove(gameObject: GameObject) {
+		// todo implementation
 	}
 }

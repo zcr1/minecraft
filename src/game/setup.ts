@@ -20,5 +20,5 @@ export function setupScene(game: Game) {
 
 	const cube = new GameObject('Cube');
 	cube.addComponent(new MeshComponent(mesh));
-	game.scene.gameObjects.push(cube);
+	game.scene.add(cube);
 }
