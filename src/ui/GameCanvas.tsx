@@ -1,3 +1,4 @@
+// @refresh reset
 import Game from 'engine/Game';
 import { useEffect, useRef } from 'react';
 import { setupScene } from '../game/setup';
