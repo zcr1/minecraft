@@ -8,7 +8,7 @@ export default class ChunkManager extends Component {
 
 	constructor({
 		gridWidth,
-		gridDepth,
+		gridHeight,
 		chunkWidth,
 		chunkHeight,
 		chunkDepth,
@@ -16,7 +16,7 @@ export default class ChunkManager extends Component {
 		threeScene,
 	}: {
 		gridWidth: number;
-		gridDepth: number;
+		gridHeight: number;
 		chunkWidth: number;
 		chunkHeight: number;
 		chunkDepth: number;
@@ -26,7 +26,7 @@ export default class ChunkManager extends Component {
 		super();
 
 		for (let x = 0; x < gridWidth; x++) {
-			for (let y = 0; y < gridDepth; y++) {
+			for (let y = 0; y < gridHeight; y++) {
 				const chunk = new ChunkComponent(chunkWidth, chunkHeight, chunkDepth, material);
 				chunk.mesh.position.set(x * chunkWidth, 0, y * chunkDepth);
 				threeScene.add(chunk.mesh);

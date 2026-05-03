@@ -19,7 +19,7 @@ export function setupScene(game: Game) {
 	const material = new THREE.MeshStandardMaterial({ map: texture });
 	const chunkManager = new ChunkManager({
 		gridWidth: 3,
-		gridDepth: 3,
+		gridHeight: 3,
 		chunkWidth: 8,
 		chunkHeight: 8,
 		chunkDepth: 8,
