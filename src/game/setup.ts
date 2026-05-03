@@ -1,8 +1,9 @@
-import * as THREE from 'three';
 import GameObject from 'engine/core/GameObject';
 import MeshComponent from 'engine/components/MeshComponent';
+import * as THREE from 'three';
 import type Game from 'engine/Game';
-import dirtUrl from '../textures/dirt.png';
+
+import dirtUrl from '../assets/textures/dirt.png';
 
 export function setupScene(game: Game) {
 	game.scene.threeScene.add(new THREE.AmbientLight(0xffffff, 0.4));
@@ -14,10 +15,7 @@ export function setupScene(game: Game) {
 	texture.colorSpace = THREE.SRGBColorSpace;
 	texture.magFilter = THREE.NearestFilter;
 
-	const mesh = new THREE.Mesh(
-		new THREE.BoxGeometry(),
-		new THREE.MeshStandardMaterial({ map: texture }),
-	);
+	const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ map: texture }));
 	game.scene.threeScene.add(mesh);
 
 	const cube = new GameObject('Cube');
