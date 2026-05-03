@@ -1,15 +1,12 @@
-export default class InputManager {
-	private static _instance: InputManager | null = null;
+import Singleton from '../core/Singleton';
 
-	static init(canvas: HTMLCanvasElement): InputManager {
-		if (this._instance) this._instance.dispose();
-		this._instance = new InputManager(canvas);
-		return this._instance;
+export default class InputManager extends Singleton {
+	static override get instance(): InputManager {
+		return super.instance as InputManager;
 	}
 
-	static get instance(): InputManager {
-		if (!this._instance) throw new Error('InputManager not initialized');
-		return this._instance;
+	static init(canvas: HTMLCanvasElement): InputManager {
+		return this._init(() => new InputManager(canvas));
 	}
 
 	private readonly canvas: HTMLCanvasElement;
@@ -30,6 +27,7 @@ export default class InputManager {
 	private _scrollDY = 0;
 
 	private constructor(canvas: HTMLCanvasElement) {
+		super();
 		this.canvas = canvas;
 		window.addEventListener('keydown', this.onKeyDown);
 		window.addEventListener('keyup', this.onKeyUp);
@@ -44,32 +42,60 @@ export default class InputManager {
 
 	// ── Keyboard ──────────────────────────────────────────────────────────
 
-	isHeld(code: string): boolean { return this.heldKeys.has(code); }
-	wasPressed(code: string): boolean { return this.pressedKeys.has(code); }
-	wasReleased(code: string): boolean { return this.releasedKeys.has(code); }
+	isHeld(code: string): boolean {
+		return this.heldKeys.has(code);
+	}
+	wasPressed(code: string): boolean {
+		return this.pressedKeys.has(code);
+	}
+	wasReleased(code: string): boolean {
+		return this.releasedKeys.has(code);
+	}
 
 	// ── Mouse buttons ─────────────────────────────────────────────────────
 
-	isMouseHeld(button: number): boolean { return this.heldButtons.has(button); }
-	wasMousePressed(button: number): boolean { return this.pressedButtons.has(button); }
-	wasMouseReleased(button: number): boolean { return this.releasedButtons.has(button); }
+	isMouseHeld(button: number): boolean {
+		return this.heldButtons.has(button);
+	}
+	wasMousePressed(button: number): boolean {
+		return this.pressedButtons.has(button);
+	}
+	wasMouseReleased(button: number): boolean {
+		return this.releasedButtons.has(button);
+	}
 
 	// ── Mouse position ────────────────────────────────────────────────────
 
-	get mouseX(): number { return this._mouseX; }
-	get mouseY(): number { return this._mouseY; }
+	get mouseX(): number {
+		return this._mouseX;
+	}
+	get mouseY(): number {
+		return this._mouseY;
+	}
 
+	// Converts the raw pixel mouse position (in canvas-space) into the
+	// coordinate system Three.js uses for raycasting and projection
+	// math — where (-1, -1) is the bottom-left of the canvas and (+1, +1)
+	// is the top-right.
 	get mouseNDC(): { x: number; y: number } {
 		return {
-			x:  (this._mouseX / this.canvas.clientWidth)  * 2 - 1,
+			x: (this._mouseX / this.canvas.clientWidth) * 2 - 1,
 			y: -(this._mouseY / this.canvas.clientHeight) * 2 + 1,
 		};
 	}
 
-	get mouseDeltaX(): number { return this._deltaX; }
-	get mouseDeltaY(): number { return this._deltaY; }
-	get scrollDeltaX(): number { return this._scrollDX; }
-	get scrollDeltaY(): number { return this._scrollDY; }
+	get mouseDeltaX(): number {
+		return this._deltaX;
+	}
+	get mouseDeltaY(): number {
+		return this._deltaY;
+	}
+	get scrollDeltaX(): number {
+		return this._scrollDX;
+	}
+	get scrollDeltaY(): number {
+		return this._scrollDY;
+	}
 
 	// ── Frame lifecycle ───────────────────────────────────────────────────
 
@@ -94,7 +120,7 @@ export default class InputManager {
 		window.removeEventListener('mouseup', this.onWindowMouseUp);
 		this.canvas.removeEventListener('wheel', this.onWheel);
 		this.canvas.removeEventListener('contextmenu', this.onContextMenu);
-		InputManager._instance = null;
+		this._destroy();
 	}
 
 	// ── Event handlers (arrow fields preserve `this`) ─────────────────────
