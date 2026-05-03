@@ -1,9 +1,15 @@
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
+import path from 'path';
 
 // Docs: https://rsbuild.rs/config/
 export default defineConfig({
 	plugins: [pluginReact()],
+	resolve: {
+		alias: {
+			engine: path.resolve(__dirname, 'src/engine'),
+		},
+	},
 	html: {
 		title: 'MineCraft',
 		tags: [
