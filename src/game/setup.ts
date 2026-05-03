@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import GameObject from 'engine/core/GameObject';
 import MeshComponent from 'engine/components/MeshComponent';
 import type Game from 'engine/Game';
+import dirtUrl from '../textures/dirt.png';
 
 export function setupScene(game: Game) {
 	game.scene.threeScene.add(new THREE.AmbientLight(0xffffff, 0.4));
@@ -9,9 +10,13 @@ export function setupScene(game: Game) {
 	dirLight.position.set(1, 2, 3);
 	game.scene.threeScene.add(dirLight);
 
+	const texture = new THREE.TextureLoader().load(dirtUrl);
+	texture.colorSpace = THREE.SRGBColorSpace;
+	texture.magFilter = THREE.NearestFilter;
+
 	const mesh = new THREE.Mesh(
 		new THREE.BoxGeometry(),
-		new THREE.MeshStandardMaterial({ color: 0x44aa88 }),
+		new THREE.MeshStandardMaterial({ map: texture }),
 	);
 	game.scene.threeScene.add(mesh);
 

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import GameObject from './GameObject';
 
 export default class Scene {
@@ -12,6 +13,8 @@ export default class Scene {
 	}
 
 	update() {
-		this.gameObjects.forEach(go => go.update());
+		for (let i = 0; i < this.gameObjects.length; i++) {
+			this.gameObjects[i].update();
+		}
 	}
 }
