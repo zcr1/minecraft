@@ -10,6 +10,7 @@ export default class Game {
 	readonly input: InputManager;
 	private rafId = 0;
 	private observer: ResizeObserver;
+	private pendingResize: { width: number; height: number } | null = null;
 
 	constructor(mount: HTMLElement) {
 		this.scene = new Scene();
@@ -18,8 +19,10 @@ export default class Game {
 		this.input = InputManager.init(this.renderer.domElement);
 
 		this.observer = new ResizeObserver(() => {
-			this.renderer.setSize(mount.clientWidth, mount.clientHeight);
-			this.camera.setAspect(mount.clientWidth / mount.clientHeight);
+			this.pendingResize = {
+				width: mount.clientWidth,
+				height: mount.clientHeight,
+			};
 		});
 		this.observer.observe(mount);
 	}
@@ -31,6 +34,11 @@ export default class Game {
 
 		const loop = () => {
 			this.rafId = requestAnimationFrame(loop);
+			if (this.pendingResize) {
+				this.renderer.setSize(this.pendingResize.width, this.pendingResize.height);
+				this.camera.setAspect(this.pendingResize.width / this.pendingResize.height);
+				this.pendingResize = null;
+			}
 			this.scene.update();
 			this.renderer.render(this.scene, this.camera);
 			this.input.flush();
