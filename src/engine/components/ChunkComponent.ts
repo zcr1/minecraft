@@ -94,28 +94,29 @@ export default class ChunkComponent extends Component {
 	}
 
 	generate(chunkAbove?: ChunkComponent) {
-		const solidAbove = new Uint8Array(this.width * this.depth);
-
-		if (chunkAbove) {
-			for (let x = 0; x < this.width; x++) {
-				for (let z = 0; z < this.depth; z++) {
-					if (chunkAbove.getBlock(x, 0, z) !== BlockType.Air) {
-						solidAbove[x * this.depth + z] = 1;
+		for (let x = 0; x < this.width; x++) {
+			for (let z = 0; z < this.depth; z++) {
+				for (let y = this.height - 1; y >= 0; y--) {
+					if (Math.random() >= EMPTY_RATE) {
+						const blockType = this.hasSolidAbove(x, y, z, chunkAbove) ? BlockType.Dirt : BlockType.Grass;
+						this.setBlock(x, y, z, blockType);
 					}
 				}
 			}
 		}
+	}
 
-		for (let x = 0; x < this.width; x++) {
-			for (let z = 0; z < this.depth; z++) {
-				for (let y = this.height - 1; y >= 0; y--) {
-					if (Math.random() < EMPTY_RATE) continue;
-					const col = x * this.depth + z;
-					this.setBlock(x, y, z, solidAbove[col] ? BlockType.Dirt : BlockType.Grass);
-					solidAbove[col] = 1;
-				}
+	private hasSolidAbove(x: number, y: number, z: number, chunkAbove?: ChunkComponent): boolean {
+		for (let checkY = y + 1; checkY < this.height; checkY++) {
+			if (this.getBlock(x, checkY, z) !== BlockType.Air) return true;
+		}
+
+		if (chunkAbove) {
+			for (let checkY = 0; checkY < chunkAbove.height; checkY++) {
+				if (chunkAbove.getBlock(x, checkY, z) !== BlockType.Air) return true;
 			}
 		}
+		return false;
 	}
 
 	buildMesh(dirtMat: THREE.Material, grassTopMat: THREE.Material): void {
