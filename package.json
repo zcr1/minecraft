@@ -23,6 +23,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.0",
     "jest": "^30.0.5",
+    "prettier": "^3.8.3",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

@@ -1,7 +1,7 @@
 export default class Component {
-	constructor() {}
+    constructor() {}
 
-	update() {}
+    update() {}
 }
 
 export type ComponentConstructor<T extends Component> = new (...args: any[]) => T;

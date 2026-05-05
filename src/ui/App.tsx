@@ -1,7 +1,7 @@
-import GameCanvas from './GameCanvas';
+import GameCanvas from "./GameCanvas";
 
 const App = () => {
-	return <GameCanvas />;
+    return <GameCanvas />;
 };
 
 export default App;

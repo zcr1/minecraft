@@ -1,47 +1,47 @@
-import Component, { type ComponentConstructor } from './Component';
+import Component, { type ComponentConstructor } from "./Component";
 
 export default class GameObject {
-	private name: string;
-	private components: Map<ComponentConstructor<any>, Component>;
-	enabled: boolean;
+    private name: string;
+    private components: Map<ComponentConstructor<any>, Component>;
+    enabled: boolean;
 
-	constructor(name?: string) {
-		this.name = name || 'GameObject';
-		this.components = new Map();
-		this.enabled = true;
-	}
+    constructor(name?: string) {
+        this.name = name || "GameObject";
+        this.components = new Map();
+        this.enabled = true;
+    }
 
-	update() {
-		if (!this.enabled) {
-			return;
-		}
+    update() {
+        if (!this.enabled) {
+            return;
+        }
 
-		this.components.forEach(component => {
-			component.update();
-		});
-	}
+        this.components.forEach(component => {
+            component.update();
+        });
+    }
 
-	addComponent<T extends Component>(component: T) {
-		const type = component.constructor as new () => T;
+    addComponent<T extends Component>(component: T) {
+        const type = component.constructor as new () => T;
 
-		if (this.components.has(type)) {
-			throw new Error(`${this.name} already has component ${type.name}`);
-		}
+        if (this.components.has(type)) {
+            throw new Error(`${this.name} already has component ${type.name}`);
+        }
 
-		this.components.set(type, component);
-	}
+        this.components.set(type, component);
+    }
 
-	getComponent<T extends Component>(type: ComponentConstructor<T>) {
-		const component = this.components.get(type);
+    getComponent<T extends Component>(type: ComponentConstructor<T>) {
+        const component = this.components.get(type);
 
-		if (!component) {
-			throw new Error(`${this.name} does not have component ${type.name}`);
-		}
+        if (!component) {
+            throw new Error(`${this.name} does not have component ${type.name}`);
+        }
 
-		return component as T;
-	}
+        return component as T;
+    }
 
-	removeComponent<T extends Component>(type: ComponentConstructor<T>) {
-		this.components.delete(type);
-	}
+    removeComponent<T extends Component>(type: ComponentConstructor<T>) {
+        this.components.delete(type);
+    }
 }
