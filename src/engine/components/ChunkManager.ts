@@ -3,6 +3,7 @@ import * as THREE from "three";
 import ChunkComponent from "./ChunkComponent";
 import Component from "../core/Component";
 
+// todo add to common utils
 function initialize3dArray(width: number, height: number, depth: number, initialValue = null) {
     const grid = new Array(width);
 
