@@ -62,7 +62,6 @@ export default class ChunkComponent extends Component {
 		this.height = height;
 		this.depth = depth;
 		this.blocks = new Uint8Array(width * height * depth);
-
 		this.mesh = new THREE.Group();
 	}
 
@@ -142,6 +141,7 @@ export default class ChunkComponent extends Component {
 			}
 		}
 
+		this.mesh.children.forEach(c => (c as THREE.Mesh).geometry.dispose());
 		this.mesh.clear();
 		this.mesh.add(new THREE.Mesh(this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx), dirtMat));
 		this.mesh.add(new THREE.Mesh(this.buildGeo(grassPos, grassNorm, grassUv, grassIdx), grassTopMat));
