@@ -93,8 +93,19 @@ export default class ChunkComponent extends Component {
 		return geo;
 	}
 
-	generate() {
+	generate(chunkAbove?: ChunkComponent) {
 		const solidAbove = new Uint8Array(this.width * this.depth);
+
+		if (chunkAbove) {
+			for (let x = 0; x < this.width; x++) {
+				for (let z = 0; z < this.depth; z++) {
+					if (chunkAbove.getBlock(x, 0, z) !== BlockType.Air) {
+						solidAbove[x * this.depth + z] = 1;
+					}
+				}
+			}
+		}
+
 		for (let x = 0; x < this.width; x++) {
 			for (let z = 0; z < this.depth; z++) {
 				for (let y = this.height - 1; y >= 0; y--) {

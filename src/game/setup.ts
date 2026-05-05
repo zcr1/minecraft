@@ -31,6 +31,7 @@ export function setupScene(game: Game) {
 	const chunkManager = new ChunkManager({
 		gridWidth: 3,
 		gridHeight: 3,
+		gridLayers: 3,
 		chunkWidth: 16,
 		chunkHeight: 16,
 		chunkDepth: 16,
