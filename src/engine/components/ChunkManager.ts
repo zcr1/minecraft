@@ -12,7 +12,7 @@ export default class ChunkManager extends Component {
 		chunkWidth,
 		chunkHeight,
 		chunkDepth,
-		material,
+		materials,
 		threeScene,
 	}: {
 		gridWidth: number;
@@ -20,15 +20,16 @@ export default class ChunkManager extends Component {
 		chunkWidth: number;
 		chunkHeight: number;
 		chunkDepth: number;
-		material: THREE.Material;
+		materials: [THREE.Material, THREE.Material];
 		threeScene: THREE.Scene;
 	}) {
 		super();
 
 		for (let x = 0; x < gridWidth; x++) {
-			for (let y = 0; y < gridHeight; y++) {
-				const chunk = new ChunkComponent(chunkWidth, chunkHeight, chunkDepth, material);
-				chunk.mesh.position.set(x * chunkWidth, 0, y * chunkDepth);
+			for (let z = 0; z < gridHeight; z++) {
+				const chunk = new ChunkComponent(chunkWidth, chunkHeight, chunkDepth);
+				chunk.mesh.position.set(x * chunkWidth, 0, z * chunkDepth);
+				chunk.buildMesh(materials[0], materials[1]);
 				threeScene.add(chunk.mesh);
 				this.chunks.push(chunk);
 			}

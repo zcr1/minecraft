@@ -46,16 +46,16 @@ const FACES = [
 
 const FACE_UVS = [0, 0, 1, 0, 1, 1, 0, 1];
 
-// todo doesn't need to be chunk?
+// todo doesn't need to be Component?
 export default class ChunkComponent extends Component {
-	readonly mesh: THREE.Mesh;
+	readonly mesh: THREE.Group;
 	readonly width: number;
 	readonly height: number;
 	readonly depth: number;
 
 	private readonly blocks: Uint8Array;
 
-	constructor(width: number, height: number, depth: number, material: THREE.Material) {
+	constructor(width: number, height: number, depth: number) {
 		super();
 
 		this.width = width;
@@ -63,47 +63,86 @@ export default class ChunkComponent extends Component {
 		this.depth = depth;
 		this.blocks = new Uint8Array(width * height * depth);
 
+		const solidAbove = new Uint8Array(width * depth);
 		for (let x = 0; x < width; x++) {
-			for (let y = 0; y < height; y++) {
-				for (let z = 0; z < depth; z++) {
-					this.setBlock(x, y, z, Math.random() < EMPTY_RATE ? BlockType.Air : BlockType.Dirt);
+			for (let z = 0; z < depth; z++) {
+				for (let y = height - 1; y >= 0; y--) {
+					if (Math.random() < EMPTY_RATE) continue;
+					const col = x * depth + z;
+					this.setBlock(x, y, z, solidAbove[col] ? BlockType.Dirt : BlockType.Grass);
+					solidAbove[col] = 1;
 				}
 			}
 		}
 
-		const positions: number[] = [];
-		const normals: number[] = [];
-		const uvs: number[] = [];
-		const indices: number[] = [];
+		this.mesh = new THREE.Group();
+	}
 
-		for (let x = 0; x < width; x++) {
-			for (let y = 0; y < height; y++) {
-				for (let z = 0; z < depth; z++) {
-					if (this.getBlock(x, y, z) === BlockType.Air) continue;
+	private pushFace(
+		face: (typeof FACES)[number],
+		x: number,
+		y: number,
+		z: number,
+		pos: number[],
+		norm: number[],
+		uv: number[],
+		idx: number[],
+	) {
+		const base = pos.length / 3;
+		for (let v = 0; v < 4; v++) {
+			pos.push(face.vertices[v * 3] + x, face.vertices[v * 3 + 1] + y, face.vertices[v * 3 + 2] + z);
+			norm.push(face.normal[0], face.normal[1], face.normal[2]);
+			uv.push(FACE_UVS[v * 2], FACE_UVS[v * 2 + 1]);
+		}
+		idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+	}
+
+	private buildGeo(pos: number[], norm: number[], uv: number[], idx: number[]) {
+		const geo = new THREE.BufferGeometry();
+		geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+		geo.setAttribute('normal', new THREE.Float32BufferAttribute(norm, 3));
+		geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+		geo.setIndex(idx);
+		return geo;
+	}
+
+	buildMesh(dirtMat: THREE.Material, grassTopMat: THREE.Material): void {
+		const dirtPos: number[] = [],
+			dirtNorm: number[] = [],
+			dirtUv: number[] = [],
+			dirtIdx: number[] = [];
+		const grassPos: number[] = [],
+			grassNorm: number[] = [],
+			grassUv: number[] = [],
+			grassIdx: number[] = [];
+
+		for (let x = 0; x < this.width; x++) {
+			for (let y = 0; y < this.height; y++) {
+				for (let z = 0; z < this.depth; z++) {
+					const block = this.getBlock(x, y, z);
+					if (block === BlockType.Air) {
+						continue;
+					}
 
 					for (const face of FACES) {
 						const [dx, dy, dz] = face.neighbor;
-						if (!this.isAirOrOOB(x + dx, y + dy, z + dz)) continue;
-
-						const base = positions.length / 3;
-						for (let v = 0; v < 4; v++) {
-							positions.push(face.vertices[v * 3] + x, face.vertices[v * 3 + 1] + y, face.vertices[v * 3 + 2] + z);
-							normals.push(face.normal[0], face.normal[1], face.normal[2]);
-							uvs.push(FACE_UVS[v * 2], FACE_UVS[v * 2 + 1]);
+						if (!this.isAirOrOOB(x + dx, y + dy, z + dz)) {
+							continue;
 						}
-						indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+
+						if (block === BlockType.Grass && face.normal[1] === 1) {
+							this.pushFace(face, x, y, z, grassPos, grassNorm, grassUv, grassIdx);
+						} else {
+							this.pushFace(face, x, y, z, dirtPos, dirtNorm, dirtUv, dirtIdx);
+						}
 					}
 				}
 			}
 		}
 
-		const geo = new THREE.BufferGeometry();
-		geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-		geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-		geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-		geo.setIndex(indices);
-
-		this.mesh = new THREE.Mesh(geo, material);
+		this.mesh.clear();
+		this.mesh.add(new THREE.Mesh(this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx), dirtMat));
+		this.mesh.add(new THREE.Mesh(this.buildGeo(grassPos, grassNorm, grassUv, grassIdx), grassTopMat));
 	}
 
 	getBlock(x: number, y: number, z: number): BlockType {
