@@ -29,6 +29,7 @@ export default class ChunkManager extends Component {
 			for (let z = 0; z < gridHeight; z++) {
 				const chunk = new ChunkComponent(chunkWidth, chunkHeight, chunkDepth);
 				chunk.mesh.position.set(x * chunkWidth, 0, z * chunkDepth);
+				chunk.generate();
 				chunk.buildMesh(materials[0], materials[1]);
 				threeScene.add(chunk.mesh);
 				this.chunks.push(chunk);

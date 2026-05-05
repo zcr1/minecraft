@@ -63,18 +63,6 @@ export default class ChunkComponent extends Component {
 		this.depth = depth;
 		this.blocks = new Uint8Array(width * height * depth);
 
-		const solidAbove = new Uint8Array(width * depth);
-		for (let x = 0; x < width; x++) {
-			for (let z = 0; z < depth; z++) {
-				for (let y = height - 1; y >= 0; y--) {
-					if (Math.random() < EMPTY_RATE) continue;
-					const col = x * depth + z;
-					this.setBlock(x, y, z, solidAbove[col] ? BlockType.Dirt : BlockType.Grass);
-					solidAbove[col] = 1;
-				}
-			}
-		}
-
 		this.mesh = new THREE.Group();
 	}
 
@@ -104,6 +92,20 @@ export default class ChunkComponent extends Component {
 		geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
 		geo.setIndex(idx);
 		return geo;
+	}
+
+	generate() {
+		const solidAbove = new Uint8Array(this.width * this.depth);
+		for (let x = 0; x < this.width; x++) {
+			for (let z = 0; z < this.depth; z++) {
+				for (let y = this.height - 1; y >= 0; y--) {
+					if (Math.random() < EMPTY_RATE) continue;
+					const col = x * this.depth + z;
+					this.setBlock(x, y, z, solidAbove[col] ? BlockType.Dirt : BlockType.Grass);
+					solidAbove[col] = 1;
+				}
+			}
+		}
 	}
 
 	buildMesh(dirtMat: THREE.Material, grassTopMat: THREE.Material): void {
