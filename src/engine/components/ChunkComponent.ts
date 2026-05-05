@@ -12,31 +12,37 @@ const EMPTY_RATE = 0.15;
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
 const FACES = [
+	// +X (right)
 	{
 		vertices: [0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5],
 		normal: [1, 0, 0],
 		neighbor: [1, 0, 0],
 	},
+	// -X (left)
 	{
 		vertices: [-0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5],
 		normal: [-1, 0, 0],
 		neighbor: [-1, 0, 0],
 	},
+	// +Y (top)
 	{
 		vertices: [-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5],
 		normal: [0, 1, 0],
 		neighbor: [0, 1, 0],
 	},
+	// -Y (bottom)
 	{
 		vertices: [-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5],
 		normal: [0, -1, 0],
 		neighbor: [0, -1, 0],
 	},
+	// +Z (front)
 	{
 		vertices: [-0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5],
 		normal: [0, 0, 1],
 		neighbor: [0, 0, 1],
 	},
+	// -Z (back)
 	{
 		vertices: [0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5],
 		normal: [0, 0, -1],
