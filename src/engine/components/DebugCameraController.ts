@@ -27,7 +27,7 @@ export default class DebugCameraController extends Component {
     constructor(camera: Camera, options: DebugCameraOptions = {}) {
         super();
         this.cam = camera.threeCamera;
-        this.moveSpeed = options.moveSpeed ?? 0.1;
+        this.moveSpeed = options.moveSpeed ?? 0.3;
         this.rotateSpeed = options.rotateSpeed ?? 0.003;
         this.panSpeed = options.panSpeed ?? 0.005;
         this.zoomSpeed = options.zoomSpeed ?? 0.01;
