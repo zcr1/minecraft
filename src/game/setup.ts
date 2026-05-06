@@ -6,6 +6,7 @@ import * as THREE from "three";
 import type Game from "engine/Game";
 
 import dirtUrl from "../assets/textures/dirt.png";
+import grassSideUrl from "../assets/textures/grass_side.png";
 import grassTopUrl from "../assets/textures/grass_top.png";
 
 export function setupScene(game: Game) {
@@ -24,9 +25,16 @@ export function setupScene(game: Game) {
     grassTopTexture.colorSpace = THREE.SRGBColorSpace;
     grassTopTexture.magFilter = THREE.NearestFilter;
 
+    const grassSideTexture = loader.load(grassSideUrl);
+    grassSideTexture.colorSpace = THREE.SRGBColorSpace;
+    grassSideTexture.magFilter = THREE.NearestFilter;
+
     const dirtMaterial = new THREE.MeshStandardMaterial({ map: dirtTexture });
     const grassTopMaterial = new THREE.MeshStandardMaterial({
         map: grassTopTexture,
+    });
+    const grassSideMaterial = new THREE.MeshStandardMaterial({
+        map: grassSideTexture,
     });
 
     const chunkManager = new ChunkManager({
@@ -36,7 +44,7 @@ export function setupScene(game: Game) {
         chunkWidth: 8,
         chunkHeight: 8,
         chunkDepth: 8,
-        materials: [dirtMaterial, grassTopMaterial],
+        materials: [dirtMaterial, grassTopMaterial, grassSideMaterial],
         threeScene: game.scene.threeScene,
     });
 

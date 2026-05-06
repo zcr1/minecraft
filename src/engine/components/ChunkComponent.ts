@@ -62,6 +62,7 @@ export default class ChunkComponent extends Component {
     private readonly blocks: Uint8Array;
     private dirtMat!: THREE.Material;
     private grassTopMat!: THREE.Material;
+    private grassSideMat!: THREE.Material;
 
     constructor(width: number, height: number, depth: number) {
         super();
@@ -129,12 +130,13 @@ export default class ChunkComponent extends Component {
     }
 
     rebuild(): void {
-        this.buildMesh(this.dirtMat, this.grassTopMat);
+        this.buildMesh(this.dirtMat, this.grassTopMat, this.grassSideMat);
     }
 
-    buildMesh(dirtMat: THREE.Material, grassTopMat: THREE.Material): void {
+    buildMesh(dirtMat: THREE.Material, grassTopMat: THREE.Material, grassSideMat: THREE.Material): void {
         this.dirtMat = dirtMat;
         this.grassTopMat = grassTopMat;
+        this.grassSideMat = grassSideMat;
         const dirtPos: number[] = [],
             dirtNorm: number[] = [],
             dirtUv: number[] = [],
@@ -143,6 +145,10 @@ export default class ChunkComponent extends Component {
             grassNorm: number[] = [],
             grassUv: number[] = [],
             grassIdx: number[] = [];
+        const grassSidePos: number[] = [],
+            grassSideNorm: number[] = [],
+            grassSideUv: number[] = [],
+            grassSideIdx: number[] = [];
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -160,6 +166,8 @@ export default class ChunkComponent extends Component {
 
                         if (block === BlockType.Grass && face.normal[1] === 1) {
                             this.pushFace(face, x, y, z, grassPos, grassNorm, grassUv, grassIdx);
+                        } else if (block === BlockType.Grass && face.normal[1] === 0) {
+                            this.pushFace(face, x, y, z, grassSidePos, grassSideNorm, grassSideUv, grassSideIdx);
                         } else {
                             this.pushFace(face, x, y, z, dirtPos, dirtNorm, dirtUv, dirtIdx);
                         }
@@ -170,8 +178,18 @@ export default class ChunkComponent extends Component {
 
         this.mesh.children.forEach(c => (c as THREE.Mesh).geometry.dispose());
         this.mesh.clear();
-        this.mesh.add(new THREE.Mesh(this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx), dirtMat));
-        this.mesh.add(new THREE.Mesh(this.buildGeo(grassPos, grassNorm, grassUv, grassIdx), grassTopMat));
+
+        if (dirtIdx.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx), dirtMat));
+        }
+        if (grassIdx.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeo(grassPos, grassNorm, grassUv, grassIdx), grassTopMat));
+        }
+        if (grassSideIdx.length > 0) {
+            this.mesh.add(
+                new THREE.Mesh(this.buildGeo(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx), grassSideMat),
+            );
+        }
     }
 
     getBlock(x: number, y: number, z: number): BlockType {
