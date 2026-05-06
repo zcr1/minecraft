@@ -51,8 +51,6 @@ export function setupScene(game: Game) {
     game.scene.add(cameraObj);
 
     const debugClickerObj = new GameObject("DebugClicker");
-    debugClickerObj.addComponent(
-        new DebugClicker(game.camera.threeCamera, chunkManager, [dirtMaterial, grassTopMaterial]),
-    );
+    debugClickerObj.addComponent(new DebugClicker(game.camera.threeCamera, chunkManager));
     game.scene.add(debugClickerObj);
 }

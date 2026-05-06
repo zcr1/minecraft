@@ -60,6 +60,8 @@ export default class ChunkComponent extends Component {
     readonly depth: number;
 
     private readonly blocks: Uint8Array;
+    private dirtMat!: THREE.Material;
+    private grassTopMat!: THREE.Material;
 
     constructor(width: number, height: number, depth: number) {
         super();
@@ -69,6 +71,7 @@ export default class ChunkComponent extends Component {
         this.depth = depth;
         this.blocks = new Uint8Array(width * height * depth);
         this.mesh = new THREE.Group();
+        this.mesh.userData.chunk = this;
     }
 
     private pushFace(
@@ -125,7 +128,13 @@ export default class ChunkComponent extends Component {
         return false;
     }
 
+    rebuild(): void {
+        this.buildMesh(this.dirtMat, this.grassTopMat);
+    }
+
     buildMesh(dirtMat: THREE.Material, grassTopMat: THREE.Material): void {
+        this.dirtMat = dirtMat;
+        this.grassTopMat = grassTopMat;
         const dirtPos: number[] = [],
             dirtNorm: number[] = [],
             dirtUv: number[] = [],
