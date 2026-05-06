@@ -1,5 +1,6 @@
 import ChunkManager from "engine/components/ChunkManager";
 import DebugCameraController from "engine/components/DebugCameraController";
+import DebugClicker from "engine/components/DebugClicker";
 import GameObject from "engine/core/GameObject";
 import * as THREE from "three";
 import type Game from "engine/Game";
@@ -32,9 +33,9 @@ export function setupScene(game: Game) {
         gridWidth: 3,
         gridHeight: 3,
         gridLayers: 3,
-        chunkWidth: 16,
-        chunkHeight: 16,
-        chunkDepth: 16,
+        chunkWidth: 8,
+        chunkHeight: 8,
+        chunkDepth: 8,
         materials: [dirtMaterial, grassTopMaterial],
         threeScene: game.scene.threeScene,
     });
@@ -48,4 +49,10 @@ export function setupScene(game: Game) {
     const cameraObj = new GameObject("DebugCamera");
     cameraObj.addComponent(new DebugCameraController(game.camera));
     game.scene.add(cameraObj);
+
+    const debugClickerObj = new GameObject("DebugClicker");
+    debugClickerObj.addComponent(
+        new DebugClicker(game.camera.threeCamera, chunkManager, [dirtMaterial, grassTopMaterial]),
+    );
+    game.scene.add(debugClickerObj);
 }

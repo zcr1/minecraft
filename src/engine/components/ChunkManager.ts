@@ -59,5 +59,9 @@ export default class ChunkManager extends Component {
         }
     }
 
+    getChunks(): readonly ChunkComponent[] {
+        return this.chunks;
+    }
+
     update() {}
 }
