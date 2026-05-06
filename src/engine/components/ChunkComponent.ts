@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import Component from "../core/Component";
+import TextureManager from "../TextureManager";
 
 export enum BlockType {
     Air = 0,
@@ -60,9 +61,6 @@ export default class ChunkComponent extends Component {
     readonly depth: number;
 
     private readonly blocks: Uint8Array;
-    private dirtMat!: THREE.Material;
-    private grassTopMat!: THREE.Material;
-    private grassSideMat!: THREE.Material;
 
     constructor(width: number, height: number, depth: number) {
         super();
@@ -130,13 +128,11 @@ export default class ChunkComponent extends Component {
     }
 
     rebuild(): void {
-        this.buildMesh(this.dirtMat, this.grassTopMat, this.grassSideMat);
+        this.buildMesh();
     }
 
-    buildMesh(dirtMat: THREE.Material, grassTopMat: THREE.Material, grassSideMat: THREE.Material): void {
-        this.dirtMat = dirtMat;
-        this.grassTopMat = grassTopMat;
-        this.grassSideMat = grassSideMat;
+    buildMesh(): void {
+        const tm = TextureManager.instance;
         const dirtPos: number[] = [],
             dirtNorm: number[] = [],
             dirtUv: number[] = [],
@@ -180,14 +176,24 @@ export default class ChunkComponent extends Component {
         this.mesh.clear();
 
         if (dirtIdx.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx), dirtMat));
+            this.mesh.add(
+                new THREE.Mesh(this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx), tm.getMaterial(BlockType.Dirt, 0)),
+            );
         }
         if (grassIdx.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeo(grassPos, grassNorm, grassUv, grassIdx), grassTopMat));
+            this.mesh.add(
+                new THREE.Mesh(
+                    this.buildGeo(grassPos, grassNorm, grassUv, grassIdx),
+                    tm.getMaterial(BlockType.Grass, 1),
+                ),
+            );
         }
         if (grassSideIdx.length > 0) {
             this.mesh.add(
-                new THREE.Mesh(this.buildGeo(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx), grassSideMat),
+                new THREE.Mesh(
+                    this.buildGeo(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx),
+                    tm.getMaterial(BlockType.Grass, 0),
+                ),
             );
         }
     }
