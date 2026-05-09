@@ -1,6 +1,7 @@
 import ChunkManager from "engine/components/ChunkManager";
 import DebugCameraController from "engine/components/DebugCameraController";
 import DebugClicker from "engine/components/DebugClicker";
+import Transform from "engine/components/Transform";
 import GameObject from "engine/core/GameObject";
 import TextureManager from "engine/TextureManager";
 import * as THREE from "three";
@@ -37,4 +38,13 @@ export function setupScene(game: Game) {
     const debugClickerObj = new GameObject("DebugClicker");
     debugClickerObj.addComponent(new DebugClicker(game.camera.threeCamera, chunkManager));
     game.scene.add(debugClickerObj);
+
+    const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);
+    const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x4488ff });
+    const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+    game.scene.threeScene.add(playerMesh);
+
+    const player = new GameObject("Player");
+    player.addComponent(new Transform(playerMesh, 12, 30, 12));
+    game.scene.add(player);
 }
