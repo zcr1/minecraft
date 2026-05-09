@@ -6,7 +6,6 @@ import Transform from "./Transform";
 
 const GRAVITY = -20;
 const TERMINAL_VEL = -30;
-const MAX_DELTA_TIME = 0.05;
 const HALF_WIDTH = 0.4;
 const HALF_HEIGHT = 0.9;
 
@@ -14,7 +13,6 @@ export default class PlayerPhysics extends Component {
     private transform!: Transform;
     private readonly chunkManager: ChunkManager;
     private velY = 0;
-    private lastTime = performance.now();
     private readonly playerBox = new THREE.Box3();
 
     constructor(chunkManager: ChunkManager) {
@@ -26,14 +24,9 @@ export default class PlayerPhysics extends Component {
         this.transform = this.gameObject.getComponent(Transform);
     }
 
-    update() {
-        const now = performance.now();
-        const dt = Math.min((now - this.lastTime) / 1000, MAX_DELTA_TIME);
-        this.lastTime = now;
-
-        this.velY = Math.max(this.velY + GRAVITY * dt, TERMINAL_VEL);
-        this.transform.y += this.velY * dt;
-
+    update(deltaTime: number) {
+        this.velY = Math.max(this.velY + GRAVITY * deltaTime, TERMINAL_VEL);
+        this.transform.y += this.velY * deltaTime;
         this.resolveY();
     }
 

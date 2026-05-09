@@ -25,6 +25,7 @@ export default class Scene {
     update() {
         const now = performance.now();
         const deltaTime = Math.min((now - this.lastTime) / 1000, MAX_DELTA_TIME);
+        this.lastTime = now;
 
         for (const gameObject of this.gameObjects) {
             gameObject.update(deltaTime);
