@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import Component from "../core/Component";
-import { BlockType } from "./ChunkComponent";
-import type ChunkManager from "./ChunkManager";
-import Transform from "./Transform";
+import { BlockType } from "engine/chunk/ChunkComponent";
+import type ChunkManager from "engine/chunk/ChunkManager";
+import Transform from "engine/components/Transform";
 
 const GRAVITY = -20;
 const TERMINAL_VEL = -30;

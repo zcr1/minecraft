@@ -2,7 +2,7 @@ import * as THREE from "three";
 import Component from "../core/Component";
 import InputManager from "../input/InputManager";
 import type Camera from "../core/Camera";
-import Transform from "./Transform";
+import Transform from "engine/components/Transform";
 
 const ROTATE_SPEED = 0.002;
 const EYE_OFFSET = 0.65;

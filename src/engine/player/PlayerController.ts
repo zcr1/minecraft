@@ -1,6 +1,6 @@
 import Component from "../core/Component";
 import InputManager from "../input/InputManager";
-import Transform from "./Transform";
+import Transform from "engine/components/Transform";
 import PlayerCamera from "./PlayerCamera";
 
 const SPEED = 5;
