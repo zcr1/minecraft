@@ -13,16 +13,22 @@ export default class PlayerCamera extends Component {
     private _yaw = 0;
     private pitch = 0;
     private pointerLocked = false;
+    private playerTransform!: Transform;
 
     constructor(camera: Camera, canvas: HTMLCanvasElement) {
         super();
         this.cam = camera.threeCamera;
         this.cam.rotation.order = "YXZ";
 
+        // todo destroy listeners
         canvas.addEventListener("click", () => canvas.requestPointerLock());
         document.addEventListener("pointerlockchange", () => {
             this.pointerLocked = document.pointerLockElement === canvas;
         });
+    }
+
+    start() {
+        this.playerTransform = this.gameObject.getComponent(Transform);
     }
 
     get yaw(): number {
@@ -30,8 +36,6 @@ export default class PlayerCamera extends Component {
     }
 
     update(_deltaTime: number) {
-        const transform = this.gameObject.getComponent(Transform);
-
         if (this.pointerLocked) {
             const input = InputManager.instance;
             this._yaw -= input.mouseDeltaX * ROTATE_SPEED;
@@ -41,6 +45,6 @@ export default class PlayerCamera extends Component {
 
         this.cam.rotation.y = this._yaw;
         this.cam.rotation.x = this.pitch;
-        this.cam.position.set(transform.x, transform.y + EYE_OFFSET, transform.z);
+        this.cam.position.set(this.playerTransform.x, this.playerTransform.y + EYE_OFFSET, this.playerTransform.z);
     }
 }

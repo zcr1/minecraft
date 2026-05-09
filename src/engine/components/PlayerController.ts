@@ -6,7 +6,7 @@ import PlayerCamera from "./PlayerCamera";
 export default class PlayerController extends Component {
     private readonly speed: number;
     private transform!: Transform;
-    private playerCamera: PlayerCamera | undefined;
+    private playerCamera!: PlayerCamera;
 
     constructor(speed = 5) {
         super();

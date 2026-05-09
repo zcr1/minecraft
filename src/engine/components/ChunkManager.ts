@@ -52,8 +52,8 @@ export default class ChunkManager extends Component {
         return (x & 0xfff) | ((y & 0xfff) << 12) | ((z & 0xff) << 24);
     }
 
+    // Currently only used by DebugClicker
     getChunks(): readonly ChunkComponent[] {
-        // Currently only used by DebugClicker
         return [...this.chunks.values()];
     }
 
