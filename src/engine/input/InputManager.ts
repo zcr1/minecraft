@@ -1,4 +1,5 @@
 import Singleton from "../core/Singleton";
+import type { KeyCode } from "engine/utils/keyCode";
 
 export default class InputManager extends Singleton {
     static override get instance(): InputManager {
@@ -11,9 +12,9 @@ export default class InputManager extends Singleton {
 
     private readonly canvas: HTMLCanvasElement;
 
-    private readonly heldKeys = new Set<string>();
-    private readonly pressedKeys = new Set<string>();
-    private readonly releasedKeys = new Set<string>();
+    private readonly heldKeys = new Set<KeyCode>();
+    private readonly pressedKeys = new Set<KeyCode>();
+    private readonly releasedKeys = new Set<KeyCode>();
 
     private readonly heldButtons = new Set<number>();
     private readonly pressedButtons = new Set<number>();
@@ -42,13 +43,13 @@ export default class InputManager extends Singleton {
 
     // ── Keyboard ──────────────────────────────────────────────────────────
 
-    isHeld(code: string): boolean {
+    isHeld(code: KeyCode): boolean {
         return this.heldKeys.has(code);
     }
-    wasPressed(code: string): boolean {
+    wasPressed(code: KeyCode): boolean {
         return this.pressedKeys.has(code);
     }
-    wasReleased(code: string): boolean {
+    wasReleased(code: KeyCode): boolean {
         return this.releasedKeys.has(code);
     }
 
@@ -126,15 +127,15 @@ export default class InputManager extends Singleton {
     // ── Event handlers (arrow fields preserve `this`) ─────────────────────
 
     private onKeyDown = (e: KeyboardEvent) => {
-        if (!this.heldKeys.has(e.code)) {
-            this.pressedKeys.add(e.code);
+        if (!this.heldKeys.has(e.code as any)) {
+            this.pressedKeys.add(e.code as any);
         }
-        this.heldKeys.add(e.code);
+        this.heldKeys.add(e.code as any);
     };
 
     private onKeyUp = (e: KeyboardEvent) => {
-        this.heldKeys.delete(e.code);
-        this.releasedKeys.add(e.code);
+        this.heldKeys.delete(e.code as any);
+        this.releasedKeys.add(e.code as any);
     };
 
     private onBlur = () => {
