@@ -26,6 +26,7 @@ export default class DebugClicker extends Component {
         this.pointer.set(x, y);
         this.raycaster.setFromCamera(this.pointer, this.camera);
 
+        // todo refactor inneficient we are checking every mesh
         const meshes = this.chunkManager.getChunks().map(c => c.mesh);
         const hits = this.raycaster.intersectObjects(meshes, true);
         if (!hits.length) {
