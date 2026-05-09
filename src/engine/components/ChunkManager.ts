@@ -61,15 +61,15 @@ export default class ChunkManager extends Component {
         return this.chunks;
     }
 
-    getBlockAtWorld(wx: number, wy: number, wz: number): BlockType {
-        const bx = Math.round(wx);
-        const by = Math.round(wy);
-        const bz = Math.round(wz);
+    getBlockAtWorld(worldX: number, worldY: number, worldZ: number): BlockType {
+        const blockX = Math.round(worldX);
+        const blockY = Math.round(worldY);
+        const blockZ = Math.round(worldZ);
 
         for (const chunk of this.chunks) {
-            const lx = bx - chunk.mesh.position.x;
-            const ly = by - chunk.mesh.position.y;
-            const lz = bz - chunk.mesh.position.z;
+            const lx = blockX - chunk.mesh.position.x;
+            const ly = blockY - chunk.mesh.position.y;
+            const lz = blockZ - chunk.mesh.position.z;
             if (lx >= 0 && lx < chunk.width && ly >= 0 && ly < chunk.height && lz >= 0 && lz < chunk.depth) {
                 return chunk.getBlock(lx, ly, lz);
             }
