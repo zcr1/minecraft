@@ -11,13 +11,13 @@ export default class GameObject {
         this.enabled = true;
     }
 
-    update() {
+    update(deltaTime: number) {
         if (!this.enabled) {
             return;
         }
 
         this.components.forEach(component => {
-            component.update();
+            component.update(deltaTime);
         });
     }
 

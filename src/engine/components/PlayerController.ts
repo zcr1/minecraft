@@ -2,12 +2,9 @@ import Component from "../core/Component";
 import InputManager from "../input/InputManager";
 import type Transform from "./Transform";
 
-const MAX_DELTA_TIME = 0.05;
-
 export default class PlayerController extends Component {
     private readonly transform: Transform;
     private readonly speed: number;
-    private lastTime = performance.now();
 
     constructor(transform: Transform, speed = 5) {
         super();
@@ -15,10 +12,7 @@ export default class PlayerController extends Component {
         this.speed = speed;
     }
 
-    update() {
-        const now = performance.now();
-        const deltaTime = Math.min((now - this.lastTime) / 1000, MAX_DELTA_TIME);
-        this.lastTime = now;
+    update(deltaTime: number) {
         this.handleMovement(deltaTime);
     }
 

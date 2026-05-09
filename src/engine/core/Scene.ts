@@ -2,9 +2,12 @@ import * as THREE from "three";
 
 import GameObject from "./GameObject";
 
+const MAX_DELTA_TIME = 0.05;
+
 export default class Scene {
     readonly threeScene: THREE.Scene;
     private readonly gameObjects = new Set<GameObject>();
+    private lastTime = performance.now();
 
     constructor() {
         this.threeScene = new THREE.Scene();
@@ -20,8 +23,11 @@ export default class Scene {
     }
 
     update() {
-        for (const go of this.gameObjects) {
-            go.update();
+        const now = performance.now();
+        const deltaTime = Math.min((now - this.lastTime) / 1000, MAX_DELTA_TIME);
+
+        for (const gameObject of this.gameObjects) {
+            gameObject.update(deltaTime);
         }
     }
 }
