@@ -18,7 +18,10 @@ function initialize3dArray(width: number, height: number, depth: number, initial
 }
 
 export default class ChunkManager extends Component {
-    private readonly chunks: ChunkComponent[] = [];
+    private readonly chunks: Map<number, ChunkComponent> = new Map();
+    private readonly chunkWidth: number;
+    private readonly chunkHeight: number;
+    private readonly chunkDepth: number;
 
     constructor({
         gridWidth,
@@ -38,6 +41,9 @@ export default class ChunkManager extends Component {
         threeScene: THREE.Scene;
     }) {
         super();
+        this.chunkWidth = chunkWidth;
+        this.chunkHeight = chunkHeight;
+        this.chunkDepth = chunkDepth;
 
         // 3D grid indexed [x][y][z] — generate top-to-bottom so chunkAbove is always ready
         const grid: ChunkComponent[][][] = initialize3dArray(gridWidth, gridHeight, gridLayers);
@@ -51,14 +57,20 @@ export default class ChunkManager extends Component {
                     chunk.buildMesh();
                     threeScene.add(chunk.mesh);
                     grid[x][y][z] = chunk;
-                    this.chunks.push(chunk);
+                    this.chunks.set(this.getChunkKey(x, y, z), chunk);
                 }
             }
         }
     }
 
+    private getChunkKey(x: number, y: number, z: number) {
+        // handles 4,096 chunks in x, 4,096 chunks in y, 256 chunks in z
+        return (x & 0xfff) | ((y & 0xfff) << 12) | ((z & 0xff) << 24);
+    }
+
     getChunks(): readonly ChunkComponent[] {
-        return this.chunks;
+        // Currently only used by DebugClicker
+        return [...this.chunks.values()];
     }
 
     getBlockAtWorld(worldX: number, worldY: number, worldZ: number): BlockType {
@@ -66,15 +78,18 @@ export default class ChunkManager extends Component {
         const blockY = Math.round(worldY);
         const blockZ = Math.round(worldZ);
 
-        for (const chunk of this.chunks) {
-            const lx = blockX - chunk.mesh.position.x;
-            const ly = blockY - chunk.mesh.position.y;
-            const lz = blockZ - chunk.mesh.position.z;
-            if (lx >= 0 && lx < chunk.width && ly >= 0 && ly < chunk.height && lz >= 0 && lz < chunk.depth) {
-                return chunk.getBlock(lx, ly, lz);
-            }
-        }
-        return BlockType.Air;
+        const chunkX = Math.floor(blockX / this.chunkWidth);
+        const chunkY = Math.floor(blockY / this.chunkHeight);
+        const chunkZ = Math.floor(blockZ / this.chunkDepth);
+
+        const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
+        if (!chunk) return BlockType.Air;
+
+        const lx = blockX - chunkX * this.chunkWidth;
+        const ly = blockY - chunkY * this.chunkHeight;
+        const lz = blockZ - chunkZ * this.chunkDepth;
+
+        return chunk.getBlock(lx, ly, lz);
     }
 
     update() {}
