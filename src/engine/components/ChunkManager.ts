@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import ChunkComponent from "./ChunkComponent";
+import ChunkComponent, { BlockType } from "./ChunkComponent";
 import Component from "../core/Component";
 
 // todo add to common utils
@@ -59,6 +59,22 @@ export default class ChunkManager extends Component {
 
     getChunks(): readonly ChunkComponent[] {
         return this.chunks;
+    }
+
+    getBlockAtWorld(wx: number, wy: number, wz: number): BlockType {
+        const bx = Math.round(wx);
+        const by = Math.round(wy);
+        const bz = Math.round(wz);
+
+        for (const chunk of this.chunks) {
+            const lx = bx - chunk.mesh.position.x;
+            const ly = by - chunk.mesh.position.y;
+            const lz = bz - chunk.mesh.position.z;
+            if (lx >= 0 && lx < chunk.width && ly >= 0 && ly < chunk.height && lz >= 0 && lz < chunk.depth) {
+                return chunk.getBlock(lx, ly, lz);
+            }
+        }
+        return BlockType.Air;
     }
 
     update() {}

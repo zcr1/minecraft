@@ -1,6 +1,7 @@
 import ChunkManager from "engine/components/ChunkManager";
 import DebugCameraController from "engine/components/DebugCameraController";
 import DebugClicker from "engine/components/DebugClicker";
+import PlayerPhysics from "engine/components/PlayerPhysics";
 import Transform from "engine/components/Transform";
 import GameObject from "engine/core/GameObject";
 import TextureManager from "engine/TextureManager";
@@ -45,6 +46,8 @@ export function setupScene(game: Game) {
     game.scene.threeScene.add(playerMesh);
 
     const player = new GameObject("Player");
-    player.addComponent(new Transform(playerMesh, 12, 30, 12));
+    const playerTransform = new Transform(playerMesh, 12, 30, 12);
+    player.addComponent(playerTransform);
+    player.addComponent(new PlayerPhysics(playerTransform, chunkManager));
     game.scene.add(player);
 }
