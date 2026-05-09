@@ -2,6 +2,7 @@ import type GameObject from "./GameObject";
 
 export default class Component {
     gameObject!: GameObject;
+    enabled = true;
 
     update(deltaTime: number) {}
     start() {}

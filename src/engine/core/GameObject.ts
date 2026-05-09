@@ -23,7 +23,9 @@ export default class GameObject {
         }
 
         this.components.forEach(component => {
-            component.update(deltaTime);
+            if (component.enabled) {
+                component.update(deltaTime);
+            }
         });
     }
 

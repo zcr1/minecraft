@@ -1,4 +1,5 @@
 import ChunkManager from "engine/chunk/ChunkManager";
+import DebugCameraController from "engine/debug/DebugCameraController";
 import DebugClicker from "engine/debug/DebugClicker";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
@@ -33,9 +34,11 @@ export function setupScene(game: Game) {
 
     game.camera.threeCamera.position.set(12, 25, 50);
 
-    // const cameraObj = new GameObject("DebugCamera");
-    // cameraObj.addComponent(new DebugCameraController(game.camera));
-    // game.scene.add(cameraObj);
+    const debugCameraController = new DebugCameraController(game.camera);
+    debugCameraController.enabled = false;
+    const cameraObj = new GameObject("DebugCamera");
+    cameraObj.addComponent(debugCameraController);
+    game.scene.add(cameraObj);
 
     const debugClickerObj = new GameObject("DebugClicker");
     debugClickerObj.addComponent(new DebugClicker(game.camera.threeCamera, chunkManager));
@@ -54,4 +57,6 @@ export function setupScene(game: Game) {
     const playerCamera = new PlayerCamera(game.camera, game.renderer.domElement);
     player.addComponent(playerCamera);
     game.scene.add(player);
+
+    return { playerCamera, debugCameraController };
 }
