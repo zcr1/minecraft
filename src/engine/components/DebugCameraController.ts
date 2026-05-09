@@ -52,10 +52,10 @@ export default class DebugCameraController extends Component {
         this.cam.getWorldDirection(this.forward);
         this.right.crossVectors(this.forward, this.up).normalize();
 
-        if (input.isHeld("KeyW")) this.cam.position.addScaledVector(this.forward, this.moveSpeed);
-        if (input.isHeld("KeyS")) this.cam.position.addScaledVector(this.forward, -this.moveSpeed);
-        if (input.isHeld("KeyA")) this.cam.position.addScaledVector(this.right, -this.moveSpeed);
-        if (input.isHeld("KeyD")) this.cam.position.addScaledVector(this.right, this.moveSpeed);
+        // if (input.isHeld("KeyW")) this.cam.position.addScaledVector(this.forward, this.moveSpeed);
+        // if (input.isHeld("KeyS")) this.cam.position.addScaledVector(this.forward, -this.moveSpeed);
+        // if (input.isHeld("KeyA")) this.cam.position.addScalwedVector(this.right, -this.moveSpeed);
+        // if (input.isHeld("KeyD")) this.cam.position.addScaledVector(this.right, this.moveSpeed);
         if (input.isHeld("KeyQ")) this.cam.position.y -= this.moveSpeed;
         if (input.isHeld("KeyE")) this.cam.position.y += this.moveSpeed;
 
