@@ -33,9 +33,9 @@ export function setupScene(game: Game) {
 
     game.camera.threeCamera.position.set(12, 25, 50);
 
-    const cameraObj = new GameObject("DebugCamera");
-    cameraObj.addComponent(new DebugCameraController(game.camera));
-    game.scene.add(cameraObj);
+    // const cameraObj = new GameObject("DebugCamera");
+    // cameraObj.addComponent(new DebugCameraController(game.camera));
+    // game.scene.add(cameraObj);
 
     const debugClickerObj = new GameObject("DebugClicker");
     debugClickerObj.addComponent(new DebugClicker(game.camera.threeCamera, chunkManager));
