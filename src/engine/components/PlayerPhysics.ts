@@ -2,7 +2,7 @@ import * as THREE from "three";
 import Component from "../core/Component";
 import { BlockType } from "./ChunkComponent";
 import type ChunkManager from "./ChunkManager";
-import type Transform from "./Transform";
+import Transform from "./Transform";
 
 const GRAVITY = -20;
 const TERMINAL_VEL = -30;
@@ -11,16 +11,19 @@ const HALF_W = 0.4;
 const HALF_H = 0.9;
 
 export default class PlayerPhysics extends Component {
-    private readonly transform: Transform;
+    private transform!: Transform;
     private readonly chunkManager: ChunkManager;
     private velY = 0;
     private lastTime = performance.now();
     private readonly playerBox = new THREE.Box3();
 
-    constructor(transform: Transform, chunkManager: ChunkManager) {
+    constructor(chunkManager: ChunkManager) {
         super();
-        this.transform = transform;
         this.chunkManager = chunkManager;
+    }
+
+    initialize() {
+        this.transform = this.gameObject.getComponent(Transform);
     }
 
     update() {

@@ -1,8 +1,10 @@
 import type GameObject from "./GameObject";
 
-export default abstract class Component {
+export default class Component {
     gameObject!: GameObject;
-    abstract update(deltaTime: number): void;
+
+    update(deltaTime: number) {}
+    initialize() {}
 }
 
 export type ComponentConstructor<T extends Component> = new (...args: any[]) => T;

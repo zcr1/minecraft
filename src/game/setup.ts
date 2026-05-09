@@ -49,9 +49,9 @@ export function setupScene(game: Game) {
     const player = new GameObject("Player");
     const playerTransform = new Transform(playerMesh, 12, 30, 12);
     player.addComponent(playerTransform);
-    player.addComponent(new PlayerPhysics(playerTransform, chunkManager));
+    player.addComponent(new PlayerPhysics(chunkManager));
     const playerCamera = new PlayerCamera(game.camera, game.renderer.domElement);
     player.addComponent(playerCamera);
-    player.addComponent(new PlayerController(playerTransform, 5, playerCamera));
+    player.addComponent(new PlayerController(5));
     game.scene.add(player);
 }

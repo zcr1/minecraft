@@ -1,18 +1,21 @@
 import Component from "../core/Component";
 import InputManager from "../input/InputManager";
-import type Transform from "./Transform";
-import type PlayerCamera from "./PlayerCamera";
+import Transform from "./Transform";
+import PlayerCamera from "./PlayerCamera";
 
 export default class PlayerController extends Component {
-    private readonly transform: Transform;
     private readonly speed: number;
-    private readonly playerCamera: PlayerCamera | undefined;
+    private transform!: Transform;
+    private playerCamera: PlayerCamera | undefined;
 
-    constructor(transform: Transform, speed = 5, playerCamera?: PlayerCamera) {
+    constructor(speed = 5) {
         super();
-        this.transform = transform;
         this.speed = speed;
-        this.playerCamera = playerCamera;
+    }
+
+    initialize() {
+        this.transform = this.gameObject.getComponent(Transform);
+        this.playerCamera = this.gameObject.getComponent(PlayerCamera);
     }
 
     update(deltaTime: number) {

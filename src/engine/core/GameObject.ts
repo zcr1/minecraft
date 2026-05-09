@@ -29,6 +29,7 @@ export default class GameObject {
         }
 
         component.gameObject = this;
+        component.initialize();
         this.components.set(type, component);
     }
 
