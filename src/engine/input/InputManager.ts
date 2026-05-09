@@ -1,4 +1,5 @@
 import Singleton from "../core/Singleton";
+import { isKeyCode } from "engine/utils/keyCode";
 import type { KeyCode } from "engine/utils/keyCode";
 
 export default class InputManager extends Singleton {
@@ -127,15 +128,17 @@ export default class InputManager extends Singleton {
     // ── Event handlers (arrow fields preserve `this`) ─────────────────────
 
     private onKeyDown = (e: KeyboardEvent) => {
-        if (!this.heldKeys.has(e.code as any)) {
-            this.pressedKeys.add(e.code as any);
+        if (!isKeyCode(e.code)) return;
+        if (!this.heldKeys.has(e.code)) {
+            this.pressedKeys.add(e.code);
         }
-        this.heldKeys.add(e.code as any);
+        this.heldKeys.add(e.code);
     };
 
     private onKeyUp = (e: KeyboardEvent) => {
-        this.heldKeys.delete(e.code as any);
-        this.releasedKeys.add(e.code as any);
+        if (!isKeyCode(e.code)) return;
+        this.heldKeys.delete(e.code);
+        this.releasedKeys.add(e.code);
     };
 
     private onBlur = () => {
