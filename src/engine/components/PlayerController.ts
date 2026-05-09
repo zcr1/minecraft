@@ -1,15 +1,18 @@
 import Component from "../core/Component";
 import InputManager from "../input/InputManager";
 import type Transform from "./Transform";
+import type PlayerCamera from "./PlayerCamera";
 
 export default class PlayerController extends Component {
     private readonly transform: Transform;
     private readonly speed: number;
+    private readonly playerCamera: PlayerCamera | undefined;
 
-    constructor(transform: Transform, speed = 5) {
+    constructor(transform: Transform, speed = 5, playerCamera?: PlayerCamera) {
         super();
         this.transform = transform;
         this.speed = speed;
+        this.playerCamera = playerCamera;
     }
 
     update(deltaTime: number) {
@@ -26,14 +29,17 @@ export default class PlayerController extends Component {
         if (input.isHeld("KeyA")) deltaX -= 1;
         if (input.isHeld("KeyD")) deltaX += 1;
 
-        // Normalize diagonal
         if (deltaX !== 0 && deltaZ !== 0) {
             const inv = 1 / Math.sqrt(2);
             deltaX *= inv;
             deltaZ *= inv;
         }
 
-        this.transform.x += deltaX * this.speed * deltaTime;
-        this.transform.z += deltaZ * this.speed * deltaTime;
+        const yaw = this.playerCamera?.yaw ?? 0;
+        const worldDeltaX = deltaZ * Math.sin(yaw) + deltaX * Math.cos(yaw);
+        const worldDeltaZ = deltaZ * Math.cos(yaw) - deltaX * Math.sin(yaw);
+
+        this.transform.x += worldDeltaX * this.speed * deltaTime;
+        this.transform.z += worldDeltaZ * this.speed * deltaTime;
     }
 }

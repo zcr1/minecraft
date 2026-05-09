@@ -1,45 +1,51 @@
-import GameObject from '../src/engine/core/GameObject';
-import Component from '../src/engine/core/Component';
+import GameObject from "../src/engine/core/GameObject";
+import Component from "../src/engine/core/Component";
 
-class Component1 extends Component {}
-class Component2 extends Component {}
-class Component3 extends Component {}
+class Component1 extends Component {
+    update() {}
+}
+class Component2 extends Component {
+    update() {}
+}
+class Component3 extends Component {
+    update() {}
+}
 
-describe('GameObject', () => {
-	let gameObject: GameObject;
+describe("GameObject", () => {
+    let gameObject: GameObject;
 
-	beforeEach(() => {
-		gameObject = new GameObject();
-	});
+    beforeEach(() => {
+        gameObject = new GameObject();
+    });
 
-	test('addComponent', () => {
-		gameObject.addComponent(new Component1());
-		gameObject.addComponent(new Component2());
-		gameObject.addComponent(new Component3());
+    test("addComponent", () => {
+        gameObject.addComponent(new Component1());
+        gameObject.addComponent(new Component2());
+        gameObject.addComponent(new Component3());
 
-		expect(() => gameObject.addComponent(new Component3())).toThrow();
-	});
+        expect(() => gameObject.addComponent(new Component3())).toThrow();
+    });
 
-	test('getComponent', () => {
-		const component1 = new Component1();
-		const component2 = new Component2();
+    test("getComponent", () => {
+        const component1 = new Component1();
+        const component2 = new Component2();
 
-		gameObject.addComponent(component1);
-		gameObject.addComponent(component2);
+        gameObject.addComponent(component1);
+        gameObject.addComponent(component2);
 
-		expect(gameObject.getComponent(Component1)).toBe(component1);
-		expect(gameObject.getComponent(Component2)).toBe(component2);
-		expect(() => gameObject.getComponent(Component3)).toThrow();
-	});
+        expect(gameObject.getComponent(Component1)).toBe(component1);
+        expect(gameObject.getComponent(Component2)).toBe(component2);
+        expect(() => gameObject.getComponent(Component3)).toThrow();
+    });
 
-	test('removeComponent', () => {
-		const component1 = new Component1();
-		const component2 = new Component2();
+    test("removeComponent", () => {
+        const component1 = new Component1();
+        const component2 = new Component2();
 
-		gameObject.addComponent(component1);
-		gameObject.addComponent(component2);
-		gameObject.removeComponent(Component1);
+        gameObject.addComponent(component1);
+        gameObject.addComponent(component2);
+        gameObject.removeComponent(Component1);
 
-		expect(() => gameObject.getComponent(Component1)).toThrow();
-	});
+        expect(() => gameObject.getComponent(Component1)).toThrow();
+    });
 });

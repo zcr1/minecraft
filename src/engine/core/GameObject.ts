@@ -28,6 +28,7 @@ export default class GameObject {
             throw new Error(`${this.name} already has component ${type.name}`);
         }
 
+        component.gameObject = this;
         this.components.set(type, component);
     }
 
