@@ -3,14 +3,16 @@ import InputManager from "../input/InputManager";
 import Transform from "./Transform";
 import PlayerCamera from "./PlayerCamera";
 
+const SPEED = 5;
+
 export default class PlayerController extends Component {
     private readonly speed: number;
     private transform!: Transform;
     private playerCamera!: PlayerCamera;
 
-    constructor(speed = 5) {
+    constructor() {
         super();
-        this.speed = speed;
+        this.speed = SPEED;
     }
 
     start() {
