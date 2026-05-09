@@ -13,7 +13,7 @@ export default class PlayerController extends Component {
         this.speed = speed;
     }
 
-    initialize() {
+    start() {
         this.transform = this.gameObject.getComponent(Transform);
         this.playerCamera = this.gameObject.getComponent(PlayerCamera);
     }

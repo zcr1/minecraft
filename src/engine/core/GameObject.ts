@@ -11,6 +11,12 @@ export default class GameObject {
         this.enabled = true;
     }
 
+    start() {
+        for (let component of this.components.values()) {
+            component.start();
+        }
+    }
+
     update(deltaTime: number) {
         if (!this.enabled) {
             return;
@@ -29,7 +35,6 @@ export default class GameObject {
         }
 
         component.gameObject = this;
-        component.initialize();
         this.components.set(type, component);
     }
 

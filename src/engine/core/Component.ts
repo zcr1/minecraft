@@ -4,7 +4,7 @@ export default class Component {
     gameObject!: GameObject;
 
     update(deltaTime: number) {}
-    initialize() {}
+    start() {}
 }
 
 export type ComponentConstructor<T extends Component> = new (...args: any[]) => T;

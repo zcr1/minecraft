@@ -14,6 +14,12 @@ export default class Scene {
         this.threeScene.background = new THREE.Color(0x1a1a2e);
     }
 
+    start() {
+        for (let gameObject of this.gameObjects) {
+            gameObject.start();
+        }
+    }
+
     add(gameObject: GameObject): void {
         this.gameObjects.add(gameObject);
     }

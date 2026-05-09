@@ -32,6 +32,8 @@ export default class Game {
             return;
         }
 
+        this.scene.start();
+
         const loop = () => {
             this.rafId = requestAnimationFrame(loop);
             if (this.pendingResize) {

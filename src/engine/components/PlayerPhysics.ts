@@ -20,7 +20,7 @@ export default class PlayerPhysics extends Component {
         this.chunkManager = chunkManager;
     }
 
-    initialize() {
+    start() {
         this.transform = this.gameObject.getComponent(Transform);
     }
 
