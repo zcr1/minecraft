@@ -69,11 +69,11 @@ export default class ChunkManager extends Component {
         const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
         if (!chunk) return BlockType.Air;
 
-        const lx = blockX - chunkX * this.chunkWidth;
-        const ly = blockY - chunkY * this.chunkHeight;
-        const lz = blockZ - chunkZ * this.chunkDepth;
+        const localX = blockX - chunkX * this.chunkWidth;
+        const localY = blockY - chunkY * this.chunkHeight;
+        const localZ = blockZ - chunkZ * this.chunkDepth;
 
-        return chunk.getBlock(lx, ly, lz);
+        return chunk.getBlock(localX, localY, localZ);
     }
 
     update() {}
