@@ -1,14 +1,14 @@
-import Transform from "engine/components/Transform";
 import Component from "../core/Component";
 import InputManager from "../input/InputManager";
 import PlayerCamera from "./PlayerCamera";
+import PlayerPhysics from "./PlayerPhysics";
 
 const SPEED = 5;
 
 export default class PlayerController extends Component {
     private readonly speed: number;
-    private transform!: Transform;
     private playerCamera!: PlayerCamera;
+    private playerPhysics!: PlayerPhysics;
 
     constructor() {
         super();
@@ -16,8 +16,8 @@ export default class PlayerController extends Component {
     }
 
     start() {
-        this.transform = this.gameObject.getComponent(Transform);
         this.playerCamera = this.gameObject.getComponent(PlayerCamera);
+        this.playerPhysics = this.gameObject.getComponent(PlayerPhysics);
     }
 
     update(deltaTime: number) {
@@ -44,7 +44,7 @@ export default class PlayerController extends Component {
         const worldDeltaX = deltaZ * Math.sin(yaw) + deltaX * Math.cos(yaw);
         const worldDeltaZ = deltaZ * Math.cos(yaw) - deltaX * Math.sin(yaw);
 
-        this.transform.x += worldDeltaX * this.speed * deltaTime;
-        this.transform.z += worldDeltaZ * this.speed * deltaTime;
+        this.playerPhysics.velocity.x = worldDeltaX * this.speed * deltaTime;
+        this.playerPhysics.velocity.z = worldDeltaZ * this.speed * deltaTime;
     }
 }

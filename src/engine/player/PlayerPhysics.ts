@@ -13,8 +13,8 @@ const SKIN_WIDTH = 1e-4;
 export default class PlayerPhysics extends Component {
     private transform!: Transform;
     private readonly chunkManager: ChunkManager;
-    private velY = 0;
     private readonly playerBox = new THREE.Box3();
+    velocity = new THREE.Vector3(0, 0, 0);
 
     constructor(chunkManager: ChunkManager) {
         super();
@@ -26,10 +26,18 @@ export default class PlayerPhysics extends Component {
     }
 
     update(deltaTime: number) {
-        this.velY = Math.max(this.velY + GRAVITY * deltaTime, TERMINAL_VEL);
-        this.transform.y += this.velY * deltaTime;
+        this.handleMovement(deltaTime);
+    }
+
+    private handleMovement(deltaTime: number) {
+        this.velocity.y = Math.max(this.velocity.y + GRAVITY * deltaTime, TERMINAL_VEL);
+        this.transform.y += this.velocity.y * deltaTime;
         this.resolveY();
+
+        this.transform.x += this.velocity.x;
         this.resolveX();
+
+        this.transform.z += this.velocity.z;
         this.resolveZ();
     }
 
@@ -104,13 +112,13 @@ export default class PlayerPhysics extends Component {
         const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5);
         const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5);
 
-        if (this.velY <= 0) {
+        if (this.velocity.y <= 0) {
             const footBlock = Math.round(y - HALF_HEIGHT);
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
                 for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                     if (this.chunkManager.getBlockAtWorld(blockX, footBlock, blockZ) !== BlockType.Air) {
                         this.transform.y = footBlock + 0.5 + HALF_HEIGHT + SKIN_WIDTH;
-                        this.velY = 0;
+                        this.velocity.y = 0;
                         return;
                     }
                 }
@@ -121,7 +129,7 @@ export default class PlayerPhysics extends Component {
                 for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                     if (this.chunkManager.getBlockAtWorld(blockX, headBlock, blockZ) !== BlockType.Air) {
                         this.transform.y = headBlock - 0.5 - HALF_HEIGHT - SKIN_WIDTH;
-                        this.velY = 0;
+                        this.velocity.y = 0;
                         return;
                     }
                 }
