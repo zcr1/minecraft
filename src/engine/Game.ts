@@ -12,19 +12,19 @@ export default class Game {
     private observer: ResizeObserver;
     private pendingResize: { width: number; height: number } | null = null;
 
-    constructor(mount: HTMLElement) {
+    constructor(container: HTMLElement) {
         this.scene = new Scene();
-        this.camera = new Camera(75, mount.clientWidth / mount.clientHeight);
-        this.renderer = new Renderer(mount);
+        this.camera = new Camera(75, container.clientWidth / container.clientHeight);
+        this.renderer = new Renderer(container);
         this.input = InputManager.init(this.renderer.domElement);
 
         this.observer = new ResizeObserver(() => {
             this.pendingResize = {
-                width: mount.clientWidth,
-                height: mount.clientHeight,
+                width: container.clientWidth,
+                height: container.clientHeight,
             };
         });
-        this.observer.observe(mount);
+        this.observer.observe(container);
     }
 
     start() {

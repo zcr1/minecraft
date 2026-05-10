@@ -24,6 +24,15 @@ export default class Scene {
         this.gameObjects.add(gameObject);
     }
 
+    getGameObject(name: string): GameObject {
+        for (const gameObject of this.gameObjects) {
+            if (gameObject.name === name) {
+                return gameObject;
+            }
+        }
+        throw new Error(`Scene does not contain GameObject "${name}"`);
+    }
+
     remove(gameObject: GameObject): void {
         this.gameObjects.delete(gameObject);
     }

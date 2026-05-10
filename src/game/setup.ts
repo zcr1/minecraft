@@ -10,7 +10,7 @@ import TextureManager from "engine/TextureManager";
 import * as THREE from "three";
 import type Game from "engine/Game";
 
-export function setupScene(game: Game) {
+export function setupScene(game: Game): void {
     game.scene.threeScene.add(new THREE.AmbientLight(0xffffff, 0.4));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1);
     dirLight.position.set(1, 2, 3);
@@ -52,11 +52,10 @@ export function setupScene(game: Game) {
     const player = new GameObject("Player");
     const playerTransform = new Transform(playerMesh, 12, 30, 12);
     player.addComponent(playerTransform);
-    player.addComponent(new PlayerController());
+    const playerController = new PlayerController();
+    player.addComponent(playerController);
     player.addComponent(new PlayerPhysics(chunkManager));
     const playerCamera = new PlayerCamera(game.camera, game.renderer.domElement);
     player.addComponent(playerCamera);
     game.scene.add(player);
-
-    return { playerCamera, debugCameraController };
 }

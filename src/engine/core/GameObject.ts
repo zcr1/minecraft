@@ -1,7 +1,7 @@
 import Component, { type ComponentConstructor } from "./Component";
 
 export default class GameObject {
-    private name: string;
+    readonly name: string;
     private components: Map<ComponentConstructor<any>, Component>;
     enabled: boolean;
 

@@ -1,21 +1,25 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect } from "react";
 import { Pane } from "tweakpane";
-import type DebugCameraController from "engine/debug/DebugCameraController";
-import type PlayerCamera from "engine/player/PlayerCamera";
+import { useGame } from "./GameContext";
+import PlayerCamera from "engine/player/PlayerCamera";
+import PlayerController from "engine/player/PlayerController";
+import DebugCameraController from "engine/debug/DebugCameraController";
 
-interface Props {
-    playerCamera: RefObject<PlayerCamera | null>;
-    debugCamera: RefObject<DebugCameraController | null>;
-}
+export default function DebugMenu() {
+    const game = useGame();
 
-export default function DebugMenu({ playerCamera, debugCamera }: Props) {
     useEffect(() => {
         const pane = new Pane({ title: "Debug" });
         const params = { debugCamera: false };
 
+        const playerCamera = game.scene.getGameObject("Player").getComponent(PlayerCamera);
+        const playerController = game.scene.getGameObject("Player").getComponent(PlayerController);
+        const debugCameraController = game.scene.getGameObject("DebugCamera").getComponent(DebugCameraController);
+
         pane.addBinding(params, "debugCamera", { label: "Debug Camera" }).on("change", ({ value }) => {
-            if (playerCamera.current) playerCamera.current.enabled = !value;
-            if (debugCamera.current) debugCamera.current.enabled = value;
+            debugCameraController.enabled = value;
+            playerCamera.enabled = !value;
+            playerController.enabled = !value;
         });
 
         return () => pane.dispose();
