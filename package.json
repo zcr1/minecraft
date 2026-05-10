@@ -10,10 +10,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "leva": "^0.10.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.181.2"
+    "three": "^0.181.2",
+    "tweakpane": "^4.0.5"
   },
   "devDependencies": {
     "@rsbuild/core": "^1.6.4",
@@ -23,6 +23,7 @@
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.0",
+    "@tweakpane/core": "^2.0.5",
     "jest": "^30.0.5",
     "prettier": "^3.8.3",
     "ts-jest": "^29.4.1",

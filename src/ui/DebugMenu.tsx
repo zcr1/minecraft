@@ -1,5 +1,5 @@
-import { useControls } from "leva";
 import { useEffect, type RefObject } from "react";
+import { Pane } from "tweakpane";
 import type DebugCameraController from "engine/debug/DebugCameraController";
 import type PlayerCamera from "engine/player/PlayerCamera";
 
@@ -9,14 +9,17 @@ interface Props {
 }
 
 export default function DebugMenu({ playerCamera, debugCamera }: Props) {
-    const [{ debugCameraEnabled }] = useControls(() => ({
-        debugCameraEnabled: { value: false, label: "Debug Camera" },
-    }));
-
     useEffect(() => {
-        if (playerCamera.current) playerCamera.current.enabled = !debugCameraEnabled;
-        if (debugCamera.current) debugCamera.current.enabled = debugCameraEnabled;
-    }, [debugCameraEnabled]);
+        const pane = new Pane({ title: "Debug" });
+        const params = { debugCamera: false };
+
+        pane.addBinding(params, "debugCamera", { label: "Debug Camera" }).on("change", ({ value }) => {
+            if (playerCamera.current) playerCamera.current.enabled = !value;
+            if (debugCamera.current) debugCamera.current.enabled = value;
+        });
+
+        return () => pane.dispose();
+    }, []);
 
     return null;
 }
