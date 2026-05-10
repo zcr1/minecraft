@@ -34,10 +34,10 @@ export default class PlayerPhysics extends Component {
         this.transform.y += this.velocity.y * deltaTime;
         this.resolveY();
 
-        this.transform.x += this.velocity.x;
+        this.transform.x += this.velocity.x * deltaTime;
         this.resolveX();
 
-        this.transform.z += this.velocity.z;
+        this.transform.z += this.velocity.z * deltaTime;
         this.resolveZ();
     }
 

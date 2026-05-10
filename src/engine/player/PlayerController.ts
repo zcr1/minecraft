@@ -20,11 +20,11 @@ export default class PlayerController extends Component {
         this.playerPhysics = this.gameObject.getComponent(PlayerPhysics);
     }
 
-    update(deltaTime: number) {
-        this.handleMovement(deltaTime);
+    update() {
+        this.handleMovement();
     }
 
-    handleMovement(deltaTime: number) {
+    handleMovement() {
         const input = InputManager.instance;
         let deltaX = 0;
         let deltaZ = 0;
@@ -44,7 +44,7 @@ export default class PlayerController extends Component {
         const worldDeltaX = deltaZ * Math.sin(yaw) + deltaX * Math.cos(yaw);
         const worldDeltaZ = deltaZ * Math.cos(yaw) - deltaX * Math.sin(yaw);
 
-        this.playerPhysics.velocity.x = worldDeltaX * this.speed * deltaTime;
-        this.playerPhysics.velocity.z = worldDeltaZ * this.speed * deltaTime;
+        this.playerPhysics.velocity.x = worldDeltaX * this.speed;
+        this.playerPhysics.velocity.z = worldDeltaZ * this.speed;
     }
 }
