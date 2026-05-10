@@ -36,16 +36,16 @@ export default class PlayerPhysics extends Component {
     private resolveX() {
         const { x, y, z } = this.transform;
 
-        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5 + SKIN_WIDTH);
-        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5 - SKIN_WIDTH);
-        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5 + SKIN_WIDTH);
-        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5 - SKIN_WIDTH);
+        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5);
+        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5);
+        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5);
+        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5);
 
         const rightBlock = Math.round(x + HALF_WIDTH);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                 if (this.chunkManager.getBlockAtWorld(rightBlock, blockY, blockZ) !== BlockType.Air) {
-                    this.transform.x = rightBlock - 0.5 - HALF_WIDTH;
+                    this.transform.x = rightBlock - 0.5 - HALF_WIDTH - SKIN_WIDTH;
                     return;
                 }
             }
@@ -55,7 +55,7 @@ export default class PlayerPhysics extends Component {
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                 if (this.chunkManager.getBlockAtWorld(leftBlock, blockY, blockZ) !== BlockType.Air) {
-                    this.transform.x = leftBlock + 0.5 + HALF_WIDTH;
+                    this.transform.x = leftBlock + 0.5 + HALF_WIDTH + SKIN_WIDTH;
                     return;
                 }
             }
@@ -65,16 +65,16 @@ export default class PlayerPhysics extends Component {
     private resolveZ() {
         const { x, y, z } = this.transform;
 
-        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5 + SKIN_WIDTH);
-        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5 - SKIN_WIDTH);
-        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5 + SKIN_WIDTH);
-        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5 - SKIN_WIDTH);
+        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5);
+        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5);
+        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5);
+        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5);
 
         const frontBlock = Math.round(z + HALF_WIDTH);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
                 if (this.chunkManager.getBlockAtWorld(blockX, blockY, frontBlock) !== BlockType.Air) {
-                    this.transform.z = frontBlock - 0.5 - HALF_WIDTH;
+                    this.transform.z = frontBlock - 0.5 - HALF_WIDTH - SKIN_WIDTH;
                     return;
                 }
             }
@@ -84,7 +84,7 @@ export default class PlayerPhysics extends Component {
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
                 if (this.chunkManager.getBlockAtWorld(blockX, blockY, backBlock) !== BlockType.Air) {
-                    this.transform.z = backBlock + 0.5 + HALF_WIDTH;
+                    this.transform.z = backBlock + 0.5 + HALF_WIDTH + SKIN_WIDTH;
                     return;
                 }
             }
@@ -99,17 +99,17 @@ export default class PlayerPhysics extends Component {
             new THREE.Vector3(x + HALF_WIDTH, y + HALF_HEIGHT, z + HALF_WIDTH),
         );
 
-        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5 + SKIN_WIDTH);
-        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5 - SKIN_WIDTH);
-        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5 + SKIN_WIDTH);
-        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5 - SKIN_WIDTH);
+        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5);
+        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5);
+        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5);
+        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5);
 
         if (this.velY <= 0) {
             const footBlock = Math.round(y - HALF_HEIGHT);
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
                 for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                     if (this.chunkManager.getBlockAtWorld(blockX, footBlock, blockZ) !== BlockType.Air) {
-                        this.transform.y = footBlock + 0.5 + HALF_HEIGHT;
+                        this.transform.y = footBlock + 0.5 + HALF_HEIGHT + SKIN_WIDTH;
                         this.velY = 0;
                         return;
                     }
@@ -120,7 +120,7 @@ export default class PlayerPhysics extends Component {
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
                 for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                     if (this.chunkManager.getBlockAtWorld(blockX, headBlock, blockZ) !== BlockType.Air) {
-                        this.transform.y = headBlock - 0.5 - HALF_HEIGHT;
+                        this.transform.y = headBlock - 0.5 - HALF_HEIGHT - SKIN_WIDTH;
                         this.velY = 0;
                         return;
                     }
