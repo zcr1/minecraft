@@ -1,9 +1,8 @@
 import * as THREE from "three";
-
+import ChunkComponent, { BlockType } from "engine/chunk/ChunkComponent";
+import ChunkManager from "engine/chunk/ChunkManager";
 import Component from "engine/core/Component";
 import InputManager from "engine/input/InputManager";
-import ChunkManager from "engine/chunk/ChunkManager";
-import ChunkComponent, { BlockType } from "engine/chunk/ChunkComponent";
 
 export default class DebugClicker extends Component {
     private readonly raycaster = new THREE.Raycaster();

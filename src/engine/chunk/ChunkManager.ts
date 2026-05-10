@@ -1,7 +1,6 @@
 import * as THREE from "three";
-
-import ChunkComponent, { BlockType } from "./ChunkComponent";
 import Component from "../core/Component";
+import ChunkComponent, { BlockType } from "./ChunkComponent";
 
 export default class ChunkManager extends Component {
     private readonly chunks: Map<number, ChunkComponent> = new Map();

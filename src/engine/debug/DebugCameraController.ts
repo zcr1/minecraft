@@ -1,7 +1,7 @@
-import Component from "engine/core/Component";
-import InputManager from "engine/input/InputManager";
 import * as THREE from "three";
 import type Camera from "engine/core/Camera";
+import Component from "engine/core/Component";
+import InputManager from "engine/input/InputManager";
 
 interface DebugCameraOptions {
     moveSpeed?: number;

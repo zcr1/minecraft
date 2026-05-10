@@ -1,7 +1,6 @@
 import * as THREE from "three";
-
-import Component from "../core/Component";
 import TextureManager from "../TextureManager";
+import Component from "../core/Component";
 
 export enum BlockType {
     Air = 0,

@@ -1,6 +1,6 @@
-import Singleton from "../core/Singleton";
 import { isKeyCode } from "engine/utils/keyCode";
 import type { KeyCode } from "engine/utils/keyCode";
+import Singleton from "../core/Singleton";
 
 export default class InputManager extends Singleton {
     static override get instance(): InputManager {

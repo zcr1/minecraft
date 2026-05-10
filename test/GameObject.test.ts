@@ -1,5 +1,5 @@
-import GameObject from "../src/engine/core/GameObject";
 import Component from "../src/engine/core/Component";
+import GameObject from "../src/engine/core/GameObject";
 
 class Component1 extends Component {
     update() {}

@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import type Camera from "../core/Camera";
 import type Scene from "../core/Scene";
 

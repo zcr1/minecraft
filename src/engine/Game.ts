@@ -1,7 +1,7 @@
 import Camera from "./core/Camera";
+import Scene from "./core/Scene";
 import InputManager from "./input/InputManager";
 import Renderer from "./renderer/Renderer";
-import Scene from "./core/Scene";
 
 export default class Game {
     readonly scene: Scene;

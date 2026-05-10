@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import GameObject from "./GameObject";
 
 const MAX_DELTA_TIME = 0.05;

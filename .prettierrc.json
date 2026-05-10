@@ -2,5 +2,9 @@
     "tabWidth": 4,
     "useTabs": false,
     "printWidth": 120,
-    "arrowParens": "avoid"
+    "arrowParens": "avoid",
+    "plugins": ["@trivago/prettier-plugin-sort-imports"],
+    "importOrder": ["^three", "^react", "^engine/", "^@/", "^\\.\\./", "^\\./"],
+    "importOrderSeparation": false,
+    "importOrderSortSpecifiers": true
 }

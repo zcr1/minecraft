@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import Component from "../core/Component";
 
 export default class MeshComponent extends Component {

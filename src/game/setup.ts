@@ -1,14 +1,14 @@
+import * as THREE from "three";
+import type Game from "engine/Game";
+import TextureManager from "engine/TextureManager";
 import ChunkManager from "engine/chunk/ChunkManager";
+import Transform from "engine/components/Transform";
+import GameObject from "engine/core/GameObject";
 import DebugCameraController from "engine/debug/DebugCameraController";
 import DebugClicker from "engine/debug/DebugClicker";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
 import PlayerPhysics from "engine/player/PlayerPhysics";
-import Transform from "engine/components/Transform";
-import GameObject from "engine/core/GameObject";
-import TextureManager from "engine/TextureManager";
-import * as THREE from "three";
-import type Game from "engine/Game";
 import GameObjectName from "engine/utils/gameObjectNames";
 
 export function setupScene(game: Game): void {

@@ -1,10 +1,10 @@
-import { useEffect } from "react";
 import { Pane } from "tweakpane";
-import { useGame } from "./GameContext";
+import { useEffect } from "react";
+import DebugCameraController from "engine/debug/DebugCameraController";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
-import DebugCameraController from "engine/debug/DebugCameraController";
 import GameObjectName from "engine/utils/gameObjectNames";
+import { useGame } from "./GameContext";
 
 export default function DebugMenu() {
     const game = useGame();
@@ -27,7 +27,7 @@ export default function DebugMenu() {
         });
 
         return () => pane.dispose();
-    }, []);
+    }, [game]);
 
     return null;
 }

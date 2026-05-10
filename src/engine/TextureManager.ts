@@ -1,9 +1,8 @@
 import * as THREE from "three";
-
+import { BlockType } from "engine/chunk/ChunkComponent";
 import dirtUrl from "../assets/textures/dirt.png";
 import grassSideUrl from "../assets/textures/grass_side.png";
 import grassTopUrl from "../assets/textures/grass_top.png";
-import { BlockType } from "engine/chunk/ChunkComponent";
 
 export default class TextureManager {
     private static _instance: TextureManager | null = null;
