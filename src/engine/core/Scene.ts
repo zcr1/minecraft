@@ -7,6 +7,7 @@ export default class Scene {
     readonly threeScene: THREE.Scene;
     private readonly gameObjects = new Set<GameObject>();
     private lastTime = performance.now();
+    fps = 0;
 
     constructor() {
         this.threeScene = new THREE.Scene();
@@ -38,8 +39,10 @@ export default class Scene {
 
     update() {
         const now = performance.now();
-        const deltaTime = Math.min((now - this.lastTime) / 1000, MAX_DELTA_TIME);
+        const rawDeltaTime = (now - this.lastTime) / 1000;
+        const deltaTime = Math.min(rawDeltaTime, MAX_DELTA_TIME);
         this.lastTime = now;
+        this.fps = rawDeltaTime > 0 ? 1 / rawDeltaTime : 0;
 
         for (const gameObject of this.gameObjects) {
             gameObject.update(deltaTime);
