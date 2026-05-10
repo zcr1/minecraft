@@ -9,6 +9,7 @@ import GameObject from "engine/core/GameObject";
 import TextureManager from "engine/TextureManager";
 import * as THREE from "three";
 import type Game from "engine/Game";
+import GameObjectName from "engine/utils/gameObjectNames";
 
 export function setupScene(game: Game): void {
     game.scene.threeScene.add(new THREE.AmbientLight(0xffffff, 0.4));
@@ -28,7 +29,7 @@ export function setupScene(game: Game): void {
         threeScene: game.scene.threeScene,
     });
 
-    const managerObj = new GameObject("ChunkManager");
+    const managerObj = new GameObject(GameObjectName.ChunkManager);
     managerObj.addComponent(chunkManager);
     game.scene.add(managerObj);
 
@@ -36,11 +37,11 @@ export function setupScene(game: Game): void {
 
     const debugCameraController = new DebugCameraController(game.camera);
     debugCameraController.enabled = false;
-    const cameraObj = new GameObject("DebugCamera");
+    const cameraObj = new GameObject(GameObjectName.DebugCamera);
     cameraObj.addComponent(debugCameraController);
     game.scene.add(cameraObj);
 
-    const debugClickerObj = new GameObject("DebugClicker");
+    const debugClickerObj = new GameObject(GameObjectName.DebugClicker);
     debugClickerObj.addComponent(new DebugClicker(game.camera.threeCamera, chunkManager));
     game.scene.add(debugClickerObj);
 
@@ -49,7 +50,7 @@ export function setupScene(game: Game): void {
     const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
     game.scene.threeScene.add(playerMesh);
 
-    const player = new GameObject("Player");
+    const player = new GameObject(GameObjectName.Player);
     const playerTransform = new Transform(playerMesh, 12, 30, 12);
     player.addComponent(playerTransform);
     const playerController = new PlayerController();
