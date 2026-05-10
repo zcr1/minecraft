@@ -34,6 +34,7 @@ export default class PlayerController extends Component {
         if (input.isHeld("KeyA")) deltaX -= 1;
         if (input.isHeld("KeyD")) deltaX += 1;
 
+        // Prevents diagonal movement from being faster
         if (deltaX !== 0 && deltaZ !== 0) {
             const inv = 1 / Math.sqrt(2);
             deltaX *= inv;
