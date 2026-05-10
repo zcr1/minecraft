@@ -30,6 +30,11 @@ export default class PlayerPhysics extends Component {
     }
 
     private handleMovement(deltaTime: number) {
+        // Each axis is stepped and resolved independently so that a wall in one
+        // axis can't be mistaken for a collision in another (e.g. a corner block
+        // seen via perpendicular AABB straddle triggering an incorrect X snap).
+        // Y is resolved first so the player is on solid ground before horizontal
+        // collision runs.
         this.velocity.y = Math.max(this.velocity.y + GRAVITY * deltaTime, TERMINAL_VEL);
         this.transform.y += this.velocity.y * deltaTime;
         this.resolveY();
@@ -49,6 +54,8 @@ export default class PlayerPhysics extends Component {
         const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5);
         const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5);
 
+        // Loop over perpendicular slices because the player AABB spans multiple
+        // blocks in Y (taller than one block) and may straddle two in Z.
         const rightBlock = Math.round(x + HALF_WIDTH);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
@@ -78,6 +85,7 @@ export default class PlayerPhysics extends Component {
         const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5);
         const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5);
 
+        // Same loop rationale as resolveX: Y spans multiple blocks, X may straddle two.
         const frontBlock = Math.round(z + HALF_WIDTH);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
