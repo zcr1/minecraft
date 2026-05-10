@@ -8,6 +8,7 @@ const GRAVITY = -20;
 const TERMINAL_VEL = -30;
 const HALF_WIDTH = 0.4;
 const HALF_HEIGHT = 0.9;
+const SKIN_WIDTH = 1e-4;
 
 export default class PlayerPhysics extends Component {
     private transform!: Transform;
@@ -27,18 +28,18 @@ export default class PlayerPhysics extends Component {
     update(deltaTime: number) {
         this.velY = Math.max(this.velY + GRAVITY * deltaTime, TERMINAL_VEL);
         this.transform.y += this.velY * deltaTime;
-        // this.resolveX();
-        // this.resolveZ();
         this.resolveY();
+        this.resolveX();
+        this.resolveZ();
     }
 
     private resolveX() {
         const { x, y, z } = this.transform;
 
-        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5);
-        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5);
-        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5);
-        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5);
+        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5 + SKIN_WIDTH);
+        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5 - SKIN_WIDTH);
+        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5 + SKIN_WIDTH);
+        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5 - SKIN_WIDTH);
 
         const rightBlock = Math.round(x + HALF_WIDTH);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
@@ -64,10 +65,10 @@ export default class PlayerPhysics extends Component {
     private resolveZ() {
         const { x, y, z } = this.transform;
 
-        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5);
-        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5);
-        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5);
-        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5);
+        const minBlockY = Math.ceil(y - HALF_HEIGHT - 0.5 + SKIN_WIDTH);
+        const maxBlockY = Math.floor(y + HALF_HEIGHT + 0.5 - SKIN_WIDTH);
+        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5 + SKIN_WIDTH);
+        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5 - SKIN_WIDTH);
 
         const frontBlock = Math.round(z + HALF_WIDTH);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
@@ -98,10 +99,10 @@ export default class PlayerPhysics extends Component {
             new THREE.Vector3(x + HALF_WIDTH, y + HALF_HEIGHT, z + HALF_WIDTH),
         );
 
-        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5);
-        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5);
-        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5);
-        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5);
+        const minBlockX = Math.ceil(x - HALF_WIDTH - 0.5 + SKIN_WIDTH);
+        const maxBlockX = Math.floor(x + HALF_WIDTH + 0.5 - SKIN_WIDTH);
+        const minBlockZ = Math.ceil(z - HALF_WIDTH - 0.5 + SKIN_WIDTH);
+        const maxBlockZ = Math.floor(z + HALF_WIDTH + 0.5 - SKIN_WIDTH);
 
         if (this.velY <= 0) {
             const footBlock = Math.round(y - HALF_HEIGHT);
