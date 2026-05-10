@@ -31,7 +31,7 @@ New engine behavior goes in a `Component` subclass. `GameObject` itself should s
 ### Major Systems
 
 - **Terrain** — `ChunkComponent` represents a voxel chunk (with `BlockType`: Air/Dirt/Grass). `ChunkManager` maintains a grid of chunks stored in a `Map`, handles chunk generation and face-culled mesh building.
-- **Player** — a `GameObject` with `Transform`, `PlayerPhysics` (gravity, terrain collision), and `PlayerController` (WASD movement).
+- **Player** — a `GameObject` with `Transform`, `PlayerPhysics` (gravity, terrain collision), `PlayerController` (WASD movement), and `PlayerCamera` (pointer-lock first-person camera with eye offset).
 - **Input** — `InputManager` (Singleton) tracks keyboard, mouse, and scroll state each frame; provides NDC conversion for raycasting.
 - **Camera** — `Camera` wraps Three.js `PerspectiveCamera`. `DebugCameraController` is a free-look component (mouse + keyboard zoom).
 - **Rendering** — `Renderer` wraps `WebGLRenderer`. `TextureManager` (Singleton) loads and caches Three.js materials for block types.
@@ -47,9 +47,14 @@ import GameObject from "engine/core/GameObject";
 
 Note: the Jest config (`jest.config.ts`) only maps `@/` → `src/`, not `engine/`. Engine imports inside test files must use relative paths (`../src/engine/...`) until that mapping is added.
 
+### Utilities
+
+- **`GameObjectNames`** (`engine/utils/gameObjectNames.ts`) — enum of named `GameObject` identifiers (ChunkManager, DebugCamera, DebugClicker, Player). Use these constants instead of raw strings when looking up objects in the scene.
+- **`KeyCode`** (`engine/utils/keyCode.ts`) — TypeScript type and validation helper for keyboard key strings used by `InputManager`.
+
 ### UI
 
-`src/index.tsx` bootstraps React into `#root`. `src/ui/App.tsx` is the root component. `src/ui/GameCanvas.tsx` mounts the `Game` instance and provides the Three.js canvas DOM element.
+`src/index.tsx` bootstraps React into `#root`. `src/ui/App.tsx` is the root component. `src/ui/GameCanvas.tsx` mounts the `Game` instance and provides the Three.js canvas DOM element. `GameContext.tsx` exposes the `Game` instance via React context so any child component can access it. `DebugMenu.tsx` is a Tweakpane-based overlay for toggling between the debug free-cam and the player camera.
 
 ### Scene setup
 
