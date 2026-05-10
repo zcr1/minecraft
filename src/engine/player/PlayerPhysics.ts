@@ -14,7 +14,7 @@ export default class PlayerPhysics extends Component {
     private transform!: Transform;
     private readonly chunkManager: ChunkManager;
     private readonly playerBox = new THREE.Box3();
-    velocity = new THREE.Vector3(0, 0, 0);
+    velocity = new THREE.Vector3();
 
     constructor(chunkManager: ChunkManager) {
         super();
