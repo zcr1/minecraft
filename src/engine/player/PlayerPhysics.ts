@@ -6,7 +6,7 @@ import Component from "../core/Component";
 
 const GRAVITY = -20;
 const TERMINAL_VEL = -30;
-const HALF_WIDTH = 0.4;
+const HALF_WIDTH = 0.3;
 const HALF_HEIGHT = 0.9;
 const SKIN_WIDTH = 1e-4;
 
