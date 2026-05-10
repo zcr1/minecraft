@@ -14,6 +14,7 @@ export default class PlayerPhysics extends Component {
     private transform!: Transform;
     private readonly chunkManager: ChunkManager;
     private readonly playerBox = new THREE.Box3();
+    isGrounded = false;
     velocity = new THREE.Vector3();
 
     constructor(chunkManager: ChunkManager) {
@@ -35,6 +36,7 @@ export default class PlayerPhysics extends Component {
         // seen via perpendicular AABB straddle triggering an incorrect X snap).
         // Y is resolved first so the player is on solid ground before horizontal
         // collision runs.
+        this.isGrounded = false;
         this.velocity.y = Math.max(this.velocity.y + GRAVITY * deltaTime, TERMINAL_VEL);
         this.transform.y += this.velocity.y * deltaTime;
         this.resolveY();
@@ -127,6 +129,7 @@ export default class PlayerPhysics extends Component {
                     if (this.chunkManager.getBlockAtWorld(blockX, footBlock, blockZ) !== BlockType.Air) {
                         this.transform.y = footBlock + 0.5 + HALF_HEIGHT + SKIN_WIDTH;
                         this.velocity.y = 0;
+                        this.isGrounded = true;
                         return;
                     }
                 }
@@ -138,6 +141,7 @@ export default class PlayerPhysics extends Component {
                     if (this.chunkManager.getBlockAtWorld(blockX, headBlock, blockZ) !== BlockType.Air) {
                         this.transform.y = headBlock - 0.5 - HALF_HEIGHT - SKIN_WIDTH;
                         this.velocity.y = 0;
+                        this.isGrounded = true;
                         return;
                     }
                 }

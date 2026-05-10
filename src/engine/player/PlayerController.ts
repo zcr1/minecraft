@@ -4,6 +4,7 @@ import PlayerCamera from "./PlayerCamera";
 import PlayerPhysics from "./PlayerPhysics";
 
 const SPEED = 5;
+const JUMP_SPEED = 10;
 
 export default class PlayerController extends Component {
     private readonly speed: number;
@@ -33,6 +34,12 @@ export default class PlayerController extends Component {
         if (input.isHeld("KeyS")) deltaZ += 1;
         if (input.isHeld("KeyA")) deltaX -= 1;
         if (input.isHeld("KeyD")) deltaX += 1;
+
+        if (input.isHeld("Space")) {
+            if (this.playerPhysics.isGrounded) {
+                this.playerPhysics.velocity.y = JUMP_SPEED;
+            }
+        }
 
         // Prevents diagonal movement from being faster
         if (deltaX !== 0 && deltaZ !== 0) {
