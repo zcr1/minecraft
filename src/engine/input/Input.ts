@@ -21,6 +21,18 @@ class Input {
 
     init(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
+        this.heldKeys.clear();
+        this.pressedKeys.clear();
+        this.releasedKeys.clear();
+        this.heldButtons.clear();
+        this.pressedButtons.clear();
+        this.releasedButtons.clear();
+        this._mouseX = 0;
+        this._mouseY = 0;
+        this._deltaX = 0;
+        this._deltaY = 0;
+        this._scrollDX = 0;
+        this._scrollDY = 0;
         window.addEventListener("keydown", this.onKeyDown);
         window.addEventListener("keyup", this.onKeyUp);
         window.addEventListener("blur", this.onBlur);

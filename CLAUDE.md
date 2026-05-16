@@ -24,7 +24,8 @@ The engine uses a component-entity pattern:
 - **`GameObject`** — an entity that owns a set of components, keyed by constructor type (one instance per component type enforced). Calls `update()` on all components each frame when `enabled = true`.
 - **`Scene`** — a `Set<GameObject>`. Has its own `update()` which ticks all active GameObjects; wired into the game loop via `Game.ts`.
 - **`Game`** — owns the game loop (`requestAnimationFrame`), the scene, renderer, and camera. Entry point for starting/stopping the engine.
-- **`Singleton`** — base class used by `Input` and `TextureManager` to enforce single instances.
+
+Engine-wide services like `Input` and `TextureManager` are module-level singletons: the module default-exports a `new Foo()` instance, and callers import that instance directly.
 
 New engine behavior goes in a `Component` subclass. `GameObject` itself should stay logic-free.
 
@@ -44,8 +45,6 @@ New engine behavior goes in a `Component` subclass. `GameObject` itself should s
 ```ts
 import GameObject from "engine/core/GameObject";
 ```
-
-Note: the Jest config (`jest.config.ts`) only maps `@/` → `src/`, not `engine/`. Engine imports inside test files must use relative paths (`../src/engine/...`) until that mapping is added.
 
 ### Utilities
 
