@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import Component from "../core/Component";
 import ChunkComponent, { BlockType } from "./ChunkComponent";
+import TerrainGenerator from "./TerrainGenerator";
 
 export default class ChunkManager extends Component {
     private readonly chunks: Map<number, ChunkComponent> = new Map();
@@ -30,17 +31,21 @@ export default class ChunkManager extends Component {
         this.chunkHeight = chunkHeight;
         this.chunkDepth = chunkDepth;
 
-        for (let x = 0; x < gridWidth; x++) {
-            for (let z = 0; z < gridHeight; z++) {
-                let chunkAbove: ChunkComponent | undefined = undefined;
-                for (let y = gridLayers - 1; y >= 0; y--) {
+        const terrainGenerator = TerrainGenerator.instance;
+
+        for (let chunkX = 0; chunkX < gridWidth; chunkX++) {
+            for (let chunkZ = 0; chunkZ < gridHeight; chunkZ++) {
+                for (let chunkY = 0; chunkY < gridLayers; chunkY++) {
+                    const worldOriginX = chunkX * chunkWidth;
+                    const worldOriginY = chunkY * chunkHeight;
+                    const worldOriginZ = chunkZ * chunkDepth;
+
                     const chunk = new ChunkComponent(chunkWidth, chunkHeight, chunkDepth);
-                    chunk.mesh.position.set(x * chunkWidth, y * chunkHeight, z * chunkDepth);
-                    chunk.generate(chunkAbove);
+                    chunk.mesh.position.set(worldOriginX, worldOriginY, worldOriginZ);
+                    chunk.generate(terrainGenerator, worldOriginX, worldOriginY, worldOriginZ);
                     chunk.buildMesh();
                     threeScene.add(chunk.mesh);
-                    this.chunks.set(this.getChunkKey(x, y, z), chunk);
-                    chunkAbove = chunk;
+                    this.chunks.set(this.getChunkKey(chunkX, chunkY, chunkZ), chunk);
                 }
             }
         }

@@ -6,6 +6,8 @@ const config: Config = {
     testMatch: ["<rootDir>/test/**/*.test.(ts|tsx|js|jsx)"],
     moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
+        "^engine/(.*)$": "<rootDir>/src/engine/$1",
+        "\\.(png|jpg|jpeg|gif|svg)$": "<rootDir>/test/fileMock.ts",
     },
 };
 

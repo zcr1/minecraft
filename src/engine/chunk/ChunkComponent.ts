@@ -1,14 +1,13 @@
 import * as THREE from "three";
 import TextureManager from "../TextureManager";
 import Component from "../core/Component";
+import type TerrainGenerator from "./TerrainGenerator";
 
 export enum BlockType {
     Air = 0,
     Dirt = 1,
     Grass = 2,
 }
-
-const EMPTY_RATE = 0.15;
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
 const FACES = [
@@ -100,30 +99,23 @@ export default class ChunkComponent extends Component {
         return geo;
     }
 
-    generate(chunkAbove?: ChunkComponent) {
-        for (let x = 0; x < this.width; x++) {
-            for (let z = 0; z < this.depth; z++) {
-                for (let y = this.height - 1; y >= 0; y--) {
-                    if (Math.random() >= EMPTY_RATE) {
-                        const blockType = this.hasSolidAbove(x, y, z, chunkAbove) ? BlockType.Dirt : BlockType.Grass;
-                        this.setBlock(x, y, z, blockType);
+    generate(generator: TerrainGenerator, worldOriginX: number, worldOriginY: number, worldOriginZ: number) {
+        for (let localX = 0; localX < this.width; localX++) {
+            for (let localZ = 0; localZ < this.depth; localZ++) {
+                // Surface height only depends on (x, z), so compute it once per column
+                // rather than re-running the octave loop for every voxel in the column.
+                const surface = Math.floor(generator.getHeight(worldOriginX + localX, worldOriginZ + localZ));
+                for (let localY = 0; localY < this.height; localY++) {
+                    const worldY = worldOriginY + localY;
+                    if (worldY > surface) {
+                        continue;
                     }
+
+                    const blockType = worldY === surface ? BlockType.Grass : BlockType.Dirt;
+                    this.setBlock(localX, localY, localZ, blockType);
                 }
             }
         }
-    }
-
-    private hasSolidAbove(x: number, y: number, z: number, chunkAbove?: ChunkComponent): boolean {
-        for (let checkY = y + 1; checkY < this.height; checkY++) {
-            if (this.getBlock(x, checkY, z) !== BlockType.Air) return true;
-        }
-
-        if (chunkAbove) {
-            for (let checkY = 0; checkY < chunkAbove.height; checkY++) {
-                if (chunkAbove.getBlock(x, checkY, z) !== BlockType.Air) return true;
-            }
-        }
-        return false;
     }
 
     rebuild(): void {

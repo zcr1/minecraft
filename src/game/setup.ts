@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type Game from "engine/Game";
 import TextureManager from "engine/TextureManager";
 import ChunkManager from "engine/chunk/ChunkManager";
+import TerrainGenerator from "engine/chunk/TerrainGenerator";
 import Transform from "engine/components/Transform";
 import GameObject from "engine/core/GameObject";
 import DebugCameraController from "engine/debug/DebugCameraController";
@@ -18,6 +19,16 @@ export function setupScene(game: Game): void {
     game.scene.threeScene.add(dirLight);
 
     TextureManager.instance.init();
+
+    TerrainGenerator.init({
+        seed: 1,
+        baseHeight: 10,
+        heightAmplitude: 5,
+        baseFrequency: 1 / 32,
+        octaves: 4,
+        persistence: 0.5,
+        lacunarity: 2.0,
+    });
 
     const chunkManager = new ChunkManager({
         gridWidth: 3,
