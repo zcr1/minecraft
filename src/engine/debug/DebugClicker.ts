@@ -41,7 +41,15 @@ export default class DebugClicker extends Component {
             return;
         }
 
-        chunk.setBlock(Math.round(local.x), Math.round(local.y), Math.round(local.z), BlockType.Air);
+        const blockX = Math.round(local.x);
+        const blockY = Math.round(local.y);
+        const blockZ = Math.round(local.z);
+
+        if (chunk.getBlock(blockX, blockY, blockZ) === BlockType.Bedrock) {
+            return;
+        }
+
+        chunk.setBlock(blockX, blockY, blockZ, BlockType.Air);
         chunk.rebuild();
     }
 }

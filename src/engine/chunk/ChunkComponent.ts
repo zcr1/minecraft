@@ -7,6 +7,7 @@ export enum BlockType {
     Air = 0,
     Dirt = 1,
     Grass = 2,
+    Bedrock = 3,
 }
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
@@ -107,6 +108,10 @@ export default class ChunkComponent extends Component {
                 const surface = Math.floor(generator.getHeight(worldOriginX + localX, worldOriginZ + localZ));
                 for (let localY = 0; localY < this.height; localY++) {
                     const worldY = worldOriginY + localY;
+                    if (worldY === 0) {
+                        this.setBlock(localX, localY, localZ, BlockType.Bedrock);
+                        continue;
+                    }
                     if (worldY > surface) {
                         continue;
                     }
@@ -135,6 +140,10 @@ export default class ChunkComponent extends Component {
             grassSideNorm: number[] = [],
             grassSideUv: number[] = [],
             grassSideIdx: number[] = [];
+        const bedrockPos: number[] = [],
+            bedrockNorm: number[] = [],
+            bedrockUv: number[] = [],
+            bedrockIdx: number[] = [];
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -154,6 +163,8 @@ export default class ChunkComponent extends Component {
                             this.pushFace(face, x, y, z, grassPos, grassNorm, grassUv, grassIdx);
                         } else if (block === BlockType.Grass && face.normal[1] === 0) {
                             this.pushFace(face, x, y, z, grassSidePos, grassSideNorm, grassSideUv, grassSideIdx);
+                        } else if (block === BlockType.Bedrock) {
+                            this.pushFace(face, x, y, z, bedrockPos, bedrockNorm, bedrockUv, bedrockIdx);
                         } else {
                             this.pushFace(face, x, y, z, dirtPos, dirtNorm, dirtUv, dirtIdx);
                         }
@@ -186,6 +197,14 @@ export default class ChunkComponent extends Component {
                 new THREE.Mesh(
                     this.buildGeo(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx),
                     textureManager.getMaterial(BlockType.Grass, 0),
+                ),
+            );
+        }
+        if (bedrockIdx.length > 0) {
+            this.mesh.add(
+                new THREE.Mesh(
+                    this.buildGeo(bedrockPos, bedrockNorm, bedrockUv, bedrockIdx),
+                    textureManager.getMaterial(BlockType.Bedrock, 0),
                 ),
             );
         }
