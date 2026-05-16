@@ -1,13 +1,13 @@
 // @refresh reset
 import { useEffect, useRef, useState } from "react";
-import Game from "engine/Game";
+import game from "engine/Game";
 import { setupScene } from "../game/setup";
 import DebugMenu from "./DebugMenu";
 import { GameProvider } from "./GameContext";
 
 export default function GameCanvas() {
     const gameContainer = useRef<HTMLDivElement>(null);
-    const [game, setGame] = useState<Game | null>(null);
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
         // ref is always set by mount time; null check required by TypeScript
@@ -16,18 +16,18 @@ export default function GameCanvas() {
             return;
         }
 
-        const game = new Game(mount);
-        setupScene(game);
+        game.init(mount);
+        setupScene();
         game.start();
-        setGame(game);
+        setReady(true);
 
         return () => game.stop();
     }, []);
 
     return (
-        <GameProvider value={game}>
+        <GameProvider value={ready ? game : null}>
             <div ref={gameContainer} style={{ width: "100vw", height: "100vh" }} />
-            {game && <DebugMenu />}
+            {ready && <DebugMenu />}
         </GameProvider>
     );
 }

@@ -1,6 +1,7 @@
-import * as THREE from "three";
+import game from "../Game";
 import Transform from "../components/Transform";
 import Component from "../core/Component";
+import GameObjectName from "../utils/gameObjectNames";
 import ChunkComponent, { BlockType } from "./ChunkComponent";
 import TerrainGenerator from "./TerrainGenerator";
 
@@ -12,10 +13,9 @@ export default class ChunkManager extends Component {
     private readonly chunkHeight: number;
     private readonly chunkDepth: number;
     private readonly worldHeightChunks: number;
-    private readonly threeScene: THREE.Scene;
     private readonly terrainGenerator: TerrainGenerator;
-    private readonly playerTransform: Transform;
     private readonly renderRadius: number;
+    private playerTransform: Transform | null = null;
     private previousCenterX: number | null = null;
     private previousCenterZ: number | null = null;
 
@@ -25,18 +25,14 @@ export default class ChunkManager extends Component {
         chunkWidth,
         chunkHeight,
         chunkDepth,
-        threeScene,
         terrainGenerator,
-        playerTransform,
     }: {
         renderRadius: number;
         worldHeightChunks: number;
         chunkWidth: number;
         chunkHeight: number;
         chunkDepth: number;
-        threeScene: THREE.Scene;
         terrainGenerator: TerrainGenerator;
-        playerTransform: Transform;
     }) {
         super();
         this.renderRadius = renderRadius;
@@ -44,11 +40,14 @@ export default class ChunkManager extends Component {
         this.chunkWidth = chunkWidth;
         this.chunkHeight = chunkHeight;
         this.chunkDepth = chunkDepth;
-        this.threeScene = threeScene;
         this.terrainGenerator = terrainGenerator;
-        this.playerTransform = playerTransform;
 
         this.generateInitialChunks();
+    }
+
+    private getPlayerTransform(): Transform {
+        this.playerTransform ??= game.getGameObject(GameObjectName.Player).getComponent(Transform);
+        return this.playerTransform;
     }
 
     private getChunkKey(x: number, y: number, z: number) {
@@ -67,9 +66,10 @@ export default class ChunkManager extends Component {
     }
 
     private getPlayerChunkColumn(): { chunkX: number; chunkZ: number } {
+        const playerTransform = this.getPlayerTransform();
         return {
-            chunkX: Math.floor(this.playerTransform.x / this.chunkWidth),
-            chunkZ: Math.floor(this.playerTransform.z / this.chunkDepth),
+            chunkX: Math.floor(playerTransform.x / this.chunkWidth),
+            chunkZ: Math.floor(playerTransform.z / this.chunkDepth),
         };
     }
 
@@ -88,7 +88,7 @@ export default class ChunkManager extends Component {
         chunk.mesh.position.set(worldOriginX, worldOriginY, worldOriginZ);
         chunk.generate(this.terrainGenerator, worldOriginX, worldOriginY, worldOriginZ);
         chunk.buildMesh();
-        this.threeScene.add(chunk.mesh);
+        game.threeScene.add(chunk.mesh);
         this.chunks.set(key, chunk);
         return chunk;
     }

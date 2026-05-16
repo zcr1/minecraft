@@ -1,5 +1,7 @@
 import { createContext, useContext } from "react";
-import type Game from "engine/Game";
+import type game from "engine/Game";
+
+type Game = typeof game;
 
 const GameContext = createContext<Game | null>(null);
 

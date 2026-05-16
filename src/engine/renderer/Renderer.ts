@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import type Camera from "../core/Camera";
-import type Scene from "../core/Scene";
 
 export default class Renderer {
     private renderer: THREE.WebGLRenderer;
@@ -12,8 +11,8 @@ export default class Renderer {
         mount.appendChild(this.renderer.domElement);
     }
 
-    render(scene: Scene, camera: Camera) {
-        this.renderer.render(scene.threeScene, camera.threeCamera);
+    render(threeScene: THREE.Scene, camera: Camera) {
+        this.renderer.render(threeScene, camera.threeCamera);
     }
 
     setSize(width: number, height: number) {

@@ -22,10 +22,9 @@ The engine uses a component-entity pattern:
 
 - **`Component`** — base class for all behavior. Subclass it and override `update()` for per-frame logic.
 - **`GameObject`** — an entity that owns a set of components, keyed by constructor type (one instance per component type enforced). Calls `update()` on all components each frame when `enabled = true`.
-- **`Scene`** — a `Set<GameObject>`. Has its own `update()` which ticks all active GameObjects; wired into the game loop via `Game.ts`.
-- **`Game`** — owns the game loop (`requestAnimationFrame`), the scene, renderer, and camera. Entry point for starting/stopping the engine.
+- **`Game`** — owns the game loop (`requestAnimationFrame`), the `THREE.Scene`, the set of `GameObject`s, the renderer, and the camera. Ticks all active GameObjects each frame and is the entry point for starting/stopping the engine. Module-level singleton — call `game.init(container)` once before `game.start()`.
 
-Engine-wide services like `Input` and `TextureManager` are module-level singletons: the module default-exports a `new Foo()` instance, and callers import that instance directly.
+Engine-wide services like `Game`, `Input`, and `TextureManager` are module-level singletons: the module default-exports a `new Foo()` instance, and callers import that instance directly.
 
 New engine behavior goes in a `Component` subclass. `GameObject` itself should stay logic-free.
 

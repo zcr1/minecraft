@@ -15,10 +15,10 @@ export default function DebugMenu() {
         const pane = new Pane({ title: "Debug" });
         const params = { debugCamera: false, showFpsGraph: false };
 
-        const player = game.scene.getGameObject(GameObjectName.Player);
+        const player = game.getGameObject(GameObjectName.Player);
         const playerCamera = player.getComponent(PlayerCamera);
         const playerController = player.getComponent(PlayerController);
-        const debugCameraController = game.scene
+        const debugCameraController = game
             .getGameObject(GameObjectName.DebugCamera)
             .getComponent(DebugCameraController);
 
@@ -39,13 +39,13 @@ export default function DebugMenu() {
         if (!showFpsGraph || !fpsContainerRef.current) return;
 
         const fpsPane = new Pane({ container: fpsContainerRef.current });
-        fpsPane.addBinding(game.scene, "fps", {
+        fpsPane.addBinding(game, "fps", {
             readonly: true,
             label: "FPS",
             format: value => Math.round(value).toString(),
             interval: 100,
         });
-        fpsPane.addBinding(game.scene, "fps", {
+        fpsPane.addBinding(game, "fps", {
             readonly: true,
             view: "graph",
             label: "",
