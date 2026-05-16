@@ -1,5 +1,6 @@
 import { Pane } from "tweakpane";
 import { useEffect, useRef, useState } from "react";
+import Transform from "engine/components/Transform";
 import DebugCameraController from "engine/debug/DebugCameraController";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
@@ -9,11 +10,13 @@ import { useGame } from "./GameContext";
 export default function DebugMenu() {
     const game = useGame();
     const [showFpsGraph, setShowFpsGraph] = useState(false);
+    const [showPlayerPosition, setShowPlayerPosition] = useState(false);
     const fpsContainerRef = useRef<HTMLDivElement | null>(null);
+    const positionContainerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const pane = new Pane({ title: "Debug" });
-        const params = { debugCamera: false, showFpsGraph: false };
+        const params = { debugCamera: false, showFpsGraph: false, showPlayerPosition: false };
 
         const player = game.getGameObject(GameObjectName.Player);
         const playerCamera = player.getComponent(PlayerCamera);
@@ -30,6 +33,10 @@ export default function DebugMenu() {
 
         pane.addBinding(params, "showFpsGraph", { label: "Show FPS" }).on("change", ({ value }) => {
             setShowFpsGraph(value);
+        });
+
+        pane.addBinding(params, "showPlayerPosition", { label: "Show Player Position" }).on("change", ({ value }) => {
+            setShowPlayerPosition(value);
         });
 
         return () => pane.dispose();
@@ -57,5 +64,25 @@ export default function DebugMenu() {
         return () => fpsPane.dispose();
     }, [game, showFpsGraph]);
 
-    return <div ref={fpsContainerRef} style={{ position: "fixed", top: 0, left: 0, pointerEvents: "none" }} />;
+    useEffect(() => {
+        if (!showPlayerPosition || !positionContainerRef.current) {
+            return;
+        }
+
+        const transform = game.getGameObject(GameObjectName.Player).getComponent(Transform);
+        const positionPane = new Pane({ container: positionContainerRef.current });
+        const formatPosition = (value: number) => value.toFixed(2);
+        positionPane.addBinding(transform, "x", { readonly: true, label: "X", format: formatPosition, interval: 100 });
+        positionPane.addBinding(transform, "y", { readonly: true, label: "Y", format: formatPosition, interval: 100 });
+        positionPane.addBinding(transform, "z", { readonly: true, label: "Z", format: formatPosition, interval: 100 });
+
+        return () => positionPane.dispose();
+    }, [game, showPlayerPosition]);
+
+    return (
+        <>
+            <div ref={fpsContainerRef} style={{ position: "fixed", top: 0, left: 0, pointerEvents: "none" }} />
+            <div ref={positionContainerRef} style={{ position: "fixed", top: 80, left: 0, pointerEvents: "none" }} />
+        </>
+    );
 }
