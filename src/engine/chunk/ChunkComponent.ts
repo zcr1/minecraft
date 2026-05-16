@@ -167,7 +167,10 @@ export default class ChunkComponent extends Component {
 
         if (dirtIdx.length > 0) {
             this.mesh.add(
-                new THREE.Mesh(this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx), tm.getMaterial(BlockType.Dirt, 0)),
+                new THREE.Mesh(
+                    this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx),
+                    textureMananger.getMaterial(BlockType.Dirt, 0),
+                ),
             );
         }
         if (grassIdx.length > 0) {
