@@ -30,15 +30,24 @@ export function setupScene(game: Game): void {
         lacunarity: 2.0,
     });
 
+    const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);
+    const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x4488ff });
+    const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+    game.scene.threeScene.add(playerMesh);
+
+    const player = new GameObject(GameObjectName.Player);
+    const playerTransform = new Transform(playerMesh, 12, 30, 12);
+    player.addComponent(playerTransform);
+
     const chunkManager = new ChunkManager({
-        gridWidth: 3,
-        gridHeight: 3,
-        gridLayers: 3,
+        renderRadius: 4,
+        worldHeightChunks: 3,
         chunkWidth: 8,
         chunkHeight: 8,
         chunkDepth: 8,
         threeScene: game.scene.threeScene,
         terrainGenerator,
+        playerTransform,
     });
 
     const managerObj = new GameObject(GameObjectName.ChunkManager);
@@ -57,18 +66,8 @@ export function setupScene(game: Game): void {
     debugClickerObj.addComponent(new DebugClicker(game.camera.threeCamera, chunkManager));
     game.scene.add(debugClickerObj);
 
-    const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);
-    const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x4488ff });
-    const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-    game.scene.threeScene.add(playerMesh);
-
-    const player = new GameObject(GameObjectName.Player);
-    const playerTransform = new Transform(playerMesh, 12, 30, 12);
-    player.addComponent(playerTransform);
-    const playerController = new PlayerController();
-    player.addComponent(playerController);
+    player.addComponent(new PlayerController());
     player.addComponent(new PlayerPhysics(chunkManager));
-    const playerCamera = new PlayerCamera(game.camera, game.renderer.domElement);
-    player.addComponent(playerCamera);
+    player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
     game.scene.add(player);
 }

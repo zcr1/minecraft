@@ -13,6 +13,7 @@ export default class Transform extends Component {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.mesh.position.set(this.x, this.y, this.z);
     }
 
     update() {
