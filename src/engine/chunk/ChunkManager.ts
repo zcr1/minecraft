@@ -58,6 +58,11 @@ export default class ChunkManager extends Component {
         // Layout: x in bits 0-11 (+-2048 chunks), z in bits 12-23 (±2048 chunks), y in bits 24-31
         // (0..255 chunks). At chunkWidth=8 that's +-16,384 blocks horizontally - well beyond any
         // plausible play area; we can pick larger biases if the world ever needs to grow past that.
+        if (x < -0x800 || x >= 0x800 || z < -0x800 || z >= 0x800 || y < 0 || y >= 0x100) {
+            // Out-of-range coords silently wrap and collide with valid chunks
+            throw new Error(`Chunk coordinate out of range: (${x}, ${y}, ${z})`);
+        }
+
         return ((x + 0x800) & 0xfff) | (((z + 0x800) & 0xfff) << 12) | ((y & 0xff) << 24);
     }
 
