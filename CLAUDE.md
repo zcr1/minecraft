@@ -77,3 +77,21 @@ Use full, descriptive names. Single-letter or truncated names are not allowed:
 | `len`            | `length`                     |
 
 This applies to parameters, locals, fields, and loop variables. The only exception is well-established math/loop indices (`i`, `j`) in tightly scoped loops where the meaning is unambiguous.
+
+### No single-line conditionals
+
+Always use braces and place the body on its own line. Do not write single-line `if` statements, even for early returns or loop control.
+
+```ts
+// Bad
+if (flag) continue;
+if (!entity) return;
+
+// Good
+if (flag) {
+    continue;
+}
+if (!entity) {
+    return;
+}
+```
