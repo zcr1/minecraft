@@ -52,8 +52,13 @@ export default class ChunkManager extends Component {
     }
 
     private getChunkKey(x: number, y: number, z: number) {
-        // handles 4,096 chunks in x, 4,096 chunks in y, 256 chunks in z
-        return (x & 0xfff) | ((y & 0xfff) << 12) | ((z & 0xff) << 24);
+        // Pack (x, y, z) into a single 32-bit int so the Map can use a primitive key. X and Z are
+        // biased into a non-negative range before masking so negative coordinates don't collide
+        // with large positive ones (-1 & 0xfff === 4095, same key as x=4095 without the bias).
+        // Layout: x in bits 0-11 (+-2048 chunks), z in bits 12-23 (±2048 chunks), y in bits 24-31
+        // (0..255 chunks). At chunkWidth=8 that's +-16,384 blocks horizontally - well beyond any
+        // plausible play area; we can pick larger biases if the world ever needs to grow past that.
+        return ((x + 0x800) & 0xfff) | (((z + 0x800) & 0xfff) << 12) | ((y & 0xff) << 24);
     }
 
     private getPlayerChunkColumn(): { chunkX: number; chunkZ: number } {
