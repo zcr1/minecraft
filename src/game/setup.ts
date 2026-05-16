@@ -43,9 +43,9 @@ export function setupScene(): void {
     const chunkManager = new ChunkManager({
         renderRadius: 4,
         worldHeightChunks: 3,
-        chunkWidth: 8,
+        chunkWidth: 16,
         chunkHeight: 32,
-        chunkDepth: 8,
+        chunkDepth: 16,
         terrainGenerator,
     });
 
