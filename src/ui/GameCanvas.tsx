@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import game from "engine/Game";
 import { setupScene } from "../game/setup";
+import Crosshair from "./Crosshair";
 import DebugMenu from "./DebugMenu";
 import { GameProvider } from "./GameContext";
 
@@ -27,6 +28,7 @@ export default function GameCanvas() {
     return (
         <GameProvider value={ready ? game : null}>
             <div ref={gameContainer} style={{ width: "100vw", height: "100vh" }} />
+            {ready && <Crosshair />}
             {ready && <DebugMenu />}
         </GameProvider>
     );

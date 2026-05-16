@@ -7,6 +7,7 @@ import Transform from "engine/components/Transform";
 import GameObject from "engine/core/GameObject";
 import DebugCameraController from "engine/debug/DebugCameraController";
 import DebugClicker from "engine/debug/DebugClicker";
+import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
 import PlayerPhysics from "engine/player/PlayerPhysics";
@@ -67,4 +68,5 @@ export function setupScene(): void {
     player.addComponent(new PlayerController());
     player.addComponent(new PlayerPhysics(chunkManager));
     player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
+    player.addComponent(new PlayerBlockInteraction(chunkManager));
 }
