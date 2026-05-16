@@ -55,9 +55,10 @@ export default class ChunkManager extends Component {
         // biased into a non-negative range before masking so negative coordinates don't collide
         // with large positive ones (-1 & 0xfff === 4095, same key as x=4095 without the bias).
         // Layout: x in bits 0-11 (+-2048 chunks), z in bits 12-23 (±2048 chunks), y in bits 24-31
-        // (0..255 chunks). At chunkWidth=8 that's +-16,384 blocks horizontally - well beyond any
-        // plausible play area; we can pick larger biases if the world ever needs to grow past that.
-        if (x < -0x800 || x >= 0x800 || z < -0x800 || z >= 0x800 || y < 0 || y >= 0x100) {
+        // (8 bits reserved, but y is functionally bounded by worldHeightChunks). At chunkWidth=8
+        // that's +-16,384 blocks horizontally - well beyond any plausible play area; we can pick
+        // larger biases if the world ever needs to grow past that.
+        if (x < -0x800 || x >= 0x800 || z < -0x800 || z >= 0x800 || y < 0 || y >= this.worldHeightChunks) {
             // Out-of-range coords silently wrap and collide with valid chunks
             throw new Error(`Chunk coordinate out of range: (${x}, ${y}, ${z})`);
         }
@@ -211,6 +212,10 @@ export default class ChunkManager extends Component {
         const chunkX = Math.floor(blockX / this.chunkWidth);
         const chunkY = Math.floor(blockY / this.chunkHeight);
         const chunkZ = Math.floor(blockZ / this.chunkDepth);
+
+        if (chunkY < 0 || chunkY >= this.worldHeightChunks) {
+            return BlockType.Air;
+        }
 
         const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
         if (!chunk) {

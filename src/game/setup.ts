@@ -22,9 +22,9 @@ export function setupScene(): void {
 
     const terrainGenerator = new TerrainGenerator({
         seed: 1,
-        baseHeight: 10,
-        heightAmplitude: 5,
-        baseFrequency: 1 / 32,
+        baseHeight: 48,
+        heightAmplitude: 10,
+        baseFrequency: 1 / 48,
         octaves: 4,
         persistence: 0.5,
         lacunarity: 2.0,
@@ -36,14 +36,14 @@ export function setupScene(): void {
     game.threeScene.add(playerMesh);
 
     const player = new GameObject(GameObjectName.Player);
-    player.addComponent(new Transform(playerMesh, 12, 30, 12));
+    player.addComponent(new Transform(playerMesh, 12, 80, 12));
     game.add(player);
 
     const chunkManager = new ChunkManager({
         renderRadius: 4,
         worldHeightChunks: 3,
         chunkWidth: 8,
-        chunkHeight: 8,
+        chunkHeight: 32,
         chunkDepth: 8,
         terrainGenerator,
     });
@@ -52,7 +52,7 @@ export function setupScene(): void {
     managerObj.addComponent(chunkManager);
     game.add(managerObj);
 
-    game.camera.threeCamera.position.set(12, 25, 50);
+    game.camera.threeCamera.position.set(12, 64, 50);
 
     const debugCameraController = new DebugCameraController(game.camera);
     debugCameraController.enabled = false;
