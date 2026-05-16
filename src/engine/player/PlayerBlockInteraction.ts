@@ -40,7 +40,12 @@ export default class PlayerBlockInteraction extends Component {
 
         this.raycaster.setFromCamera(this.pointer, this.camera);
 
-        const meshes = this.chunkManager.getChunks().map(chunk => chunk.mesh);
+        const chunks = this.chunkManager.getChunksAlongRay(
+            this.raycaster.ray.origin,
+            this.raycaster.ray.direction,
+            RAY_DISTANCE,
+        );
+        const meshes = chunks.map(chunk => chunk.mesh);
         const hits = this.raycaster.intersectObjects(meshes, true);
         if (!hits.length) {
             this.targetedBlock = null;

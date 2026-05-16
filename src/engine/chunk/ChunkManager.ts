@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import game from "../Game";
 import Transform from "../components/Transform";
 import Component from "../core/Component";
@@ -202,6 +203,35 @@ export default class ChunkManager extends Component {
     // Currently only used by DebugClicker
     getChunks(): readonly ChunkComponent[] {
         return [...this.chunks.values()];
+    }
+
+    getChunksAlongRay(origin: THREE.Vector3, direction: THREE.Vector3, distance: number): ChunkComponent[] {
+        const endX = origin.x + direction.x * distance;
+        const endY = origin.y + direction.y * distance;
+        const endZ = origin.z + direction.z * distance;
+
+        const minChunkX = Math.floor(Math.min(origin.x, endX) / this.chunkWidth);
+        const maxChunkX = Math.floor(Math.max(origin.x, endX) / this.chunkWidth);
+        const minChunkY = Math.floor(Math.min(origin.y, endY) / this.chunkHeight);
+        const maxChunkY = Math.floor(Math.max(origin.y, endY) / this.chunkHeight);
+        const minChunkZ = Math.floor(Math.min(origin.z, endZ) / this.chunkDepth);
+        const maxChunkZ = Math.floor(Math.max(origin.z, endZ) / this.chunkDepth);
+
+        const result: ChunkComponent[] = [];
+        for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (let chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+                if (chunkY < 0 || chunkY >= this.worldHeightChunks) {
+                    continue;
+                }
+                for (let chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                    const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
+                    if (chunk) {
+                        result.push(chunk);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     getBlockAtWorld(worldX: number, worldY: number, worldZ: number): BlockType {
