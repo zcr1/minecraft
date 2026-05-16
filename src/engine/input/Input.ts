@@ -1,17 +1,8 @@
 import { isKeyCode } from "engine/utils/keyCode";
 import type { KeyCode } from "engine/utils/keyCode";
-import Singleton from "../core/Singleton";
 
-export default class InputManager extends Singleton {
-    static override get instance(): InputManager {
-        return super.instance as InputManager;
-    }
-
-    static init(canvas: HTMLCanvasElement): InputManager {
-        return this._init(() => new InputManager(canvas));
-    }
-
-    private readonly canvas: HTMLCanvasElement;
+class Input {
+    private canvas!: HTMLCanvasElement;
 
     private readonly heldKeys = new Set<KeyCode>();
     private readonly pressedKeys = new Set<KeyCode>();
@@ -28,8 +19,7 @@ export default class InputManager extends Singleton {
     private _scrollDX = 0;
     private _scrollDY = 0;
 
-    private constructor(canvas: HTMLCanvasElement) {
-        super();
+    init(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         window.addEventListener("keydown", this.onKeyDown);
         window.addEventListener("keyup", this.onKeyUp);
@@ -122,7 +112,6 @@ export default class InputManager extends Singleton {
         window.removeEventListener("mouseup", this.onWindowMouseUp);
         this.canvas.removeEventListener("wheel", this.onWheel);
         this.canvas.removeEventListener("contextmenu", this.onContextMenu);
-        this._destroy();
     }
 
     // ── Event handlers (arrow fields preserve `this`) ─────────────────────
@@ -183,3 +172,5 @@ export default class InputManager extends Singleton {
         e.preventDefault();
     };
 }
+
+export default new Input();

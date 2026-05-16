@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import TextureManager from "../TextureManager";
+import textureMananger from "../TextureManager";
 import Component from "../core/Component";
 import type TerrainGenerator from "./TerrainGenerator";
 
@@ -123,7 +123,6 @@ export default class ChunkComponent extends Component {
     }
 
     buildMesh(): void {
-        const tm = TextureManager.instance;
         const dirtPos: number[] = [],
             dirtNorm: number[] = [],
             dirtUv: number[] = [],
@@ -175,7 +174,7 @@ export default class ChunkComponent extends Component {
             this.mesh.add(
                 new THREE.Mesh(
                     this.buildGeo(grassPos, grassNorm, grassUv, grassIdx),
-                    tm.getMaterial(BlockType.Grass, 1),
+                    textureMananger.getMaterial(BlockType.Grass, 1),
                 ),
             );
         }
@@ -183,7 +182,7 @@ export default class ChunkComponent extends Component {
             this.mesh.add(
                 new THREE.Mesh(
                     this.buildGeo(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx),
-                    tm.getMaterial(BlockType.Grass, 0),
+                    textureMananger.getMaterial(BlockType.Grass, 0),
                 ),
             );
         }

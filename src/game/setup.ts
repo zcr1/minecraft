@@ -18,9 +18,9 @@ export function setupScene(game: Game): void {
     dirLight.position.set(1, 2, 3);
     game.scene.threeScene.add(dirLight);
 
-    TextureManager.instance.init();
+    TextureManager.init();
 
-    TerrainGenerator.init({
+    const terrainGenerator = new TerrainGenerator({
         seed: 1,
         baseHeight: 10,
         heightAmplitude: 5,
@@ -38,6 +38,7 @@ export function setupScene(game: Game): void {
         chunkHeight: 8,
         chunkDepth: 8,
         threeScene: game.scene.threeScene,
+        terrainGenerator,
     });
 
     const managerObj = new GameObject(GameObjectName.ChunkManager);

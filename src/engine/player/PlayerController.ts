@@ -1,5 +1,5 @@
 import Component from "../core/Component";
-import InputManager from "../input/InputManager";
+import input from "../input/Input";
 import PlayerCamera from "./PlayerCamera";
 import PlayerPhysics from "./PlayerPhysics";
 
@@ -26,7 +26,6 @@ export default class PlayerController extends Component {
     }
 
     handleMovement() {
-        const input = InputManager.instance;
         let deltaX = 0;
         let deltaZ = 0;
 

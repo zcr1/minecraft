@@ -4,21 +4,10 @@ import dirtUrl from "../assets/textures/dirt.png";
 import grassSideUrl from "../assets/textures/grass_side.png";
 import grassTopUrl from "../assets/textures/grass_top.png";
 
-export default class TextureManager {
-    private static _instance: TextureManager | null = null;
-
+class TextureManager {
     private dirtMat!: THREE.MeshStandardMaterial;
     private grassTopMat!: THREE.MeshStandardMaterial;
     private grassSideMat!: THREE.MeshStandardMaterial;
-
-    private constructor() {}
-
-    static get instance(): TextureManager {
-        if (!TextureManager._instance) {
-            TextureManager._instance = new TextureManager();
-        }
-        return TextureManager._instance;
-    }
 
     init() {
         const loader = new THREE.TextureLoader();
@@ -42,3 +31,5 @@ export default class TextureManager {
         return new THREE.MeshStandardMaterial({ map: tex });
     }
 }
+
+export default new TextureManager();

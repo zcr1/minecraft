@@ -2,7 +2,7 @@ import * as THREE from "three";
 import ChunkComponent, { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Component from "engine/core/Component";
-import InputManager from "engine/input/InputManager";
+import input from "engine/input/Input";
 
 export default class DebugClicker extends Component {
     private readonly raycaster = new THREE.Raycaster();
@@ -17,11 +17,11 @@ export default class DebugClicker extends Component {
     }
 
     update() {
-        if (!InputManager.instance.wasMousePressed(0)) {
+        if (!input.wasMousePressed(0)) {
             return;
         }
 
-        const { x, y } = InputManager.instance.mouseNDC;
+        const { x, y } = input.mouseNDC;
         this.pointer.set(x, y);
         this.raycaster.setFromCamera(this.pointer, this.camera);
 

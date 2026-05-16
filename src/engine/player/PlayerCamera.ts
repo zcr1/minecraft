@@ -2,7 +2,7 @@ import * as THREE from "three";
 import Transform from "engine/components/Transform";
 import type Camera from "../core/Camera";
 import Component from "../core/Component";
-import InputManager from "../input/InputManager";
+import input from "../input/Input";
 
 const ROTATE_SPEED = 0.002;
 const EYE_OFFSET = 0.65;
@@ -37,7 +37,6 @@ export default class PlayerCamera extends Component {
 
     update(_deltaTime: number) {
         if (this.pointerLocked) {
-            const input = InputManager.instance;
             this._yaw -= input.mouseDeltaX * ROTATE_SPEED;
             this.pitch -= input.mouseDeltaY * ROTATE_SPEED;
             this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));

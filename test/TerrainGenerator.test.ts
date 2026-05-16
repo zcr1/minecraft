@@ -11,16 +11,10 @@ const defaultConfig: TerrainConfig = {
     lacunarity: 2.0,
 };
 
-// Note on the two-instance tests below: TerrainGenerator is a Singleton, so the second
-// init() call replaces the entry in the Singleton._instances map. But _init() returns
-// the freshly-built object, and we hold onto both return values directly — the older
-// instance object stays alive in JS via `generatorA`, with its own seeded noise function
-// still intact. We're not going through TerrainGenerator.instance, so the global state
-// swap doesn't affect us.
 describe("TerrainGenerator", () => {
     test("is deterministic across instances with the same seed", () => {
-        const generatorA = TerrainGenerator.init(defaultConfig);
-        const generatorB = TerrainGenerator.init(defaultConfig);
+        const generatorA = new TerrainGenerator(defaultConfig);
+        const generatorB = new TerrainGenerator(defaultConfig);
 
         for (let worldX = -20; worldX <= 20; worldX += 4) {
             for (let worldZ = -20; worldZ <= 20; worldZ += 4) {
@@ -30,8 +24,8 @@ describe("TerrainGenerator", () => {
     });
 
     test("different seeds produce different heights", () => {
-        const generatorA = TerrainGenerator.init({ ...defaultConfig, seed: 1 });
-        const generatorB = TerrainGenerator.init({ ...defaultConfig, seed: 999 });
+        const generatorA = new TerrainGenerator({ ...defaultConfig, seed: 1 });
+        const generatorB = new TerrainGenerator({ ...defaultConfig, seed: 999 });
 
         let differences = 0;
         for (let worldX = 0; worldX < 16; worldX++) {
@@ -45,7 +39,7 @@ describe("TerrainGenerator", () => {
     });
 
     test("heights stay within [baseHeight - amplitude, baseHeight + amplitude]", () => {
-        const generator = TerrainGenerator.init(defaultConfig);
+        const generator = new TerrainGenerator(defaultConfig);
         const minimum = defaultConfig.baseHeight - defaultConfig.heightAmplitude;
         const maximum = defaultConfig.baseHeight + defaultConfig.heightAmplitude;
 
@@ -59,7 +53,7 @@ describe("TerrainGenerator", () => {
     });
 
     test("getBlock layers air above, grass at surface, dirt below", () => {
-        const generator = TerrainGenerator.init(defaultConfig);
+        const generator = new TerrainGenerator(defaultConfig);
         const worldX = 7;
         const worldZ = 13;
         const surface = Math.floor(generator.getHeight(worldX, worldZ));

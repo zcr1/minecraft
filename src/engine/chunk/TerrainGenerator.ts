@@ -1,6 +1,5 @@
 import { NoiseFunction2D, createNoise2D } from "simplex-noise";
 import { BlockType } from "engine/chunk/ChunkComponent";
-import Singleton from "../core/Singleton";
 
 export type TerrainConfig = {
     seed?: number;
@@ -33,20 +32,11 @@ function mulberry32(seed: number): () => number {
     };
 }
 
-export default class TerrainGenerator extends Singleton {
-    static override get instance(): TerrainGenerator {
-        return super.instance as TerrainGenerator;
-    }
-
-    static init(config: TerrainConfig): TerrainGenerator {
-        return this._init(() => new TerrainGenerator(config));
-    }
-
+export default class TerrainGenerator {
     private readonly noise2D: NoiseFunction2D;
     private readonly config: TerrainConfig;
 
-    private constructor(config: TerrainConfig) {
-        super();
+    constructor(config: TerrainConfig) {
         this.config = config;
         const prng = mulberry32(config.seed ?? 1);
         this.noise2D = createNoise2D(prng);

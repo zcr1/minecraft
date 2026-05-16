@@ -24,7 +24,7 @@ The engine uses a component-entity pattern:
 - **`GameObject`** — an entity that owns a set of components, keyed by constructor type (one instance per component type enforced). Calls `update()` on all components each frame when `enabled = true`.
 - **`Scene`** — a `Set<GameObject>`. Has its own `update()` which ticks all active GameObjects; wired into the game loop via `Game.ts`.
 - **`Game`** — owns the game loop (`requestAnimationFrame`), the scene, renderer, and camera. Entry point for starting/stopping the engine.
-- **`Singleton`** — base class used by `InputManager` and `TextureManager` to enforce single instances.
+- **`Singleton`** — base class used by `Input` and `TextureManager` to enforce single instances.
 
 New engine behavior goes in a `Component` subclass. `GameObject` itself should stay logic-free.
 
@@ -32,7 +32,7 @@ New engine behavior goes in a `Component` subclass. `GameObject` itself should s
 
 - **Terrain** — `ChunkComponent` represents a voxel chunk (with `BlockType`: Air/Dirt/Grass). `ChunkManager` maintains a grid of chunks stored in a `Map`, handles chunk generation and face-culled mesh building.
 - **Player** — a `GameObject` with `Transform`, `PlayerPhysics` (gravity, terrain collision), `PlayerController` (WASD movement), and `PlayerCamera` (pointer-lock first-person camera with eye offset).
-- **Input** — `InputManager` (Singleton) tracks keyboard, mouse, and scroll state each frame; provides NDC conversion for raycasting.
+- **Input** — `Input` (Singleton) tracks keyboard, mouse, and scroll state each frame; provides NDC conversion for raycasting.
 - **Camera** — `Camera` wraps Three.js `PerspectiveCamera`. `DebugCameraController` is a free-look component (mouse + keyboard zoom).
 - **Rendering** — `Renderer` wraps `WebGLRenderer`. `TextureManager` (Singleton) loads and caches Three.js materials for block types.
 - **Interaction** — `DebugClicker` component uses raycasting to detect and remove blocks on click.
@@ -50,7 +50,7 @@ Note: the Jest config (`jest.config.ts`) only maps `@/` → `src/`, not `engine/
 ### Utilities
 
 - **`GameObjectNames`** (`engine/utils/gameObjectNames.ts`) — enum of named `GameObject` identifiers (ChunkManager, DebugCamera, DebugClicker, Player). Use these constants instead of raw strings when looking up objects in the scene.
-- **`KeyCode`** (`engine/utils/keyCode.ts`) — TypeScript type and validation helper for keyboard key strings used by `InputManager`.
+- **`KeyCode`** (`engine/utils/keyCode.ts`) — TypeScript type and validation helper for keyboard key strings used by `Input`.
 
 ### UI
 

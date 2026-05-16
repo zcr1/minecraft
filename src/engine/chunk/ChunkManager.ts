@@ -3,6 +3,7 @@ import Component from "../core/Component";
 import ChunkComponent, { BlockType } from "./ChunkComponent";
 import TerrainGenerator from "./TerrainGenerator";
 
+// todo should this be a singleton?
 export default class ChunkManager extends Component {
     private readonly chunks: Map<number, ChunkComponent> = new Map();
     private readonly chunkWidth: number;
@@ -17,6 +18,7 @@ export default class ChunkManager extends Component {
         chunkHeight,
         chunkDepth,
         threeScene,
+        terrainGenerator,
     }: {
         gridWidth: number;
         gridHeight: number;
@@ -25,13 +27,12 @@ export default class ChunkManager extends Component {
         chunkHeight: number;
         chunkDepth: number;
         threeScene: THREE.Scene;
+        terrainGenerator: TerrainGenerator;
     }) {
         super();
         this.chunkWidth = chunkWidth;
         this.chunkHeight = chunkHeight;
         this.chunkDepth = chunkDepth;
-
-        const terrainGenerator = TerrainGenerator.instance;
 
         for (let chunkX = 0; chunkX < gridWidth; chunkX++) {
             for (let chunkZ = 0; chunkZ < gridHeight; chunkZ++) {

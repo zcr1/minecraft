@@ -1,13 +1,12 @@
 import Camera from "./core/Camera";
 import Scene from "./core/Scene";
-import InputManager from "./input/InputManager";
+import input from "./input/Input";
 import Renderer from "./renderer/Renderer";
 
 export default class Game {
     readonly scene: Scene;
     readonly camera: Camera;
     readonly renderer: Renderer;
-    readonly input: InputManager;
     private rafId = 0;
     private observer: ResizeObserver;
     private pendingResize: { width: number; height: number } | null = null;
@@ -16,7 +15,7 @@ export default class Game {
         this.scene = new Scene();
         this.camera = new Camera(75, container.clientWidth / container.clientHeight);
         this.renderer = new Renderer(container);
-        this.input = InputManager.init(this.renderer.domElement);
+        input.init(this.renderer.domElement);
 
         this.observer = new ResizeObserver(() => {
             this.pendingResize = {
@@ -43,7 +42,7 @@ export default class Game {
             }
             this.scene.update();
             this.renderer.render(this.scene, this.camera);
-            this.input.flush();
+            input.flush();
         };
         loop();
     }
@@ -51,7 +50,7 @@ export default class Game {
     stop() {
         cancelAnimationFrame(this.rafId);
         this.observer.disconnect();
-        this.input.dispose();
+        input.dispose();
         this.renderer.dispose();
     }
 }

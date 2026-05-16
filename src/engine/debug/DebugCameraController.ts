@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type Camera from "engine/core/Camera";
 import Component from "engine/core/Component";
-import InputManager from "engine/input/InputManager";
+import input from "engine/input/Input";
 
 interface DebugCameraOptions {
     moveSpeed?: number;
@@ -38,8 +38,6 @@ export default class DebugCameraController extends Component {
     }
 
     update() {
-        const input = InputManager.instance;
-
         if (input.isMouseHeld(2)) {
             this.yaw -= input.mouseDeltaX * this.rotateSpeed;
             this.pitch -= input.mouseDeltaY * this.rotateSpeed;
