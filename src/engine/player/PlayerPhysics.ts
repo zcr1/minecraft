@@ -1,7 +1,9 @@
 import * as THREE from "three";
+import game from "engine/Game";
 import { BlockType } from "engine/chunk/ChunkComponent";
-import type ChunkManager from "engine/chunk/ChunkManager";
+import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
+import GameObjectName from "engine/utils/gameObjectNames";
 import Component from "../core/Component";
 
 const GRAVITY = -20;
@@ -12,18 +14,14 @@ const SKIN_WIDTH = 1e-4;
 
 export default class PlayerPhysics extends Component {
     private transform!: Transform;
-    private readonly chunkManager: ChunkManager;
+    private chunkManager!: ChunkManager;
     private readonly playerBox = new THREE.Box3();
     isGrounded = false;
     velocity = new THREE.Vector3();
 
-    constructor(chunkManager: ChunkManager) {
-        super();
-        this.chunkManager = chunkManager;
-    }
-
     start() {
         this.transform = this.gameObject.getComponent(Transform);
+        this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
     }
 
     update(deltaTime: number) {

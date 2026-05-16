@@ -61,12 +61,8 @@ export function setupScene(): void {
     cameraObj.addComponent(debugCameraController);
     game.add(cameraObj);
 
-    const debugClickerObj = new GameObject(GameObjectName.DebugClicker);
-    debugClickerObj.addComponent(new DebugClicker(game.camera.threeCamera, chunkManager));
-    game.add(debugClickerObj);
-
     player.addComponent(new PlayerController());
-    player.addComponent(new PlayerPhysics(chunkManager));
+    player.addComponent(new PlayerPhysics());
     player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
-    player.addComponent(new PlayerBlockInteraction(chunkManager));
+    player.addComponent(new PlayerBlockInteraction());
 }

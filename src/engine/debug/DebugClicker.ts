@@ -1,19 +1,24 @@
 import * as THREE from "three";
+import game from "engine/Game";
 import ChunkComponent, { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Component from "engine/core/Component";
 import input from "engine/input/Input";
+import GameObjectName from "engine/utils/gameObjectNames";
 
 export default class DebugClicker extends Component {
     private readonly raycaster = new THREE.Raycaster();
     private readonly pointer = new THREE.Vector2();
     private readonly camera: THREE.Camera;
-    private readonly chunkManager: ChunkManager;
+    private chunkManager!: ChunkManager;
 
-    constructor(camera: THREE.Camera, chunkManager: ChunkManager) {
+    constructor(camera: THREE.Camera) {
         super();
         this.camera = camera;
-        this.chunkManager = chunkManager;
+    }
+
+    start() {
+        this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
     }
 
     update() {

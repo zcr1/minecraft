@@ -4,6 +4,7 @@ import ChunkComponent, { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Component from "engine/core/Component";
 import input from "engine/input/Input";
+import GameObjectName from "engine/utils/gameObjectNames";
 
 const RAY_DISTANCE = 4;
 
@@ -16,21 +17,21 @@ export interface TargetedBlock {
 }
 
 export default class PlayerBlockInteraction extends Component {
-    private readonly chunkManager: ChunkManager;
+    private chunkManager!: ChunkManager;
     private readonly raycaster = new THREE.Raycaster();
     private readonly pointer = new THREE.Vector2(0, 0);
     private camera!: THREE.Camera;
 
     targetedBlock: TargetedBlock | null = null;
 
-    constructor(chunkManager: ChunkManager) {
+    constructor() {
         super();
-        this.chunkManager = chunkManager;
         this.raycaster.far = RAY_DISTANCE;
     }
 
     start() {
         this.camera = game.camera.threeCamera;
+        this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
     }
 
     update() {
