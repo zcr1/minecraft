@@ -4,7 +4,7 @@ import PlayerCamera from "./PlayerCamera";
 import PlayerPhysics from "./PlayerPhysics";
 
 const SPEED = 5;
-const JUMP_SPEED = 10;
+const JUMP_SPEED = 8;
 
 export default class PlayerController extends Component {
     private readonly speed: number;
