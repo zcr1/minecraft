@@ -94,12 +94,9 @@ export default class DroppedItems extends Component {
                 continue;
             }
 
-            const playerX = this.playerTransform.x;
-            const playerY = this.playerTransform.y;
-            const playerZ = this.playerTransform.z;
-            const deltaX = playerX - item.mesh.position.x;
-            const deltaY = playerY - item.mesh.position.y;
-            const deltaZ = playerZ - item.mesh.position.z;
+            const deltaX = this.playerTransform.x - item.mesh.position.x;
+            const deltaY = this.playerTransform.y - item.mesh.position.y;
+            const deltaZ = this.playerTransform.z - item.mesh.position.z;
             const distanceSquared = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
             if (distanceSquared <= PICKUP_RADIUS * PICKUP_RADIUS) {
