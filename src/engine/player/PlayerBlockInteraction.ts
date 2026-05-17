@@ -54,14 +54,15 @@ export default class PlayerBlockInteraction extends Component {
         }
 
         const hit = hits[0];
-        const chunk = hit.object.parent?.userData.chunk as ChunkComponent | undefined;
-        if (!chunk) {
+        const chunkGroup = hit.object.parent;
+        const chunk = chunkGroup?.userData.chunk as ChunkComponent | undefined;
+        if (!chunk || !chunkGroup || !hit.face) {
             this.targetedBlock = null;
             return;
         }
 
         // step 0.5 inside the face so Math.round lands on the block's integer-coordinate center
-        const local = hit.point.clone().addScaledVector(hit.face!.normal, -0.5).sub(hit.object.parent!.position);
+        const local = hit.point.clone().addScaledVector(hit.face.normal, -0.5).sub(chunkGroup.position);
         const blockX = Math.round(local.x);
         const blockY = Math.round(local.y);
         const blockZ = Math.round(local.z);

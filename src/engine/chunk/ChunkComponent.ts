@@ -239,15 +239,21 @@ export default class ChunkComponent extends Component {
     }
 
     hitBlock(x: number, y: number, z: number, damage: number) {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) {
+            return;
+        }
         const index = this.getBlockIndex(x, y, z);
+        const currentHitPoints = this.blockHitPoints[index];
 
-        if (this.blockHitPoints[index]) {
-            this.blockHitPoints[index] -= damage;
+        if (currentHitPoints === 0) {
+            return;
+        }
 
-            if (this.blockHitPoints[index] <= 0) {
-                this.setBlock(x, y, z, BlockType.Air);
-                this.rebuild();
-            }
+        if (damage >= currentHitPoints) {
+            this.setBlock(x, y, z, BlockType.Air);
+            this.rebuild();
+        } else {
+            this.blockHitPoints[index] = currentHitPoints - damage;
         }
     }
 
