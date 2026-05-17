@@ -88,7 +88,10 @@ export default class PlayerBlockInteraction extends Component {
                 blockZ: target.blockZ,
                 blockType: target.blockType,
             };
-            target.chunk.hitBlock(target.blockX, target.blockY, target.blockZ, 255);
+            const broke = target.chunk.hitBlock(target.blockX, target.blockY, target.blockZ, 255);
+            if (broke) {
+                this.chunkManager.relightAround(target.chunk);
+            }
             eventManager.emit("blockBroken", broken);
             this.resetProgress();
             this.targetedBlock = null;

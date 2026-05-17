@@ -4,7 +4,7 @@ describe("ChunkComponent.hitBlock", () => {
     let chunk: ChunkComponent;
 
     beforeEach(() => {
-        chunk = new ChunkComponent(4, 4, 4);
+        chunk = new ChunkComponent(4, 4, 4, 0, 0, 0);
     });
 
     test("damage less than hp decrements without breaking", () => {
@@ -73,7 +73,7 @@ describe("ChunkComponent.hitBlock", () => {
 
 describe("ChunkComponent block hitpoints by type", () => {
     test("dirt takes two damage=1 hits to break", () => {
-        const chunk = new ChunkComponent(2, 2, 2);
+        const chunk = new ChunkComponent(2, 2, 2, 0, 0, 0);
         chunk.setBlock(0, 0, 0, BlockType.Dirt);
         chunk.hitBlock(0, 0, 0, 1);
         expect(chunk.getBlock(0, 0, 0)).toBe(BlockType.Dirt);
@@ -82,7 +82,7 @@ describe("ChunkComponent block hitpoints by type", () => {
     });
 
     test("grass takes two damage=1 hits to break", () => {
-        const chunk = new ChunkComponent(2, 2, 2);
+        const chunk = new ChunkComponent(2, 2, 2, 0, 0, 0);
         chunk.setBlock(0, 0, 0, BlockType.Grass);
         chunk.hitBlock(0, 0, 0, 1);
         expect(chunk.getBlock(0, 0, 0)).toBe(BlockType.Grass);
@@ -91,7 +91,7 @@ describe("ChunkComponent block hitpoints by type", () => {
     });
 
     test("bedrock cannot be broken", () => {
-        const chunk = new ChunkComponent(2, 2, 2);
+        const chunk = new ChunkComponent(2, 2, 2, 0, 0, 0);
         chunk.setBlock(0, 0, 0, BlockType.Bedrock);
         for (let hit = 0; hit < 10; hit++) {
             chunk.hitBlock(0, 0, 0, 1);

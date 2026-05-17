@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { BlockType } from "engine/chunk/ChunkComponent";
+import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 import bedrockUrl from "../assets/textures/bedrock.png";
 import destroyStage0Url from "../assets/textures/destroy_stage_0.png";
 import destroyStage1Url from "../assets/textures/destroy_stage_1.png";
@@ -53,6 +54,11 @@ class TextureManager {
         });
     }
 
+    // Returned materials have applyVertexLighting baked in: their shader reads a per-vertex
+    // `aLight` Float attribute (0-15) and multiplies the diffuse color by mix(MIN_LIGHT, 1.0,
+    // aLight / 15.0). Any geometry drawn with these materials MUST declare the `aLight`
+    // attribute, or every fragment will read 0 and render at the MIN_LIGHT floor (~10%).
+    // See DroppedItems.createItemGeometry for a non-chunk consumer that meets this contract.
     getMaterial(blockType: BlockType, normalY: number): THREE.Material {
         if (blockType === BlockType.Grass) {
             return normalY === 1 ? this.grassTopMat : this.grassSideMat;
@@ -89,7 +95,9 @@ class TextureManager {
         const tex = loader.load(url);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.magFilter = THREE.NearestFilter;
-        return new THREE.MeshStandardMaterial({ map: tex });
+        const material = new THREE.MeshStandardMaterial({ map: tex });
+        applyVertexLighting(material);
+        return material;
     }
 }
 

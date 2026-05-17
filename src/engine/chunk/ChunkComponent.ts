@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import textureManager from "../TextureManager";
 import Component from "../core/Component";
+import type ChunkManager from "./ChunkManager";
 import type TerrainGenerator from "./TerrainGenerator";
 
 export enum BlockType {
@@ -59,24 +60,55 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Dirt]: 2,
 };
 
+// Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
+interface SubMesh {
+    positions: number[];
+    normals: number[];
+    uvs: number[];
+    lights: number[];
+    indices: number[];
+}
+
+function createSubMesh(): SubMesh {
+    return { positions: [], normals: [], uvs: [], lights: [], indices: [] };
+}
+
 // todo doesn't need to be Component?
 export default class ChunkComponent extends Component {
     readonly mesh: THREE.Group;
     readonly width: number;
     readonly height: number;
     readonly depth: number;
+    readonly worldOriginX: number;
+    readonly worldOriginY: number;
+    readonly worldOriginZ: number;
 
     private readonly blocks: Uint8Array;
     private readonly blockHitPoints: Uint8Array;
+    // Byte per voxel: high nibble = sky light, low nibble = block light (reserved for emissives).
+    // Packing both channels into one byte keeps the per-chunk light memory at width*height*depth
+    // bytes instead of doubling it when block-light gets implemented.
+    private readonly lightLevels: Uint8Array;
 
-    constructor(width: number, height: number, depth: number) {
+    constructor(
+        width: number,
+        height: number,
+        depth: number,
+        worldOriginX: number,
+        worldOriginY: number,
+        worldOriginZ: number,
+    ) {
         super();
 
         this.width = width;
         this.height = height;
         this.depth = depth;
+        this.worldOriginX = worldOriginX;
+        this.worldOriginY = worldOriginY;
+        this.worldOriginZ = worldOriginZ;
         this.blocks = new Uint8Array(width * height * depth);
         this.blockHitPoints = new Uint8Array(width * height * depth);
+        this.lightLevels = new Uint8Array(width * height * depth);
         this.mesh = new THREE.Group();
         this.mesh.userData.chunk = this;
     }
@@ -86,46 +118,56 @@ export default class ChunkComponent extends Component {
         x: number,
         y: number,
         z: number,
-        pos: number[],
-        norm: number[],
-        uv: number[],
-        idx: number[],
+        subMesh: SubMesh,
+        lightValue: number,
     ) {
-        const base = pos.length / 3;
+        const base = subMesh.positions.length / 3;
         for (let v = 0; v < 4; v++) {
-            pos.push(face.vertices[v * 3] + x, face.vertices[v * 3 + 1] + y, face.vertices[v * 3 + 2] + z);
-            norm.push(face.normal[0], face.normal[1], face.normal[2]);
-            uv.push(FACE_UVS[v * 2], FACE_UVS[v * 2 + 1]);
+            subMesh.positions.push(
+                face.vertices[v * 3] + x,
+                face.vertices[v * 3 + 1] + y,
+                face.vertices[v * 3 + 2] + z,
+            );
+            subMesh.normals.push(face.normal[0], face.normal[1], face.normal[2]);
+            subMesh.uvs.push(FACE_UVS[v * 2], FACE_UVS[v * 2 + 1]);
+            subMesh.lights.push(lightValue);
         }
-        idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+        subMesh.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
 
-    private buildGeometry(pos: number[], norm: number[], uv: number[], idx: number[]) {
+    private buildGeometry(subMesh: SubMesh) {
         const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute("normal", new THREE.Float32BufferAttribute(norm, 3));
-        geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-        geo.setIndex(idx);
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(subMesh.positions, 3));
+        geo.setAttribute("normal", new THREE.Float32BufferAttribute(subMesh.normals, 3));
+        geo.setAttribute("uv", new THREE.Float32BufferAttribute(subMesh.uvs, 2));
+        geo.setAttribute("aLight", new THREE.Float32BufferAttribute(subMesh.lights, 1));
+        geo.setIndex(subMesh.indices);
         return geo;
     }
 
     private isAirOrOOB(x: number, y: number, z: number): boolean {
-        if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) return true;
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) {
+            return true;
+        }
         return this.getBlock(x, y, z) === BlockType.Air;
+    }
+
+    private isInBounds(x: number, y: number, z: number): boolean {
+        return x >= 0 && x < this.width && y >= 0 && y < this.height && z >= 0 && z < this.depth;
     }
 
     private getBlockIndex(x: number, y: number, z: number) {
         return x * this.height * this.depth + y * this.depth + z;
     }
 
-    generate(generator: TerrainGenerator, worldOriginX: number, worldOriginY: number, worldOriginZ: number) {
+    generate(generator: TerrainGenerator) {
         for (let localX = 0; localX < this.width; localX++) {
             for (let localZ = 0; localZ < this.depth; localZ++) {
                 // Surface height only depends on (x, z), so compute it once per column
                 // rather than re-running the octave loop for every voxel in the column.
-                const surface = Math.floor(generator.getHeight(worldOriginX + localX, worldOriginZ + localZ));
+                const surface = Math.floor(generator.getHeight(this.worldOriginX + localX, this.worldOriginZ + localZ));
                 for (let localY = 0; localY < this.height; localY++) {
-                    const worldY = worldOriginY + localY;
+                    const worldY = this.worldOriginY + localY;
                     if (worldY === 0) {
                         this.setBlock(localX, localY, localZ, BlockType.Bedrock);
                         continue;
@@ -141,27 +183,15 @@ export default class ChunkComponent extends Component {
         }
     }
 
-    rebuild(): void {
-        this.buildMesh();
+    rebuild(chunkManager: ChunkManager): void {
+        this.buildMesh(chunkManager);
     }
 
-    buildMesh(): void {
-        const dirtPos: number[] = [],
-            dirtNorm: number[] = [],
-            dirtUv: number[] = [],
-            dirtIdx: number[] = [];
-        const grassPos: number[] = [],
-            grassNorm: number[] = [],
-            grassUv: number[] = [],
-            grassIdx: number[] = [];
-        const grassSidePos: number[] = [],
-            grassSideNorm: number[] = [],
-            grassSideUv: number[] = [],
-            grassSideIdx: number[] = [];
-        const bedrockPos: number[] = [],
-            bedrockNorm: number[] = [],
-            bedrockUv: number[] = [],
-            bedrockIdx: number[] = [];
+    buildMesh(chunkManager: ChunkManager): void {
+        const dirt = createSubMesh();
+        const grassTop = createSubMesh();
+        const grassSide = createSubMesh();
+        const bedrock = createSubMesh();
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -173,18 +203,35 @@ export default class ChunkComponent extends Component {
 
                     for (const face of FACES) {
                         const [dx, dy, dz] = face.neighbor;
-                        if (!this.isAirOrOOB(x + dx, y + dy, z + dz)) {
+                        const adjacentX = x + dx;
+                        const adjacentY = y + dy;
+                        const adjacentZ = z + dz;
+                        if (!this.isAirOrOOB(adjacentX, adjacentY, adjacentZ)) {
                             continue;
                         }
 
-                        if (block === BlockType.Grass && face.normal[1] === 1) {
-                            this.pushFace(face, x, y, z, grassPos, grassNorm, grassUv, grassIdx);
-                        } else if (block === BlockType.Grass && face.normal[1] === 0) {
-                            this.pushFace(face, x, y, z, grassSidePos, grassSideNorm, grassSideUv, grassSideIdx);
-                        } else if (block === BlockType.Bedrock) {
-                            this.pushFace(face, x, y, z, bedrockPos, bedrockNorm, bedrockUv, bedrockIdx);
+                        // Face brightness comes from the air voxel we just culled against
+                        // (the block we're emitting is opaque, so its own light level is 0).
+                        // When that voxel falls outside the chunk we cross into a neighbor.
+                        let lightValue: number;
+                        if (this.isInBounds(adjacentX, adjacentY, adjacentZ)) {
+                            lightValue = this.getSkyLight(adjacentX, adjacentY, adjacentZ);
                         } else {
-                            this.pushFace(face, x, y, z, dirtPos, dirtNorm, dirtUv, dirtIdx);
+                            lightValue = chunkManager.getLightAtWorld(
+                                this.worldOriginX + adjacentX,
+                                this.worldOriginY + adjacentY,
+                                this.worldOriginZ + adjacentZ,
+                            );
+                        }
+
+                        if (block === BlockType.Grass && face.normal[1] === 1) {
+                            this.pushFace(face, x, y, z, grassTop, lightValue);
+                        } else if (block === BlockType.Grass && face.normal[1] === 0) {
+                            this.pushFace(face, x, y, z, grassSide, lightValue);
+                        } else if (block === BlockType.Bedrock) {
+                            this.pushFace(face, x, y, z, bedrock, lightValue);
+                        } else {
+                            this.pushFace(face, x, y, z, dirt, lightValue);
                         }
                     }
                 }
@@ -194,36 +241,20 @@ export default class ChunkComponent extends Component {
         this.mesh.children.forEach(c => (c as THREE.Mesh).geometry.dispose());
         this.mesh.clear();
 
-        if (dirtIdx.length > 0) {
+        if (dirt.indices.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeometry(dirt), textureManager.getMaterial(BlockType.Dirt, 0)));
+        }
+        if (grassTop.indices.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeometry(grassTop), textureManager.getMaterial(BlockType.Grass, 1)));
+        }
+        if (grassSide.indices.length > 0) {
             this.mesh.add(
-                new THREE.Mesh(
-                    this.buildGeometry(dirtPos, dirtNorm, dirtUv, dirtIdx),
-                    textureManager.getMaterial(BlockType.Dirt, 0),
-                ),
+                new THREE.Mesh(this.buildGeometry(grassSide), textureManager.getMaterial(BlockType.Grass, 0)),
             );
         }
-        if (grassIdx.length > 0) {
+        if (bedrock.indices.length > 0) {
             this.mesh.add(
-                new THREE.Mesh(
-                    this.buildGeometry(grassPos, grassNorm, grassUv, grassIdx),
-                    textureManager.getMaterial(BlockType.Grass, 1),
-                ),
-            );
-        }
-        if (grassSideIdx.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(
-                    this.buildGeometry(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx),
-                    textureManager.getMaterial(BlockType.Grass, 0),
-                ),
-            );
-        }
-        if (bedrockIdx.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(
-                    this.buildGeometry(bedrockPos, bedrockNorm, bedrockUv, bedrockIdx),
-                    textureManager.getMaterial(BlockType.Bedrock, 0),
-                ),
+                new THREE.Mesh(this.buildGeometry(bedrock), textureManager.getMaterial(BlockType.Bedrock, 0)),
             );
         }
     }
@@ -238,23 +269,44 @@ export default class ChunkComponent extends Component {
         this.blockHitPoints[index] = BLOCK_HITPOINTS[type];
     }
 
-    hitBlock(x: number, y: number, z: number, damage: number) {
+    getSkyLight(x: number, y: number, z: number): number {
+        return (this.lightLevels[this.getBlockIndex(x, y, z)] >> 4) & 0x0f;
+    }
+
+    setSkyLight(x: number, y: number, z: number, level: number): void {
+        const index = this.getBlockIndex(x, y, z);
+        const existing = this.lightLevels[index] & 0x0f;
+        this.lightLevels[index] = ((level & 0x0f) << 4) | existing;
+    }
+
+    getBlockLight(x: number, y: number, z: number): number {
+        return this.lightLevels[this.getBlockIndex(x, y, z)] & 0x0f;
+    }
+
+    clearLightLevels(): void {
+        this.lightLevels.fill(0);
+    }
+
+    // Returns true if the block was destroyed. The caller (ChunkManager.relightAround via
+    // PlayerBlockInteraction) is responsible for the relight + rebuild because relighting may
+    // need to touch neighbor chunks, which ChunkComponent has no handle to.
+    hitBlock(x: number, y: number, z: number, damage: number): boolean {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) {
-            return;
+            return false;
         }
         const index = this.getBlockIndex(x, y, z);
         const currentHitPoints = this.blockHitPoints[index];
 
         if (currentHitPoints === 0) {
-            return;
+            return false;
         }
 
         if (damage >= currentHitPoints) {
             this.setBlock(x, y, z, BlockType.Air);
-            this.rebuild();
-        } else {
-            this.blockHitPoints[index] = currentHitPoints - damage;
+            return true;
         }
+        this.blockHitPoints[index] = currentHitPoints - damage;
+        return false;
     }
 
     update() {}

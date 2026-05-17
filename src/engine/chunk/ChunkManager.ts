@@ -4,9 +4,19 @@ import Transform from "../components/Transform";
 import Component from "../core/Component";
 import GameObjectName from "../utils/gameObjectNames";
 import ChunkComponent, { BlockType } from "./ChunkComponent";
+import lightingSystem, { MAX_LIGHT } from "./LightingSystem";
 import TerrainGenerator from "./TerrainGenerator";
 
 const GENERATION_BUDGET_PER_FRAME = 2;
+
+const NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number, number]> = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+];
 
 export default class ChunkManager extends Component {
     private readonly chunks: Map<number, ChunkComponent> = new Map();
@@ -86,13 +96,89 @@ export default class ChunkManager extends Component {
         const worldOriginY = chunkY * this.chunkHeight;
         const worldOriginZ = chunkZ * this.chunkDepth;
 
-        const chunk = new ChunkComponent(this.chunkWidth, this.chunkHeight, this.chunkDepth);
+        const chunk = new ChunkComponent(
+            this.chunkWidth,
+            this.chunkHeight,
+            this.chunkDepth,
+            worldOriginX,
+            worldOriginY,
+            worldOriginZ,
+        );
         chunk.mesh.position.set(worldOriginX, worldOriginY, worldOriginZ);
-        chunk.generate(this.terrainGenerator, worldOriginX, worldOriginY, worldOriginZ);
-        chunk.buildMesh();
+        chunk.generate(this.terrainGenerator);
+        lightingSystem.recomputeSkyLight(chunk, this);
+        chunk.buildMesh(this);
         game.threeScene.add(chunk.mesh);
         this.chunks.set(key, chunk);
+
+        // Already-loaded neighbors were lit against an "unloaded" version of this chunk (treated
+        // as opaque by getLightAtWorld), so their edge cells may have the wrong light. Relight
+        // them now that the real chunk exists - this is what hides streaming seams.
+        this.relightLoadedNeighbors(chunkX, chunkY, chunkZ);
+
         return chunk;
+    }
+
+    private relightAndRebuild(chunk: ChunkComponent): void {
+        lightingSystem.recomputeSkyLight(chunk, this);
+        chunk.rebuild(this);
+    }
+
+    private relightLoadedNeighbors(chunkX: number, chunkY: number, chunkZ: number): void {
+        for (const [offsetX, offsetY, offsetZ] of NEIGHBOR_OFFSETS) {
+            const neighborChunkX = chunkX + offsetX;
+            const neighborChunkY = chunkY + offsetY;
+            const neighborChunkZ = chunkZ + offsetZ;
+            if (neighborChunkY < 0 || neighborChunkY >= this.worldHeightChunks) {
+                continue;
+            }
+            const neighbor = this.chunks.get(this.getChunkKey(neighborChunkX, neighborChunkY, neighborChunkZ));
+            if (!neighbor) {
+                continue;
+            }
+            this.relightAndRebuild(neighbor);
+        }
+    }
+
+    // Self first so neighbors' edge-seed pass reads fresh light when they recompute.
+    relightAround(chunk: ChunkComponent): void {
+        this.relightAndRebuild(chunk);
+        const chunkX = Math.floor(chunk.worldOriginX / this.chunkWidth);
+        const chunkY = Math.floor(chunk.worldOriginY / this.chunkHeight);
+        const chunkZ = Math.floor(chunk.worldOriginZ / this.chunkDepth);
+        this.relightLoadedNeighbors(chunkX, chunkY, chunkZ);
+    }
+
+    getLightAtWorld(worldX: number, worldY: number, worldZ: number): number {
+        const blockX = Math.round(worldX);
+        const blockY = Math.round(worldY);
+        const blockZ = Math.round(worldZ);
+
+        // Above the world's vertical cap is open sky (full skylight); below the world is treated
+        // as opaque underground (0). Unloaded chunks inside the cap fall through to the !chunk
+        // branch below and also return 0 - the streaming relight in getOrCreateChunk corrects
+        // any seams that creates.
+        const chunkY = Math.floor(blockY / this.chunkHeight);
+        if (chunkY >= this.worldHeightChunks) {
+            return MAX_LIGHT;
+        }
+        if (chunkY < 0) {
+            return 0;
+        }
+
+        const chunkX = Math.floor(blockX / this.chunkWidth);
+        const chunkZ = Math.floor(blockZ / this.chunkDepth);
+
+        const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
+        if (!chunk) {
+            return 0;
+        }
+
+        const localX = blockX - chunkX * this.chunkWidth;
+        const localY = blockY - chunkY * this.chunkHeight;
+        const localZ = blockZ - chunkZ * this.chunkDepth;
+
+        return chunk.getSkyLight(localX, localY, localZ);
     }
 
     private generateInitialChunks(): void {

@@ -3,6 +3,7 @@ import game from "engine/Game";
 import TextureManager from "engine/TextureManager";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
+import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
@@ -33,7 +34,6 @@ interface DroppedItem {
 }
 
 export default class DroppedItems extends Component {
-    private readonly geometry = new THREE.BoxGeometry(ITEM_SIZE, ITEM_SIZE, ITEM_SIZE);
     private readonly items: DroppedItem[] = [];
     private readonly freeIndices: number[] = [];
     private readonly activeIndices = new Set<number>();
@@ -67,7 +67,10 @@ export default class DroppedItems extends Component {
         }
 
         for (let i = 0; i < POOL_SIZE; i++) {
-            const mesh = new THREE.Mesh(this.geometry, this.materialsByType.get(BlockType.Dirt)!);
+            // Each item needs its own geometry because the chunk shader reads a per-vertex `aLight`
+            // attribute and we sample that per-item from the item's world position each frame.
+            // A shared geometry would force every item to the same light value.
+            const mesh = new THREE.Mesh(this.createItemGeometry(), this.materialsByType.get(BlockType.Dirt)!);
             mesh.visible = false;
             game.threeScene.add(mesh);
             this.items.push({
@@ -134,6 +137,8 @@ export default class DroppedItems extends Component {
             }
 
             item.mesh.rotation.y += SPIN_SPEED * deltaTime;
+
+            this.updateItemLight(item);
         }
 
         for (const index of this.expired) {
@@ -141,12 +146,36 @@ export default class DroppedItems extends Component {
         }
     }
 
+    private createItemGeometry(): THREE.BoxGeometry {
+        const geometry = new THREE.BoxGeometry(ITEM_SIZE, ITEM_SIZE, ITEM_SIZE);
+        const vertexCount = geometry.attributes.position.count;
+        const lightArray = new Float32Array(vertexCount);
+        lightArray.fill(MAX_LIGHT);
+        geometry.setAttribute("aLight", new THREE.BufferAttribute(lightArray, 1));
+        return geometry;
+    }
+
+    private updateItemLight(item: DroppedItem): void {
+        const sampled = this.chunkManager.getLightAtWorld(
+            item.mesh.position.x,
+            item.mesh.position.y,
+            item.mesh.position.z,
+        );
+        const attribute = item.mesh.geometry.attributes.aLight as THREE.BufferAttribute;
+        const array = attribute.array as Float32Array;
+        if (array[0] === sampled) {
+            return;
+        }
+        array.fill(sampled);
+        attribute.needsUpdate = true;
+    }
+
     dispose() {
         eventManager.unsubscribe("blockBroken", this.blockBrokenListener);
         for (const item of this.items) {
             game.threeScene.remove(item.mesh);
+            item.mesh.geometry.dispose();
         }
-        this.geometry.dispose();
         this.items.length = 0;
         this.freeIndices.length = 0;
         this.activeIndices.clear();
