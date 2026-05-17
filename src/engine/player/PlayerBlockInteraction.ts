@@ -42,8 +42,8 @@ export default class PlayerBlockInteraction extends Component {
     targetedBlock: TargetedBlock | null = null;
     damageProgress = 0;
 
-    onStageAdvanced: ((event: StageAdvancedEvent) => void) | null = null;
-    onBlockBroken: ((event: BlockBreakEvent) => void) | null = null;
+    private readonly stageAdvancedListeners: Array<(event: StageAdvancedEvent) => void> = [];
+    private readonly blockBrokenListeners: Array<(event: BlockBreakEvent) => void> = [];
 
     private readonly hitPoint = new THREE.Vector3();
     private readonly hitNormal = new THREE.Vector3();
@@ -91,7 +91,11 @@ export default class PlayerBlockInteraction extends Component {
                 blockType: target.blockType,
             };
             target.chunk.hitBlock(target.blockX, target.blockY, target.blockZ, 255);
-            this.onBlockBroken?.(broken);
+            // Iterate a snapshot so a listener that removes itself (or another) mid-dispatch
+            // can't shift indices and skip the next listener.
+            for (const listener of [...this.blockBrokenListeners]) {
+                listener(broken);
+            }
             this.resetProgress();
             this.targetedBlock = null;
             return;
@@ -100,12 +104,37 @@ export default class PlayerBlockInteraction extends Component {
         const currentStage = this.damageStage;
         if (currentStage !== this.lastEmittedStage) {
             this.lastEmittedStage = currentStage;
-            this.onStageAdvanced?.({
+            const event: StageAdvancedEvent = {
                 stage: currentStage,
                 blockType: target.blockType,
                 hitPoint: this.hitPoint.clone(),
                 hitNormal: this.hitNormal.clone(),
-            });
+            };
+            for (const listener of [...this.stageAdvancedListeners]) {
+                listener(event);
+            }
+        }
+    }
+
+    addBlockBrokenListener(listener: (event: BlockBreakEvent) => void): void {
+        this.blockBrokenListeners.push(listener);
+    }
+
+    removeBlockBrokenListener(listener: (event: BlockBreakEvent) => void): void {
+        const index = this.blockBrokenListeners.indexOf(listener);
+        if (index !== -1) {
+            this.blockBrokenListeners.splice(index, 1);
+        }
+    }
+
+    addStageAdvancedListener(listener: (event: StageAdvancedEvent) => void): void {
+        this.stageAdvancedListeners.push(listener);
+    }
+
+    removeStageAdvancedListener(listener: (event: StageAdvancedEvent) => void): void {
+        const index = this.stageAdvancedListeners.indexOf(listener);
+        if (index !== -1) {
+            this.stageAdvancedListeners.splice(index, 1);
         }
     }
 

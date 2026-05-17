@@ -5,6 +5,7 @@ import { setupScene } from "../game/setup";
 import Crosshair from "./Crosshair";
 import DebugMenu from "./DebugMenu";
 import { GameProvider } from "./GameContext";
+import InventoryHUD from "./InventoryHUD";
 
 export default function GameCanvas() {
     const gameContainer = useRef<HTMLDivElement>(null);
@@ -28,8 +29,13 @@ export default function GameCanvas() {
     return (
         <GameProvider value={ready ? game : null}>
             <div ref={gameContainer} style={{ width: "100vw", height: "100vh" }} />
-            {ready && <Crosshair />}
-            {ready && <DebugMenu />}
+            {ready && (
+                <>
+                    <DebugMenu />
+                    <InventoryHUD />
+                    <Crosshair />
+                </>
+            )}
         </GameProvider>
     );
 }

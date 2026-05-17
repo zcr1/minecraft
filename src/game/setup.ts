@@ -8,6 +8,8 @@ import GameObject from "engine/core/GameObject";
 import DebugCameraController from "engine/debug/DebugCameraController";
 import BlockBreakParticles from "engine/effects/BlockBreakParticles";
 import BlockDamageOverlay from "engine/effects/BlockDamageOverlay";
+import DroppedItems from "engine/items/DroppedItems";
+import Inventory from "engine/player/Inventory";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
@@ -66,6 +68,7 @@ export function setupScene(): void {
     player.addComponent(new PlayerPhysics());
     player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
     player.addComponent(new PlayerBlockInteraction());
+    player.addComponent(new Inventory());
 
     const damageOverlay = new GameObject(GameObjectName.BlockDamageOverlay);
     damageOverlay.addComponent(new BlockDamageOverlay());
@@ -74,4 +77,8 @@ export function setupScene(): void {
     const breakParticles = new GameObject(GameObjectName.BlockBreakParticles);
     breakParticles.addComponent(new BlockBreakParticles());
     game.add(breakParticles);
+
+    const droppedItems = new GameObject(GameObjectName.DroppedItems);
+    droppedItems.addComponent(new DroppedItems());
+    game.add(droppedItems);
 }

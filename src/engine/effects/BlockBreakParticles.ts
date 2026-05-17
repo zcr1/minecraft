@@ -40,6 +40,8 @@ export default class BlockBreakParticles extends Component {
     private readonly scratchCenter = new THREE.Vector3();
     private readonly scratchOmni = new THREE.Vector3(0, 1, 0);
     private interaction: PlayerBlockInteraction | null = null;
+    private readonly stageAdvancedListener = (event: StageAdvancedEvent) => this.handleStageAdvanced(event);
+    private readonly blockBrokenListener = (event: BlockBreakEvent) => this.handleBlockBroken(event);
 
     start() {
         // Preallocate the full pool up front so a burst spawn doesn't allocate/GC mid-frame.
@@ -61,8 +63,8 @@ export default class BlockBreakParticles extends Component {
         }
 
         this.interaction = game.getGameObject(GameObjectName.Player).getComponent(PlayerBlockInteraction);
-        this.interaction.onStageAdvanced = event => this.handleStageAdvanced(event);
-        this.interaction.onBlockBroken = event => this.handleBlockBroken(event);
+        this.interaction.addStageAdvancedListener(this.stageAdvancedListener);
+        this.interaction.addBlockBrokenListener(this.blockBrokenListener);
     }
 
     update(deltaTime: number) {
@@ -88,8 +90,8 @@ export default class BlockBreakParticles extends Component {
 
     dispose() {
         if (this.interaction) {
-            this.interaction.onStageAdvanced = null;
-            this.interaction.onBlockBroken = null;
+            this.interaction.removeStageAdvancedListener(this.stageAdvancedListener);
+            this.interaction.removeBlockBrokenListener(this.blockBrokenListener);
             this.interaction = null;
         }
         for (const particle of this.particles) {
