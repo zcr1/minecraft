@@ -198,7 +198,7 @@ export default class DroppedItems extends Component {
                 for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                     if (this.chunkManager.getBlockAtWorld(blockX, footBlock, blockZ) !== BlockType.Air) {
                         item.mesh.position.y = footBlock + 0.5 + COLLISION_HALF + SKIN_WIDTH;
-                        item.velocity.y = 0;
+                        item.velocity.set(0, 0, 0);
                         return;
                     }
                 }
