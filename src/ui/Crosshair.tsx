@@ -10,8 +10,9 @@ export default function Crosshair() {
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                width: 24,
-                height: 24,
+                width: 64,
+                height: 64,
+                opacity: 0.7,
                 pointerEvents: "none",
                 imageRendering: "pixelated",
             }}
