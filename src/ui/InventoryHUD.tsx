@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useReducer } from "react";
 import { BlockType } from "engine/chunk/ChunkComponent";
+import eventManager from "engine/core/EventManager";
 import Inventory from "engine/player/Inventory";
 import GameObjectName from "engine/utils/gameObjectNames";
 import { useGame } from "./GameContext";
@@ -17,8 +18,9 @@ export default function InventoryHUD() {
     const inventory = useMemo(() => game.getGameObject(GameObjectName.Player).getComponent(Inventory), [game]);
 
     useEffect(() => {
-        inventory.addChangeListener(forceRender);
-        return () => inventory.removeChangeListener(forceRender);
+        const listener = () => forceRender();
+        eventManager.subscribe("inventoryChanged", listener);
+        return () => eventManager.unsubscribe("inventoryChanged", listener);
     }, [inventory]);
 
     const entries = Array.from(inventory.entries()).filter(([, count]) => count > 0);

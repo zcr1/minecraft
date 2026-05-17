@@ -5,9 +5,10 @@ import { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
+import eventManager from "engine/core/EventManager";
 import { applyGravity, stepAxisX, stepAxisY, stepAxisZ } from "engine/physics/voxelPhysics";
 import Inventory from "engine/player/Inventory";
-import PlayerBlockInteraction, { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
+import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
 
 const POOL_SIZE = 64;
@@ -39,7 +40,6 @@ export default class DroppedItems extends Component {
     private readonly materialsByType = new Map<BlockType, THREE.Material[]>();
     private readonly scratchToPlayer = new THREE.Vector3();
     private readonly expired: number[] = [];
-    private interaction: PlayerBlockInteraction | null = null;
     private chunkManager!: ChunkManager;
     private playerTransform!: Transform;
     private inventory!: Inventory;
@@ -48,7 +48,6 @@ export default class DroppedItems extends Component {
     start() {
         const playerObject = game.getGameObject(GameObjectName.Player);
         this.playerTransform = playerObject.getComponent(Transform);
-        this.interaction = playerObject.getComponent(PlayerBlockInteraction);
         this.inventory = playerObject.getComponent(Inventory);
         this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
 
@@ -81,7 +80,7 @@ export default class DroppedItems extends Component {
             this.freeIndices.push(i);
         }
 
-        this.interaction.addBlockBrokenListener(this.blockBrokenListener);
+        eventManager.subscribe("blockBroken", this.blockBrokenListener);
     }
 
     update(deltaTime: number) {
@@ -143,10 +142,7 @@ export default class DroppedItems extends Component {
     }
 
     dispose() {
-        if (this.interaction) {
-            this.interaction.removeBlockBrokenListener(this.blockBrokenListener);
-            this.interaction = null;
-        }
+        eventManager.unsubscribe("blockBroken", this.blockBrokenListener);
         for (const item of this.items) {
             game.threeScene.remove(item.mesh);
         }

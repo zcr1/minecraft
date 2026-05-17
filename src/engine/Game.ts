@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import Camera from "./core/Camera";
+import eventManager from "./core/EventManager";
 import GameObject from "./core/GameObject";
 import input from "./input/Input";
 import Renderer from "./renderer/Renderer";
@@ -95,6 +96,7 @@ class Game {
         this.gameObjects.clear();
         this.observer.disconnect();
         input.dispose();
+        eventManager.clear();
         this.renderer.dispose();
     }
 }

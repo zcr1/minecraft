@@ -2,11 +2,8 @@ import * as THREE from "three";
 import game from "engine/Game";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import Component from "engine/core/Component";
-import PlayerBlockInteraction, {
-    type BlockBreakEvent,
-    type StageAdvancedEvent,
-} from "engine/player/PlayerBlockInteraction";
-import GameObjectName from "engine/utils/gameObjectNames";
+import eventManager from "engine/core/EventManager";
+import { type BlockBreakEvent, type StageAdvancedEvent } from "engine/player/PlayerBlockInteraction";
 
 const POOL_SIZE = 96;
 const PARTICLE_SIZE = 0.12;
@@ -39,7 +36,6 @@ export default class BlockBreakParticles extends Component {
     private readonly scratchTangentB = new THREE.Vector3();
     private readonly scratchCenter = new THREE.Vector3();
     private readonly scratchOmni = new THREE.Vector3(0, 1, 0);
-    private interaction: PlayerBlockInteraction | null = null;
     private readonly stageAdvancedListener = (event: StageAdvancedEvent) => this.handleStageAdvanced(event);
     private readonly blockBrokenListener = (event: BlockBreakEvent) => this.handleBlockBroken(event);
 
@@ -62,9 +58,8 @@ export default class BlockBreakParticles extends Component {
             this.freeIndices.push(i);
         }
 
-        this.interaction = game.getGameObject(GameObjectName.Player).getComponent(PlayerBlockInteraction);
-        this.interaction.addStageAdvancedListener(this.stageAdvancedListener);
-        this.interaction.addBlockBrokenListener(this.blockBrokenListener);
+        eventManager.subscribe("blockDamageStageAdvanced", this.stageAdvancedListener);
+        eventManager.subscribe("blockBroken", this.blockBrokenListener);
     }
 
     update(deltaTime: number) {
@@ -89,11 +84,8 @@ export default class BlockBreakParticles extends Component {
     }
 
     dispose() {
-        if (this.interaction) {
-            this.interaction.removeStageAdvancedListener(this.stageAdvancedListener);
-            this.interaction.removeBlockBrokenListener(this.blockBrokenListener);
-            this.interaction = null;
-        }
+        eventManager.unsubscribe("blockDamageStageAdvanced", this.stageAdvancedListener);
+        eventManager.unsubscribe("blockBroken", this.blockBrokenListener);
         for (const particle of this.particles) {
             game.threeScene.remove(particle.mesh);
             particle.material.dispose();
