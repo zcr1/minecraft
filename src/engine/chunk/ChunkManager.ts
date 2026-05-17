@@ -200,6 +200,10 @@ export default class ChunkManager extends Component {
         }
     }
 
+    update() {
+        this.updateLoadedChunks();
+    }
+
     // Currently only used by DebugClicker
     getChunks(): readonly ChunkComponent[] {
         return [...this.chunks.values()];
@@ -257,9 +261,5 @@ export default class ChunkManager extends Component {
         const localZ = blockZ - chunkZ * this.chunkDepth;
 
         return chunk.getBlock(localX, localY, localZ);
-    }
-
-    update() {
-        this.updateLoadedChunks();
     }
 }

@@ -52,6 +52,13 @@ const FACES = [
 
 const FACE_UVS = [0, 0, 1, 0, 1, 1, 0, 1];
 
+const BLOCK_HITPOINTS: Record<BlockType, number> = {
+    [BlockType.Air]: 0,
+    [BlockType.Bedrock]: 0,
+    [BlockType.Grass]: 2,
+    [BlockType.Dirt]: 2,
+};
+
 // todo doesn't need to be Component?
 export default class ChunkComponent extends Component {
     readonly mesh: THREE.Group;
@@ -60,6 +67,7 @@ export default class ChunkComponent extends Component {
     readonly depth: number;
 
     private readonly blocks: Uint8Array;
+    private readonly blockHitPoints: Uint8Array;
 
     constructor(width: number, height: number, depth: number) {
         super();
@@ -68,6 +76,7 @@ export default class ChunkComponent extends Component {
         this.height = height;
         this.depth = depth;
         this.blocks = new Uint8Array(width * height * depth);
+        this.blockHitPoints = new Uint8Array(width * height * depth);
         this.mesh = new THREE.Group();
         this.mesh.userData.chunk = this;
     }
@@ -91,13 +100,22 @@ export default class ChunkComponent extends Component {
         idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
 
-    private buildGeo(pos: number[], norm: number[], uv: number[], idx: number[]) {
+    private buildGeometry(pos: number[], norm: number[], uv: number[], idx: number[]) {
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
         geo.setAttribute("normal", new THREE.Float32BufferAttribute(norm, 3));
         geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
         geo.setIndex(idx);
         return geo;
+    }
+
+    private isAirOrOOB(x: number, y: number, z: number): boolean {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) return true;
+        return this.getBlock(x, y, z) === BlockType.Air;
+    }
+
+    private getBlockIndex(x: number, y: number, z: number) {
+        return x * this.height * this.depth + y * this.depth + z;
     }
 
     generate(generator: TerrainGenerator, worldOriginX: number, worldOriginY: number, worldOriginZ: number) {
@@ -179,7 +197,7 @@ export default class ChunkComponent extends Component {
         if (dirtIdx.length > 0) {
             this.mesh.add(
                 new THREE.Mesh(
-                    this.buildGeo(dirtPos, dirtNorm, dirtUv, dirtIdx),
+                    this.buildGeometry(dirtPos, dirtNorm, dirtUv, dirtIdx),
                     textureManager.getMaterial(BlockType.Dirt, 0),
                 ),
             );
@@ -187,7 +205,7 @@ export default class ChunkComponent extends Component {
         if (grassIdx.length > 0) {
             this.mesh.add(
                 new THREE.Mesh(
-                    this.buildGeo(grassPos, grassNorm, grassUv, grassIdx),
+                    this.buildGeometry(grassPos, grassNorm, grassUv, grassIdx),
                     textureManager.getMaterial(BlockType.Grass, 1),
                 ),
             );
@@ -195,7 +213,7 @@ export default class ChunkComponent extends Component {
         if (grassSideIdx.length > 0) {
             this.mesh.add(
                 new THREE.Mesh(
-                    this.buildGeo(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx),
+                    this.buildGeometry(grassSidePos, grassSideNorm, grassSideUv, grassSideIdx),
                     textureManager.getMaterial(BlockType.Grass, 0),
                 ),
             );
@@ -203,7 +221,7 @@ export default class ChunkComponent extends Component {
         if (bedrockIdx.length > 0) {
             this.mesh.add(
                 new THREE.Mesh(
-                    this.buildGeo(bedrockPos, bedrockNorm, bedrockUv, bedrockIdx),
+                    this.buildGeometry(bedrockPos, bedrockNorm, bedrockUv, bedrockIdx),
                     textureManager.getMaterial(BlockType.Bedrock, 0),
                 ),
             );
@@ -215,12 +233,22 @@ export default class ChunkComponent extends Component {
     }
 
     setBlock(x: number, y: number, z: number, type: BlockType): void {
-        this.blocks[x * this.height * this.depth + y * this.depth + z] = type;
+        const index = this.getBlockIndex(x, y, z);
+        this.blocks[index] = type;
+        this.blockHitPoints[index] = BLOCK_HITPOINTS[type];
     }
 
-    private isAirOrOOB(x: number, y: number, z: number): boolean {
-        if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) return true;
-        return this.getBlock(x, y, z) === BlockType.Air;
+    hitBlock(x: number, y: number, z: number, damage: number) {
+        const index = this.getBlockIndex(x, y, z);
+
+        if (this.blockHitPoints[index]) {
+            this.blockHitPoints[index] -= damage;
+
+            if (this.blockHitPoints[index] <= 0) {
+                this.setBlock(x, y, z, BlockType.Air);
+                this.rebuild();
+            }
+        }
     }
 
     update() {}

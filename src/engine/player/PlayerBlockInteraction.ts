@@ -66,12 +66,14 @@ export default class PlayerBlockInteraction extends Component {
         const blockY = Math.round(local.y);
         const blockZ = Math.round(local.z);
 
-        this.targetedBlock = {
-            chunk,
-            blockX,
-            blockY,
-            blockZ,
-            blockType: chunk.getBlock(blockX, blockY, blockZ),
-        };
+        chunk.hitBlock(blockX, blockY, blockZ, 1);
+
+        // this.targetedBlock = {
+        //     chunk,
+        //     blockX,
+        //     blockY,
+        //     blockZ,
+        //     blockType: chunk.getBlock(blockX, blockY, blockZ),
+        // };
     }
 }
