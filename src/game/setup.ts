@@ -25,7 +25,7 @@ export function setupScene(): void {
     TextureManager.init();
 
     const terrainGenerator = new TerrainGenerator({
-        seed: 1,
+        seed: Math.random() * 1e6,
         baseHeight: 48,
         heightAmplitude: 10,
         baseFrequency: 1 / 48,
