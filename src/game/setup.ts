@@ -6,7 +6,8 @@ import TerrainGenerator from "engine/chunk/TerrainGenerator";
 import Transform from "engine/components/Transform";
 import GameObject from "engine/core/GameObject";
 import DebugCameraController from "engine/debug/DebugCameraController";
-import DebugClicker from "engine/debug/DebugClicker";
+import BlockBreakParticles from "engine/effects/BlockBreakParticles";
+import BlockDamageOverlay from "engine/effects/BlockDamageOverlay";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
@@ -65,4 +66,12 @@ export function setupScene(): void {
     player.addComponent(new PlayerPhysics());
     player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
     player.addComponent(new PlayerBlockInteraction());
+
+    const damageOverlay = new GameObject(GameObjectName.BlockDamageOverlay);
+    damageOverlay.addComponent(new BlockDamageOverlay());
+    game.add(damageOverlay);
+
+    const breakParticles = new GameObject(GameObjectName.BlockBreakParticles);
+    breakParticles.addComponent(new BlockBreakParticles());
+    game.add(breakParticles);
 }

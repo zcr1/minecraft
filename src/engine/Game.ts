@@ -89,6 +89,9 @@ class Game {
     stop() {
         cancelAnimationFrame(this.rafId);
         this.rafId = 0;
+        for (const gameObject of this.gameObjects) {
+            gameObject.dispose();
+        }
         this.gameObjects.clear();
         this.observer.disconnect();
         input.dispose();

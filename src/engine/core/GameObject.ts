@@ -17,6 +17,13 @@ export default class GameObject {
         }
     }
 
+    dispose() {
+        for (const component of this.components.values()) {
+            component.dispose();
+        }
+        this.components.clear();
+    }
+
     update(deltaTime: number) {
         if (!this.enabled) {
             return;
