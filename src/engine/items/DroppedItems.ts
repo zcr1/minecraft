@@ -5,6 +5,7 @@ import { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
+import { applyGravity, stepAxisX, stepAxisY, stepAxisZ } from "engine/physics/voxelPhysics";
 import Inventory from "engine/player/Inventory";
 import PlayerBlockInteraction, { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
@@ -12,16 +13,15 @@ import GameObjectName from "engine/utils/gameObjectNames";
 const POOL_SIZE = 64;
 const ITEM_SIZE = 0.3;
 const GRAVITY = -20;
-const TERMINAL_VEL = -25;
+const TERMINAL_VELOCITY = -25;
 const LIFETIME_SECONDS = 30;
 const POP_UP_VELOCITY = 4;
 const POP_HORIZONTAL = 1.5;
 const PICKUP_RADIUS = 1.0;
-const MAGNET_RADIUS = 2.0;
+const MAGNET_RADIUS = 2.5;
 const MAGNET_SPEED = 6;
 const SPIN_SPEED = 2;
 const COLLISION_HALF = ITEM_SIZE / 2;
-const SKIN_WIDTH = 1e-4;
 
 interface DroppedItem {
     mesh: THREE.Mesh;
@@ -105,19 +105,34 @@ export default class DroppedItems extends Component {
                 continue;
             }
 
+            const body = {
+                position: item.mesh.position,
+                velocity: item.velocity,
+                halfWidth: COLLISION_HALF,
+                halfHeight: COLLISION_HALF,
+            };
+
             if (distanceSquared <= MAGNET_RADIUS * MAGNET_RADIUS) {
                 this.scratchToPlayer.set(deltaX, deltaY, deltaZ).normalize().multiplyScalar(MAGNET_SPEED);
                 item.velocity.copy(this.scratchToPlayer);
             } else {
-                item.velocity.y = Math.max(item.velocity.y + GRAVITY * deltaTime, TERMINAL_VEL);
+                applyGravity(body, deltaTime, GRAVITY, TERMINAL_VELOCITY);
             }
 
-            item.mesh.position.y += item.velocity.y * deltaTime;
-            this.resolveY(item);
-            item.mesh.position.x += item.velocity.x * deltaTime;
-            this.resolveX(item);
-            item.mesh.position.z += item.velocity.z * deltaTime;
-            this.resolveZ(item);
+            const yHit = stepAxisY(body, this.chunkManager, deltaTime);
+            if (yHit === "foot") {
+                // Zero horizontal velocity too so items settle quickly on landing
+                // instead of sliding across uneven terrain.
+                item.velocity.set(0, 0, 0);
+            } else if (yHit === "head") {
+                item.velocity.y = 0;
+            }
+            if (stepAxisX(body, this.chunkManager, deltaTime)) {
+                item.velocity.x = 0;
+            }
+            if (stepAxisZ(body, this.chunkManager, deltaTime)) {
+                item.velocity.z = 0;
+            }
 
             item.mesh.rotation.y += SPIN_SPEED * deltaTime;
         }
@@ -174,114 +189,6 @@ export default class DroppedItems extends Component {
         );
         item.age = 0;
         item.mesh.visible = true;
-    }
-
-    // Axis-by-axis collision resolution mirrors PlayerPhysics. The item AABB is small enough
-    // (0.3 wide) that it spans at most two blocks per axis, so the perpendicular slice loops
-    // are the same shape as the player's but with COLLISION_HALF substituted for HALF_*.
-    private resolveY(item: DroppedItem): void {
-        const x = item.mesh.position.x;
-        const y = item.mesh.position.y;
-        const z = item.mesh.position.z;
-
-        const minBlockX = Math.ceil(x - COLLISION_HALF - 0.5);
-        const maxBlockX = Math.floor(x + COLLISION_HALF + 0.5);
-        const minBlockZ = Math.ceil(z - COLLISION_HALF - 0.5);
-        const maxBlockZ = Math.floor(z + COLLISION_HALF + 0.5);
-
-        if (item.velocity.y <= 0) {
-            const footBlock = Math.round(y - COLLISION_HALF);
-            for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
-                for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                    if (this.chunkManager.getBlockAtWorld(blockX, footBlock, blockZ) !== BlockType.Air) {
-                        item.mesh.position.y = footBlock + 0.5 + COLLISION_HALF + SKIN_WIDTH;
-                        item.velocity.set(0, 0, 0);
-                        return;
-                    }
-                }
-            }
-        } else {
-            const headBlock = Math.round(y + COLLISION_HALF);
-            for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
-                for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                    if (this.chunkManager.getBlockAtWorld(blockX, headBlock, blockZ) !== BlockType.Air) {
-                        item.mesh.position.y = headBlock - 0.5 - COLLISION_HALF - SKIN_WIDTH;
-                        item.velocity.y = 0;
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
-    private resolveX(item: DroppedItem): void {
-        const x = item.mesh.position.x;
-        const y = item.mesh.position.y;
-        const z = item.mesh.position.z;
-
-        const minBlockY = Math.ceil(y - COLLISION_HALF - 0.5);
-        const maxBlockY = Math.floor(y + COLLISION_HALF + 0.5);
-        const minBlockZ = Math.ceil(z - COLLISION_HALF - 0.5);
-        const maxBlockZ = Math.floor(z + COLLISION_HALF + 0.5);
-
-        if (item.velocity.x >= 0) {
-            const rightBlock = Math.round(x + COLLISION_HALF);
-            for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
-                for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                    if (this.chunkManager.getBlockAtWorld(rightBlock, blockY, blockZ) !== BlockType.Air) {
-                        item.mesh.position.x = rightBlock - 0.5 - COLLISION_HALF - SKIN_WIDTH;
-                        item.velocity.x = 0;
-                        return;
-                    }
-                }
-            }
-        } else {
-            const leftBlock = Math.round(x - COLLISION_HALF);
-            for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
-                for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                    if (this.chunkManager.getBlockAtWorld(leftBlock, blockY, blockZ) !== BlockType.Air) {
-                        item.mesh.position.x = leftBlock + 0.5 + COLLISION_HALF + SKIN_WIDTH;
-                        item.velocity.x = 0;
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
-    private resolveZ(item: DroppedItem): void {
-        const x = item.mesh.position.x;
-        const y = item.mesh.position.y;
-        const z = item.mesh.position.z;
-
-        const minBlockY = Math.ceil(y - COLLISION_HALF - 0.5);
-        const maxBlockY = Math.floor(y + COLLISION_HALF + 0.5);
-        const minBlockX = Math.ceil(x - COLLISION_HALF - 0.5);
-        const maxBlockX = Math.floor(x + COLLISION_HALF + 0.5);
-
-        if (item.velocity.z >= 0) {
-            const frontBlock = Math.round(z + COLLISION_HALF);
-            for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
-                for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
-                    if (this.chunkManager.getBlockAtWorld(blockX, blockY, frontBlock) !== BlockType.Air) {
-                        item.mesh.position.z = frontBlock - 0.5 - COLLISION_HALF - SKIN_WIDTH;
-                        item.velocity.z = 0;
-                        return;
-                    }
-                }
-            }
-        } else {
-            const backBlock = Math.round(z - COLLISION_HALF);
-            for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
-                for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
-                    if (this.chunkManager.getBlockAtWorld(blockX, blockY, backBlock) !== BlockType.Air) {
-                        item.mesh.position.z = backBlock + 0.5 + COLLISION_HALF + SKIN_WIDTH;
-                        item.velocity.z = 0;
-                        return;
-                    }
-                }
-            }
-        }
     }
 
     private recycle(index: number): void {
