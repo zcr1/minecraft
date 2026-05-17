@@ -204,11 +204,6 @@ export default class ChunkManager extends Component {
         this.updateLoadedChunks();
     }
 
-    // Currently only used by DebugClicker
-    getChunks(): readonly ChunkComponent[] {
-        return [...this.chunks.values()];
-    }
-
     getChunksAlongRay(origin: THREE.Vector3, direction: THREE.Vector3, distance: number): ChunkComponent[] {
         const endX = origin.x + direction.x * distance;
         const endY = origin.y + direction.y * distance;
