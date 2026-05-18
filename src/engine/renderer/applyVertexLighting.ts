@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 // Floor for the bake's contribution. At skylight 0 the diffuse is multiplied by this instead of
 // going pitch black, so caves stay legible without a torch system.
-const MIN_LIGHT = 0.1;
+const MIN_LIGHT = 0.05;
 
 // Patches a MeshStandardMaterial so the final lit color is multiplied by a per-vertex `aLight`
 // attribute (0-15, encoded as `aLight / 15.0`).
@@ -38,7 +38,10 @@ export function applyVertexLighting(material: THREE.MeshStandardMaterial): void 
             )
             .replace(
                 "#include <opaque_fragment>",
-                `outgoingLight *= mix(${MIN_LIGHT.toFixed(2)}, 1.0, vLight);
+                // Power curve: full sky (vLight=1) stays at 1.0, but mid-range values bend toward
+                // the MIN_LIGHT floor faster than a linear ramp - caves go dark a few blocks
+                // sooner without changing the underlying 0-15 skylight data.
+                `outgoingLight *= mix(${MIN_LIGHT.toFixed(2)}, 1.0, pow(vLight, 2.2));
                 #include <opaque_fragment>`,
             );
     };
