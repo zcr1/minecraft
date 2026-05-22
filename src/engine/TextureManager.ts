@@ -1,15 +1,15 @@
 import bedrockUrl from "assets/textures/bedrock.png";
-import cobbleUrl from "assets/textures/cobble.png";
-import destroyStage0Url from "assets/textures/destroy_stage_0.png";
-import destroyStage1Url from "assets/textures/destroy_stage_1.png";
-import destroyStage2Url from "assets/textures/destroy_stage_2.png";
-import destroyStage3Url from "assets/textures/destroy_stage_3.png";
-import destroyStage4Url from "assets/textures/destroy_stage_4.png";
-import destroyStage5Url from "assets/textures/destroy_stage_5.png";
-import destroyStage6Url from "assets/textures/destroy_stage_6.png";
-import destroyStage7Url from "assets/textures/destroy_stage_7.png";
-import destroyStage8Url from "assets/textures/destroy_stage_8.png";
-import destroyStage9Url from "assets/textures/destroy_stage_9.png";
+import cobbleUrl from "assets/textures/cobblestone.png";
+import desetroy0Url from "assets/textures/destroy_0.png";
+import desetroy1Url from "assets/textures/destroy_1.png";
+import desetroy2Url from "assets/textures/destroy_2.png";
+import desetroy3Url from "assets/textures/destroy_3.png";
+import desetroy4Url from "assets/textures/destroy_4.png";
+import desetroy5Url from "assets/textures/destroy_5.png";
+import desetroy6Url from "assets/textures/destroy_6.png";
+import desetroy7Url from "assets/textures/destroy_7.png";
+import desetroy8Url from "assets/textures/destroy_8.png";
+import desetroy9Url from "assets/textures/destroy_9.png";
 import dirtUrl from "assets/textures/dirt.png";
 import grassSideUrl from "assets/textures/grass_side.png";
 import grassTopUrl from "assets/textures/grass_top.png";
@@ -19,16 +19,16 @@ import { BlockType } from "engine/chunk/ChunkComponent";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 
 const DESTROY_STAGE_URLS = [
-    destroyStage0Url,
-    destroyStage1Url,
-    destroyStage2Url,
-    destroyStage3Url,
-    destroyStage4Url,
-    destroyStage5Url,
-    destroyStage6Url,
-    destroyStage7Url,
-    destroyStage8Url,
-    destroyStage9Url,
+    desetroy0Url,
+    desetroy1Url,
+    desetroy2Url,
+    desetroy3Url,
+    desetroy4Url,
+    desetroy5Url,
+    desetroy6Url,
+    desetroy7Url,
+    desetroy8Url,
+    desetroy9Url,
 ];
 
 export const BLOCK_BREAK_STAGE_COUNT = DESTROY_STAGE_URLS.length;
@@ -40,7 +40,7 @@ class TextureManager {
     private bedrockMat!: THREE.MeshStandardMaterial;
     private stoneMat!: THREE.MeshStandardMaterial;
     private cobbleMat!: THREE.MeshStandardMaterial;
-    private destroyStageTextures: THREE.Texture[] = [];
+    private desetroyTextures: THREE.Texture[] = [];
 
     init() {
         const loader = new THREE.TextureLoader();
@@ -51,7 +51,7 @@ class TextureManager {
         this.stoneMat = this.loadMat(loader, stoneUrl);
         this.cobbleMat = this.loadMat(loader, cobbleUrl);
 
-        this.destroyStageTextures = DESTROY_STAGE_URLS.map(url => {
+        this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
             const tex = loader.load(url);
             tex.colorSpace = THREE.SRGBColorSpace;
             tex.magFilter = THREE.NearestFilter;
@@ -83,7 +83,7 @@ class TextureManager {
 
     createBlockBreakMaterial(): THREE.MeshBasicMaterial {
         const material = new THREE.MeshBasicMaterial({
-            map: this.destroyStageTextures[0],
+            map: this.desetroyTextures[0],
             transparent: true,
             opacity: 0.5,
             depthWrite: false,
@@ -96,7 +96,7 @@ class TextureManager {
 
     setBlockBreakStage(material: THREE.MeshBasicMaterial, stageIndex: number): void {
         const clamped = Math.max(0, Math.min(BLOCK_BREAK_STAGE_COUNT - 1, stageIndex));
-        const texture = this.destroyStageTextures[clamped];
+        const texture = this.desetroyTextures[clamped];
         if (material.map !== texture) {
             material.map = texture;
             material.needsUpdate = true;

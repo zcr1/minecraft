@@ -1,5 +1,5 @@
 import bedrockUrl from "assets/textures/bedrock.png";
-import cobbleUrl from "assets/textures/cobble.png";
+import cobbleUrl from "assets/textures/cobblestone.png";
 import dirtUrl from "assets/textures/dirt.png";
 import grassTopUrl from "assets/textures/grass_top.png";
 import stoneUrl from "assets/textures/stone.png";
