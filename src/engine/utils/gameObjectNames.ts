@@ -6,6 +6,7 @@ enum GameObjectName {
     DebugCamera = "DebugCamera",
     DroppedItems = "DroppedItems",
     Player = "Player",
+    Sky = "Sky",
 }
 
 export default GameObjectName;
