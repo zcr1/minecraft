@@ -44,7 +44,7 @@ export default class BlockPlacementPreview extends Component {
             color: 0xffffff,
             linewidth: LINE_WIDTH_PX,
             transparent: true,
-            opacity: 0.5,
+            opacity: 0.4,
             depthWrite: false,
         });
 
