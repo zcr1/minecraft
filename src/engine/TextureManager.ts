@@ -1,20 +1,20 @@
+import bedrockUrl from "assets/textures/bedrock.png";
+import destroyStage0Url from "assets/textures/destroy_stage_0.png";
+import destroyStage1Url from "assets/textures/destroy_stage_1.png";
+import destroyStage2Url from "assets/textures/destroy_stage_2.png";
+import destroyStage3Url from "assets/textures/destroy_stage_3.png";
+import destroyStage4Url from "assets/textures/destroy_stage_4.png";
+import destroyStage5Url from "assets/textures/destroy_stage_5.png";
+import destroyStage6Url from "assets/textures/destroy_stage_6.png";
+import destroyStage7Url from "assets/textures/destroy_stage_7.png";
+import destroyStage8Url from "assets/textures/destroy_stage_8.png";
+import destroyStage9Url from "assets/textures/destroy_stage_9.png";
+import dirtUrl from "assets/textures/dirt.png";
+import grassSideUrl from "assets/textures/grass_side.png";
+import grassTopUrl from "assets/textures/grass_top.png";
 import * as THREE from "three";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
-import bedrockUrl from "../assets/textures/bedrock.png";
-import destroyStage0Url from "../assets/textures/destroy_stage_0.png";
-import destroyStage1Url from "../assets/textures/destroy_stage_1.png";
-import destroyStage2Url from "../assets/textures/destroy_stage_2.png";
-import destroyStage3Url from "../assets/textures/destroy_stage_3.png";
-import destroyStage4Url from "../assets/textures/destroy_stage_4.png";
-import destroyStage5Url from "../assets/textures/destroy_stage_5.png";
-import destroyStage6Url from "../assets/textures/destroy_stage_6.png";
-import destroyStage7Url from "../assets/textures/destroy_stage_7.png";
-import destroyStage8Url from "../assets/textures/destroy_stage_8.png";
-import destroyStage9Url from "../assets/textures/destroy_stage_9.png";
-import dirtUrl from "../assets/textures/dirt.png";
-import grassSideUrl from "../assets/textures/grass_side.png";
-import grassTopUrl from "../assets/textures/grass_top.png";
 
 const DESTROY_STAGE_URLS = [
     destroyStage0Url,

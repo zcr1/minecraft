@@ -23,7 +23,8 @@
     "noUnusedParameters": true,
 
     "paths": {
-      "engine/*": ["./src/engine/*"]
+      "engine/*": ["./src/engine/*"],
+      "assets/*": ["./src/assets/*"]
     }
   },
   "include": ["src", "test"]

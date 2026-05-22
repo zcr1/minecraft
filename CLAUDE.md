@@ -77,6 +77,25 @@ Use full, descriptive names. Single-letter or truncated names are not allowed:
 
 This applies to parameters, locals, fields, and loop variables. The only exception is well-established math/loop indices (`i`, `j`) in tightly scoped loops where the meaning is unambiguous.
 
+### SCSS class naming
+
+Use flat `kebab-case` class names — do not use BEM `__element` or `--modifier` suffixes.
+
+```scss
+// Bad
+.inventory-slot {
+    &__icon { ... }
+    &__count { ... }
+}
+
+// Good
+.inventory-slot {
+    ...
+    .inventory-slot-icon { ... }
+    .inventory-slot-count { ... }
+}
+```
+
 ### No single-line conditionals
 
 Always use braces and place the body on its own line. Do not write single-line `if` statements, even for early returns or loop control.

@@ -1,4 +1,4 @@
-import crosshairUrl from "../assets/textures/crosshair.png";
+import crosshairUrl from "assets/textures/crosshair.png";
 
 export default function Crosshair() {
     return (

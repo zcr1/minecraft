@@ -102,9 +102,10 @@ export default class DroppedItems extends Component {
             const distanceSquared = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
             if (distanceSquared <= PICKUP_RADIUS * PICKUP_RADIUS) {
-                this.inventory.add(item.blockType);
-                this.expired.push(index);
-                continue;
+                if (this.inventory.add(item.blockType)) {
+                    this.expired.push(index);
+                    continue;
+                }
             }
 
             const body = {
