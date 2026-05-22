@@ -11,6 +11,8 @@ export enum BlockType {
     Bedrock = 3,
     Stone = 4,
     Cobblestone = 5,
+    CoalOre = 6,
+    Coal = 7,
 }
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
@@ -62,6 +64,8 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Dirt]: 2,
     [BlockType.Stone]: 4,
     [BlockType.Cobblestone]: 3,
+    [BlockType.CoalOre]: 4,
+    [BlockType.Coal]: 0,
 };
 
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
@@ -183,6 +187,7 @@ export default class ChunkComponent extends Component {
                 }
             }
         }
+        generator.placeCoalVeins(this);
     }
 
     rebuild(chunkManager: ChunkManager): void {
@@ -196,6 +201,7 @@ export default class ChunkComponent extends Component {
         const bedrock = createSubMesh();
         const stone = createSubMesh();
         const cobblestone = createSubMesh();
+        const coalOre = createSubMesh();
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -228,7 +234,9 @@ export default class ChunkComponent extends Component {
                             );
                         }
 
-                        if (block === BlockType.Stone) {
+                        if (block === BlockType.CoalOre) {
+                            this.pushFace(face, x, y, z, coalOre, lightValue);
+                        } else if (block === BlockType.Stone) {
                             this.pushFace(face, x, y, z, stone, lightValue);
                         } else if (block === BlockType.Cobblestone) {
                             this.pushFace(face, x, y, z, cobblestone, lightValue);
@@ -271,6 +279,11 @@ export default class ChunkComponent extends Component {
         if (cobblestone.indices.length > 0) {
             this.mesh.add(
                 new THREE.Mesh(this.buildGeometry(cobblestone), textureManager.getMaterial(BlockType.Cobblestone, 0)),
+            );
+        }
+        if (coalOre.indices.length > 0) {
+            this.mesh.add(
+                new THREE.Mesh(this.buildGeometry(coalOre), textureManager.getMaterial(BlockType.CoalOre, 0)),
             );
         }
     }

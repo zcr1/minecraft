@@ -14,6 +14,9 @@ import GameObjectName from "engine/utils/gameObjectNames";
 const RAY_DISTANCE = 3;
 const BREAK_TIME_SECONDS = 1.2;
 
+// Items that can be held and picked up but cannot be placed as world blocks.
+const NON_PLACEABLE_BLOCKS = new Set<BlockType>([BlockType.Coal]);
+
 export interface TargetedBlock {
     chunk: ChunkComponent;
     blockX: number;
@@ -128,6 +131,9 @@ export default class PlayerBlockInteraction extends Component {
     private tryPlaceBlock(target: TargetedBlock): void {
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
         if (!slot) {
+            return;
+        }
+        if (NON_PLACEABLE_BLOCKS.has(slot.blockType)) {
             return;
         }
 

@@ -13,7 +13,9 @@ import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
 
 const BLOCK_DROPS: Partial<Record<BlockType, BlockType>> = {
+    [BlockType.Grass]: BlockType.Dirt,
     [BlockType.Stone]: BlockType.Cobblestone,
+    [BlockType.CoalOre]: BlockType.Coal,
 };
 
 const POOL_SIZE = 64;
@@ -63,6 +65,7 @@ export default class DroppedItems extends Component {
             BlockType.Bedrock,
             BlockType.Stone,
             BlockType.Cobblestone,
+            BlockType.Coal,
         ]) {
             const sideMaterial = TextureManager.getMaterial(blockType, 0);
             const topMaterial = TextureManager.getMaterial(blockType, 1);

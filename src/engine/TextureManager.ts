@@ -1,4 +1,6 @@
 import bedrockUrl from "assets/textures/bedrock.png";
+import coalUrl from "assets/textures/coal.png";
+import coalOreUrl from "assets/textures/coal_ore.png";
 import cobbleUrl from "assets/textures/cobblestone.png";
 import desetroy0Url from "assets/textures/destroy_0.png";
 import desetroy1Url from "assets/textures/destroy_1.png";
@@ -40,6 +42,8 @@ class TextureManager {
     private bedrockMat!: THREE.MeshStandardMaterial;
     private stoneMat!: THREE.MeshStandardMaterial;
     private cobbleMat!: THREE.MeshStandardMaterial;
+    private coalOreMat!: THREE.MeshStandardMaterial;
+    private coalMat!: THREE.MeshStandardMaterial;
     private desetroyTextures: THREE.Texture[] = [];
 
     init() {
@@ -50,6 +54,8 @@ class TextureManager {
         this.bedrockMat = this.loadMat(loader, bedrockUrl);
         this.stoneMat = this.loadMat(loader, stoneUrl);
         this.cobbleMat = this.loadMat(loader, cobbleUrl);
+        this.coalOreMat = this.loadMat(loader, coalOreUrl);
+        this.coalMat = this.loadMat(loader, coalUrl);
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
             const tex = loader.load(url);
@@ -77,6 +83,12 @@ class TextureManager {
         }
         if (blockType === BlockType.Cobblestone) {
             return this.cobbleMat;
+        }
+        if (blockType === BlockType.CoalOre) {
+            return this.coalOreMat;
+        }
+        if (blockType === BlockType.Coal) {
+            return this.coalMat;
         }
         return this.dirtMat;
     }
