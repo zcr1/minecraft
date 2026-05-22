@@ -12,6 +12,10 @@ import Inventory from "engine/player/Inventory";
 import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
 
+const BLOCK_DROPS: Partial<Record<BlockType, BlockType>> = {
+    [BlockType.Stone]: BlockType.Cobblestone,
+};
+
 const POOL_SIZE = 64;
 const ITEM_SIZE = 0.3;
 const GRAVITY = -20;
@@ -20,7 +24,7 @@ const LIFETIME_SECONDS = 30;
 const POP_UP_VELOCITY = 4;
 const POP_HORIZONTAL = 1.5;
 const PICKUP_RADIUS = 1.0;
-const MAGNET_RADIUS = 2.5;
+const MAGNET_RADIUS = 2;
 const MAGNET_SPEED = 6;
 const SPIN_SPEED = 2;
 const COLLISION_HALF = ITEM_SIZE / 2;
@@ -53,7 +57,13 @@ export default class DroppedItems extends Component {
 
         // BoxGeometry face order is +X, -X, +Y, -Y, +Z, -Z. Only the +Y face uses the "top"
         // material variant; the rest fall through to the side/default texture.
-        for (const blockType of [BlockType.Dirt, BlockType.Grass, BlockType.Bedrock]) {
+        for (const blockType of [
+            BlockType.Dirt,
+            BlockType.Grass,
+            BlockType.Bedrock,
+            BlockType.Stone,
+            BlockType.Cobblestone,
+        ]) {
             const sideMaterial = TextureManager.getMaterial(blockType, 0);
             const topMaterial = TextureManager.getMaterial(blockType, 1);
             this.materialsByType.set(blockType, [
@@ -184,16 +194,15 @@ export default class DroppedItems extends Component {
     }
 
     private handleBlockBroken(event: BlockBreakEvent): void {
-        const materials = this.materialsByType.get(event.blockType);
+        const dropType = BLOCK_DROPS[event.blockType] ?? event.blockType;
+        const materials = this.materialsByType.get(dropType);
         if (!materials) {
-            throw new Error(`DroppedItems has no material mapping for BlockType ${event.blockType}`);
+            throw new Error(`DroppedItems has no material mapping for BlockType ${dropType}`);
         }
 
         const index = this.freeIndices.pop();
         if (index === undefined) {
-            console.warn(
-                `DroppedItems pool exhausted (size ${POOL_SIZE}); dropping spawn for BlockType ${event.blockType}`,
-            );
+            console.warn(`DroppedItems pool exhausted (size ${POOL_SIZE}); dropping spawn for BlockType ${dropType}`);
             return;
         }
 
@@ -201,7 +210,7 @@ export default class DroppedItems extends Component {
         this.activeIndices.add(index);
 
         item.mesh.material = materials;
-        item.blockType = event.blockType;
+        item.blockType = dropType;
         item.mesh.position.set(
             event.chunk.mesh.position.x + event.blockX,
             event.chunk.mesh.position.y + event.blockY,

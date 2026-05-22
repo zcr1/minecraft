@@ -1,4 +1,5 @@
 import bedrockUrl from "assets/textures/bedrock.png";
+import cobbleUrl from "assets/textures/cobble.png";
 import destroyStage0Url from "assets/textures/destroy_stage_0.png";
 import destroyStage1Url from "assets/textures/destroy_stage_1.png";
 import destroyStage2Url from "assets/textures/destroy_stage_2.png";
@@ -12,6 +13,7 @@ import destroyStage9Url from "assets/textures/destroy_stage_9.png";
 import dirtUrl from "assets/textures/dirt.png";
 import grassSideUrl from "assets/textures/grass_side.png";
 import grassTopUrl from "assets/textures/grass_top.png";
+import stoneUrl from "assets/textures/stone.png";
 import * as THREE from "three";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
@@ -36,6 +38,8 @@ class TextureManager {
     private grassTopMat!: THREE.MeshStandardMaterial;
     private grassSideMat!: THREE.MeshStandardMaterial;
     private bedrockMat!: THREE.MeshStandardMaterial;
+    private stoneMat!: THREE.MeshStandardMaterial;
+    private cobbleMat!: THREE.MeshStandardMaterial;
     private destroyStageTextures: THREE.Texture[] = [];
 
     init() {
@@ -44,6 +48,8 @@ class TextureManager {
         this.grassTopMat = this.loadMat(loader, grassTopUrl);
         this.grassSideMat = this.loadMat(loader, grassSideUrl);
         this.bedrockMat = this.loadMat(loader, bedrockUrl);
+        this.stoneMat = this.loadMat(loader, stoneUrl);
+        this.cobbleMat = this.loadMat(loader, cobbleUrl);
 
         this.destroyStageTextures = DESTROY_STAGE_URLS.map(url => {
             const tex = loader.load(url);
@@ -65,6 +71,12 @@ class TextureManager {
         }
         if (blockType === BlockType.Bedrock) {
             return this.bedrockMat;
+        }
+        if (blockType === BlockType.Stone) {
+            return this.stoneMat;
+        }
+        if (blockType === BlockType.Cobblestone) {
+            return this.cobbleMat;
         }
         return this.dirtMat;
     }

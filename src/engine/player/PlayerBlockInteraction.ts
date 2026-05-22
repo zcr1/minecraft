@@ -11,7 +11,7 @@ import Inventory from "engine/player/Inventory";
 import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
 
-const RAY_DISTANCE = 4;
+const RAY_DISTANCE = 3;
 const BREAK_TIME_SECONDS = 1.2;
 
 export interface TargetedBlock {

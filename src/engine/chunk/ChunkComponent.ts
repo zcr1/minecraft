@@ -9,6 +9,8 @@ export enum BlockType {
     Dirt = 1,
     Grass = 2,
     Bedrock = 3,
+    Stone = 4,
+    Cobblestone = 5,
 }
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
@@ -58,6 +60,8 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Bedrock]: 0,
     [BlockType.Grass]: 2,
     [BlockType.Dirt]: 2,
+    [BlockType.Stone]: 4,
+    [BlockType.Cobblestone]: 3,
 };
 
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
@@ -164,7 +168,7 @@ export default class ChunkComponent extends Component {
         for (let localX = 0; localX < this.width; localX++) {
             for (let localZ = 0; localZ < this.depth; localZ++) {
                 // Surface height only depends on (x, z), so compute it once per column
-                // rather than re-running the octave loop for every voxel in the column.
+                // rather than re-running the noise octaves for every voxel in the column.
                 const surface = Math.floor(generator.getHeight(this.worldOriginX + localX, this.worldOriginZ + localZ));
                 for (let localY = 0; localY < this.height; localY++) {
                     const worldY = this.worldOriginY + localY;
@@ -175,9 +179,7 @@ export default class ChunkComponent extends Component {
                     if (worldY > surface) {
                         continue;
                     }
-
-                    const blockType = worldY === surface ? BlockType.Grass : BlockType.Dirt;
-                    this.setBlock(localX, localY, localZ, blockType);
+                    this.setBlock(localX, localY, localZ, generator.blockTypeForLayer(worldY, surface));
                 }
             }
         }
@@ -192,6 +194,8 @@ export default class ChunkComponent extends Component {
         const grassTop = createSubMesh();
         const grassSide = createSubMesh();
         const bedrock = createSubMesh();
+        const stone = createSubMesh();
+        const cobblestone = createSubMesh();
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -224,7 +228,11 @@ export default class ChunkComponent extends Component {
                             );
                         }
 
-                        if (block === BlockType.Grass && face.normal[1] === 1) {
+                        if (block === BlockType.Stone) {
+                            this.pushFace(face, x, y, z, stone, lightValue);
+                        } else if (block === BlockType.Cobblestone) {
+                            this.pushFace(face, x, y, z, cobblestone, lightValue);
+                        } else if (block === BlockType.Grass && face.normal[1] === 1) {
                             this.pushFace(face, x, y, z, grassTop, lightValue);
                         } else if (block === BlockType.Grass && face.normal[1] === 0) {
                             this.pushFace(face, x, y, z, grassSide, lightValue);
@@ -255,6 +263,14 @@ export default class ChunkComponent extends Component {
         if (bedrock.indices.length > 0) {
             this.mesh.add(
                 new THREE.Mesh(this.buildGeometry(bedrock), textureManager.getMaterial(BlockType.Bedrock, 0)),
+            );
+        }
+        if (stone.indices.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeometry(stone), textureManager.getMaterial(BlockType.Stone, 0)));
+        }
+        if (cobblestone.indices.length > 0) {
+            this.mesh.add(
+                new THREE.Mesh(this.buildGeometry(cobblestone), textureManager.getMaterial(BlockType.Cobblestone, 0)),
             );
         }
     }

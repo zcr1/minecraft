@@ -67,6 +67,21 @@ export default class TerrainGenerator {
         return baseHeight + normalized * heightAmplitude;
     }
 
+    // Determines the block type for a voxel that is known to be at or below the surface.
+    // Callers that have already computed the surface height (e.g. chunk generation) should
+    // use this directly to avoid redundant getHeight() calls.
+    blockTypeForLayer(worldY: number, surface: number): BlockType {
+        if (worldY === surface) {
+            return BlockType.Grass;
+        }
+
+        if (worldY >= surface - 3) {
+            return BlockType.Dirt;
+        }
+
+        return BlockType.Stone;
+    }
+
     getBlock(worldX: number, worldY: number, worldZ: number): BlockType {
         const surface = Math.floor(this.getHeight(worldX, worldZ));
 
@@ -74,10 +89,6 @@ export default class TerrainGenerator {
             return BlockType.Air;
         }
 
-        if (worldY === surface) {
-            return BlockType.Grass;
-        }
-
-        return BlockType.Dirt;
+        return this.blockTypeForLayer(worldY, surface);
     }
 }
