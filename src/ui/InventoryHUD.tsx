@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import eventManager from "engine/core/EventManager";
 import Inventory, { HOTBAR_SIZE, type InventorySlot, TOTAL_SLOTS } from "engine/player/Inventory";
@@ -8,12 +9,13 @@ import { BLOCK_TEXTURE_URLS } from "./blockTextures";
 
 interface SlotCellProps {
     slot: InventorySlot | null;
+    isSelected: boolean;
 }
 
-function SlotCell({ slot }: SlotCellProps) {
+function SlotCell({ slot, isSelected }: SlotCellProps) {
     const textureUrl = slot ? BLOCK_TEXTURE_URLS[slot.blockType] : undefined;
     return (
-        <div className="inventory-slot">
+        <div className={classNames("inventory-slot", { "inventory-slot-selected": isSelected })}>
             {slot && textureUrl && (
                 <>
                     <img className="inventory-slot-icon" src={textureUrl} alt="" draggable={false} />
@@ -28,6 +30,7 @@ export default function InventoryHUD() {
     const game = useGame();
     const [, forceRender] = useReducer((value: number) => value + 1, 0);
     const [inventoryOpen, setInventoryOpen] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState(0);
 
     const inventory = useMemo(() => game.getGameObject(GameObjectName.Player).getComponent(Inventory), [game]);
 
@@ -36,6 +39,13 @@ export default function InventoryHUD() {
         const listener = () => forceRender();
         eventManager.subscribe("inventoryChanged", listener);
         return () => eventManager.unsubscribe("inventoryChanged", listener);
+    }, []);
+
+    // Track selected hotbar slot.
+    useEffect(() => {
+        const listener = (slotIndex: number) => setSelectedSlot(slotIndex);
+        eventManager.subscribe("hotbarSelectionChanged", listener);
+        return () => eventManager.unsubscribe("hotbarSelectionChanged", listener);
     }, []);
 
     // Toggle main inventory with E. Release pointer lock on open so the cursor is visible.
@@ -64,13 +74,13 @@ export default function InventoryHUD() {
             {inventoryOpen && (
                 <div className="inventory-grid">
                     {mainSlots.map((slot, index) => (
-                        <SlotCell key={index} slot={slot} />
+                        <SlotCell key={index} slot={slot} isSelected={false} />
                     ))}
                 </div>
             )}
             <div className="hotbar">
                 {hotbarSlots.map((slot, index) => (
-                    <SlotCell key={index} slot={slot} />
+                    <SlotCell key={index} slot={slot} isSelected={index === selectedSlot} />
                 ))}
             </div>
         </div>

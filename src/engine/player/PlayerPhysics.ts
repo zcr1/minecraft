@@ -8,8 +8,25 @@ import Component from "../core/Component";
 
 const GRAVITY = -20;
 const TERMINAL_VELOCITY = -30;
-const HALF_WIDTH = 0.3;
-const HALF_HEIGHT = 0.9;
+const PLAYER_HALF_WIDTH = 0.3;
+const PLAYER_HALF_HEIGHT = 0.9;
+
+// Returns true if the player's AABB intersects the 1×1×1 block centered at the given world coords.
+export function playerOverlapsBlock(
+    playerTransform: Transform,
+    worldX: number,
+    worldY: number,
+    worldZ: number,
+): boolean {
+    return (
+        playerTransform.x + PLAYER_HALF_WIDTH > worldX - 0.5 &&
+        playerTransform.x - PLAYER_HALF_WIDTH < worldX + 0.5 &&
+        playerTransform.y + PLAYER_HALF_HEIGHT > worldY - 0.5 &&
+        playerTransform.y - PLAYER_HALF_HEIGHT < worldY + 0.5 &&
+        playerTransform.z + PLAYER_HALF_WIDTH > worldZ - 0.5 &&
+        playerTransform.z - PLAYER_HALF_WIDTH < worldZ + 0.5
+    );
+}
 
 export default class PlayerPhysics extends Component {
     private transform!: Transform;
@@ -24,8 +41,8 @@ export default class PlayerPhysics extends Component {
         this.body = {
             position: this.transform,
             velocity: this.velocity,
-            halfWidth: HALF_WIDTH,
-            halfHeight: HALF_HEIGHT,
+            halfWidth: PLAYER_HALF_WIDTH,
+            halfHeight: PLAYER_HALF_HEIGHT,
         };
     }
 

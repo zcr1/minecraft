@@ -319,6 +319,33 @@ export default class ChunkManager extends Component {
         return result;
     }
 
+    setBlockAtWorld(worldX: number, worldY: number, worldZ: number, blockType: BlockType): boolean {
+        const blockX = Math.round(worldX);
+        const blockY = Math.round(worldY);
+        const blockZ = Math.round(worldZ);
+
+        const chunkX = Math.floor(blockX / this.chunkWidth);
+        const chunkY = Math.floor(blockY / this.chunkHeight);
+        const chunkZ = Math.floor(blockZ / this.chunkDepth);
+
+        if (chunkY < 0 || chunkY >= this.worldHeightChunks) {
+            return false;
+        }
+
+        const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
+        if (!chunk) {
+            return false;
+        }
+
+        const localX = blockX - chunkX * this.chunkWidth;
+        const localY = blockY - chunkY * this.chunkHeight;
+        const localZ = blockZ - chunkZ * this.chunkDepth;
+
+        chunk.setBlock(localX, localY, localZ, blockType);
+        this.relightAround(chunk);
+        return true;
+    }
+
     getBlockAtWorld(worldX: number, worldY: number, worldZ: number): BlockType {
         const blockX = Math.round(worldX);
         const blockY = Math.round(worldY);

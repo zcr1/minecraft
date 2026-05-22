@@ -1,6 +1,7 @@
 enum GameObjectName {
     BlockBreakParticles = "BlockBreakParticles",
     BlockDamageOverlay = "BlockDamageOverlay",
+    BlockPlacementPreview = "BlockPlacementPreview",
     ChunkManager = "ChunkManager",
     DebugCamera = "DebugCamera",
     DroppedItems = "DroppedItems",

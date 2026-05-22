@@ -39,6 +39,10 @@
     position: relative;
     flex-shrink: 0;
 
+    &.inventory-slot-selected {
+        border-color: #fff;
+    }
+
     .inventory-slot-icon {
         position: absolute;
         top: 50%;

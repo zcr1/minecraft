@@ -3,9 +3,12 @@ import game from "engine/Game";
 import { BLOCK_BREAK_STAGE_COUNT } from "engine/TextureManager";
 import ChunkComponent, { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
+import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import input from "engine/input/Input";
+import Inventory from "engine/player/Inventory";
+import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
 
 const RAY_DISTANCE = 4;
@@ -36,6 +39,8 @@ export interface StageAdvancedEvent {
 
 export default class PlayerBlockInteraction extends Component {
     private chunkManager!: ChunkManager;
+    private inventory!: Inventory;
+    private playerTransform!: Transform;
     private readonly raycaster = new THREE.Raycaster();
     private readonly pointer = new THREE.Vector2(0, 0);
     private camera!: THREE.Camera;
@@ -44,7 +49,8 @@ export default class PlayerBlockInteraction extends Component {
     damageProgress = 0;
 
     private readonly hitPoint = new THREE.Vector3();
-    private readonly hitNormal = new THREE.Vector3();
+    // Exposed for sibling effects (e.g. BlockPlacementPreview). Only valid when targetedBlock is non-null.
+    readonly hitNormal = new THREE.Vector3();
     private readonly scratchLocal = new THREE.Vector3();
     private lastEmittedStage = -1;
 
@@ -56,6 +62,8 @@ export default class PlayerBlockInteraction extends Component {
     start() {
         this.camera = game.camera.threeCamera;
         this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
+        this.inventory = this.gameObject.getComponent(Inventory);
+        this.playerTransform = this.gameObject.getComponent(Transform);
     }
 
     get damageStage(): number {
@@ -72,6 +80,12 @@ export default class PlayerBlockInteraction extends Component {
             this.resetProgress();
         }
         this.targetedBlock = target;
+
+        // Right-click placement — checked before the mining guard so it works regardless of hand state.
+        if (target && input.wasMousePressed(2)) {
+            this.tryPlaceBlock(target);
+            return;
+        }
 
         if (!target || !input.isMouseHeld(0)) {
             this.resetProgress();
@@ -108,6 +122,31 @@ export default class PlayerBlockInteraction extends Component {
                 hitNormal: this.hitNormal.clone(),
             };
             eventManager.emit("blockDamageStageAdvanced", event);
+        }
+    }
+
+    private tryPlaceBlock(target: TargetedBlock): void {
+        const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
+        if (!slot) {
+            return;
+        }
+
+        // Step one block outward along the face normal to find the adjacent (placement) cell.
+        const worldPlaceX = target.chunk.worldOriginX + target.blockX + this.hitNormal.x;
+        const worldPlaceY = target.chunk.worldOriginY + target.blockY + this.hitNormal.y;
+        const worldPlaceZ = target.chunk.worldOriginZ + target.blockZ + this.hitNormal.z;
+
+        if (this.chunkManager.getBlockAtWorld(worldPlaceX, worldPlaceY, worldPlaceZ) !== BlockType.Air) {
+            return;
+        }
+
+        if (playerOverlapsBlock(this.playerTransform, worldPlaceX, worldPlaceY, worldPlaceZ)) {
+            return;
+        }
+
+        const placed = this.chunkManager.setBlockAtWorld(worldPlaceX, worldPlaceY, worldPlaceZ, slot.blockType);
+        if (placed) {
+            this.inventory.consumeSelectedSlot();
         }
     }
 

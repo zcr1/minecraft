@@ -8,7 +8,9 @@ import GameObject from "engine/core/GameObject";
 import DebugCameraController from "engine/debug/DebugCameraController";
 import BlockBreakParticles from "engine/effects/BlockBreakParticles";
 import BlockDamageOverlay from "engine/effects/BlockDamageOverlay";
+import BlockPlacementPreview from "engine/effects/BlockPlacementPreview";
 import DroppedItems from "engine/items/DroppedItems";
+import HeldItem from "engine/player/HeldItem";
 import Inventory from "engine/player/Inventory";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerCamera from "engine/player/PlayerCamera";
@@ -69,10 +71,15 @@ export function setupScene(): void {
     player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
     player.addComponent(new PlayerBlockInteraction());
     player.addComponent(new Inventory());
+    player.addComponent(new HeldItem());
 
     const damageOverlay = new GameObject(GameObjectName.BlockDamageOverlay);
     damageOverlay.addComponent(new BlockDamageOverlay());
     game.add(damageOverlay);
+
+    const placementPreview = new GameObject(GameObjectName.BlockPlacementPreview);
+    placementPreview.addComponent(new BlockPlacementPreview());
+    game.add(placementPreview);
 
     const breakParticles = new GameObject(GameObjectName.BlockBreakParticles);
     breakParticles.addComponent(new BlockBreakParticles());

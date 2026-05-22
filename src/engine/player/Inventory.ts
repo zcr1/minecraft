@@ -1,6 +1,7 @@
 import { BlockType } from "engine/chunk/ChunkComponent";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
+import input from "engine/input/Input";
 
 export const HOTBAR_SIZE = 9;
 export const INVENTORY_SIZE = 27;
@@ -13,7 +14,21 @@ export interface InventorySlot {
 }
 
 export default class Inventory extends Component {
+    private static readonly HOTBAR_KEYS = [
+        "Digit1",
+        "Digit2",
+        "Digit3",
+        "Digit4",
+        "Digit5",
+        "Digit6",
+        "Digit7",
+        "Digit8",
+        "Digit9",
+    ] as const;
+
     private readonly slots: (InventorySlot | null)[] = new Array(TOTAL_SLOTS).fill(null);
+
+    selectedHotbarSlot = 0;
 
     // Add one item to the inventory. Returns true if the item was accepted, false if inventory is full.
     // Phase 1: stack onto an existing partial stack of the same type.
@@ -50,6 +65,27 @@ export default class Inventory extends Component {
 
     getSlots(): readonly (InventorySlot | null)[] {
         return this.slots;
+    }
+
+    update(_deltaTime: number) {
+        for (let index = 0; index < Inventory.HOTBAR_KEYS.length; index++) {
+            if (input.wasPressed(Inventory.HOTBAR_KEYS[index]) && index !== this.selectedHotbarSlot) {
+                this.selectedHotbarSlot = index;
+                eventManager.emit("hotbarSelectionChanged", index);
+            }
+        }
+    }
+
+    consumeSelectedSlot(): void {
+        const slot = this.slots[this.selectedHotbarSlot];
+        if (!slot) {
+            return;
+        }
+        slot.count -= 1;
+        if (slot.count <= 0) {
+            this.slots[this.selectedHotbarSlot] = null;
+        }
+        eventManager.emit("inventoryChanged", undefined);
     }
 
     dispose() {

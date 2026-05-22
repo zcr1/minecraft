@@ -4,6 +4,7 @@ export interface GameEventMap {
     blockBroken: BlockBreakEvent;
     blockDamageStageAdvanced: StageAdvancedEvent;
     inventoryChanged: void;
+    hotbarSelectionChanged: number;
 }
 
 type Listener<K extends keyof GameEventMap> = (event: GameEventMap[K]) => void;
