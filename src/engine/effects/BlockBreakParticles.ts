@@ -8,14 +8,21 @@ import { type BlockBreakEvent, type StageAdvancedEvent } from "engine/player/Pla
 const POOL_SIZE = 96;
 const PARTICLE_SIZE = 0.12;
 const GRAVITY = 18;
-const STAGE_PARTICLES_PER_HIT = 6;
-const BREAK_PARTICLES = 16;
+const STAGE_PARTICLES_PER_HIT = 4;
+const BREAK_PARTICLES = 10;
 
 const BLOCK_COLORS: Record<BlockType, number> = {
     [BlockType.Air]: 0xffffff,
     [BlockType.Dirt]: 0x8a5a3b,
     [BlockType.Grass]: 0x6cb04c,
     [BlockType.Bedrock]: 0x3a3a3a,
+    [BlockType.Stone]: 0x888888,
+    [BlockType.Cobblestone]: 0x6a6a6a,
+};
+
+// Blocks with a secondary color randomly mix between the two when spawning particles.
+const BLOCK_SECONDARY_COLORS: Partial<Record<BlockType, number>> = {
+    [BlockType.Grass]: 0x8a5a3b,
 };
 
 interface Particle {
@@ -97,14 +104,17 @@ export default class BlockBreakParticles extends Component {
     }
 
     private handleStageAdvanced(event: StageAdvancedEvent): void {
-        const color = BLOCK_COLORS[event.blockType] ?? 0xffffff;
+        const primary = BLOCK_COLORS[event.blockType] ?? 0xffffff;
+        const secondary = BLOCK_SECONDARY_COLORS[event.blockType];
         for (let i = 0; i < STAGE_PARTICLES_PER_HIT; i++) {
-            this.spawn(event.hitPoint, event.hitNormal, color, 2, 4, 0.4, 0.7);
+            const color = secondary !== undefined && Math.random() < 0.5 ? secondary : primary;
+            this.spawn(event.hitPoint, event.hitNormal, color, 1.5, 3, 0.4, 0.7);
         }
     }
 
     private handleBlockBroken(event: BlockBreakEvent): void {
-        const color = BLOCK_COLORS[event.blockType] ?? 0xffffff;
+        const primary = BLOCK_COLORS[event.blockType] ?? 0xffffff;
+        const secondary = BLOCK_SECONDARY_COLORS[event.blockType];
         this.scratchCenter.set(
             event.chunk.mesh.position.x + event.blockX,
             event.chunk.mesh.position.y + event.blockY,
@@ -113,7 +123,8 @@ export default class BlockBreakParticles extends Component {
         // No specific face to favor on full destruction, so seed with +Y and let the wide spread
         // factor in `spawn` scatter particles roughly omnidirectionally.
         for (let i = 0; i < BREAK_PARTICLES; i++) {
-            this.spawn(this.scratchCenter, this.scratchOmni, color, 3, 6, 0.6, 0.9);
+            const color = secondary !== undefined && Math.random() < 0.5 ? secondary : primary;
+            this.spawn(this.scratchCenter, this.scratchOmni, color, 2, 4, 0.6, 0.9);
         }
     }
 
