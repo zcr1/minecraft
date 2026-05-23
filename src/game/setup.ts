@@ -41,10 +41,15 @@ export function setupScene(): void {
     const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);
     const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x4488ff });
     const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-    game.threeScene.add(playerMesh);
-
     const player = new GameObject(GameObjectName.Player);
     player.addComponent(new Transform(playerMesh, 12, 80, 12));
+    player.addComponent(new PlayerController());
+    player.addComponent(new PlayerPhysics());
+    player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
+    player.addComponent(new PlayerBlockInteraction());
+    player.addComponent(new Inventory());
+    player.addComponent(new HeldItem());
+    game.threeScene.add(playerMesh);
     game.add(player);
 
     const chunkManager = new ChunkManager({
@@ -67,13 +72,6 @@ export function setupScene(): void {
     const cameraObj = new GameObject(GameObjectName.DebugCamera);
     cameraObj.addComponent(debugCameraController);
     game.add(cameraObj);
-
-    player.addComponent(new PlayerController());
-    player.addComponent(new PlayerPhysics());
-    player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
-    player.addComponent(new PlayerBlockInteraction());
-    player.addComponent(new Inventory());
-    player.addComponent(new HeldItem());
 
     const damageOverlay = new GameObject(GameObjectName.BlockDamageOverlay);
     damageOverlay.addComponent(new BlockDamageOverlay());

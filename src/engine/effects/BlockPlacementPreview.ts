@@ -61,7 +61,7 @@ export default class BlockPlacementPreview extends Component {
         const target = this.playerInteraction.targetedBlock;
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
 
-        if (!target || !slot) {
+        if (!target || !slot || slot.item.kind !== "block") {
             this.lines.visible = false;
             return;
         }
