@@ -3,7 +3,6 @@ enum GameObjectName {
     BlockDamageOverlay = "BlockDamageOverlay",
     BlockPlacementPreview = "BlockPlacementPreview",
     ChunkManager = "ChunkManager",
-    DebugCamera = "DebugCamera",
     DroppedItems = "DroppedItems",
     Player = "Player",
     Sky = "Sky",

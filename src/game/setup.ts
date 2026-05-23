@@ -5,7 +5,6 @@ import ChunkManager from "engine/chunk/ChunkManager";
 import TerrainGenerator from "engine/chunk/TerrainGenerator";
 import Transform from "engine/components/Transform";
 import GameObject from "engine/core/GameObject";
-import DebugCameraController from "engine/debug/DebugCameraController";
 import BlockBreakParticles from "engine/effects/BlockBreakParticles";
 import BlockDamageOverlay from "engine/effects/BlockDamageOverlay";
 import BlockPlacementPreview from "engine/effects/BlockPlacementPreview";
@@ -66,12 +65,6 @@ export function setupScene(): void {
     game.add(managerObj);
 
     game.camera.threeCamera.position.set(12, 64, 50);
-
-    const debugCameraController = new DebugCameraController(game.camera);
-    debugCameraController.enabled = false;
-    const cameraObj = new GameObject(GameObjectName.DebugCamera);
-    cameraObj.addComponent(debugCameraController);
-    game.add(cameraObj);
 
     const damageOverlay = new GameObject(GameObjectName.BlockDamageOverlay);
     damageOverlay.addComponent(new BlockDamageOverlay());

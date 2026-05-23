@@ -32,6 +32,7 @@ export default class PlayerPhysics extends Component {
     private transform!: Transform;
     private chunkManager!: ChunkManager;
     private body!: PhysicsBody;
+    noClipEnabled = false;
     isGrounded = false;
     velocity = new THREE.Vector3();
 
@@ -47,6 +48,13 @@ export default class PlayerPhysics extends Component {
     }
 
     update(deltaTime: number) {
+        if (this.noClipEnabled) {
+            this.body.position.x += this.velocity.x * deltaTime;
+            this.body.position.y += this.velocity.y * deltaTime;
+            this.body.position.z += this.velocity.z * deltaTime;
+            return;
+        }
+
         // Each axis is stepped and resolved independently so that a wall in one
         // axis can't be mistaken for a collision in another (e.g. a corner block
         // seen via perpendicular AABB straddle triggering an incorrect X snap).

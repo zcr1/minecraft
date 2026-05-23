@@ -1,10 +1,8 @@
 import { Pane } from "tweakpane";
 import { useEffect, useRef, useState } from "react";
 import Transform from "engine/components/Transform";
-import DebugCameraController from "engine/debug/DebugCameraController";
 import PlayerBlockInteraction, { BREAK_TIME_SECONDS } from "engine/player/PlayerBlockInteraction";
-import PlayerCamera from "engine/player/PlayerCamera";
-import PlayerController from "engine/player/PlayerController";
+import PlayerPhysics from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
 import { useGame } from "./GameContext";
 
@@ -17,20 +15,14 @@ export default function DebugMenu() {
 
     useEffect(() => {
         const pane = new Pane({ title: "Debug" });
-        const params = { debugCamera: false, showFpsGraph: false, showPlayerPosition: false, breakTimeZero: false };
+        const params = { noClip: false, showFpsGraph: false, showPlayerPosition: false, instantBreak: false };
 
         const player = game.getGameObject(GameObjectName.Player);
-        const playerCamera = player.getComponent(PlayerCamera);
-        const playerController = player.getComponent(PlayerController);
+        const playerPhysics = player.getComponent(PlayerPhysics);
         const playerBlockInteraction = player.getComponent(PlayerBlockInteraction);
-        const debugCameraController = game
-            .getGameObject(GameObjectName.DebugCamera)
-            .getComponent(DebugCameraController);
 
-        pane.addBinding(params, "debugCamera", { label: "Debug Camera" }).on("change", ({ value }) => {
-            debugCameraController.enabled = value;
-            playerCamera.enabled = !value;
-            playerController.enabled = !value;
+        pane.addBinding(params, "noClip", { label: "No Clip" }).on("change", ({ value }) => {
+            playerPhysics.noClipEnabled = value;
         });
 
         pane.addBinding(params, "showFpsGraph", { label: "Show FPS" }).on("change", ({ value }) => {
@@ -41,7 +33,7 @@ export default function DebugMenu() {
             setShowPlayerPosition(value);
         });
 
-        pane.addBinding(params, "breakTimeZero", { label: "Break Time Zero" }).on("change", ({ value }) => {
+        pane.addBinding(params, "instantBreak", { label: "Instant Break" }).on("change", ({ value }) => {
             playerBlockInteraction.breakTimeSeconds = value ? 0.01 : BREAK_TIME_SECONDS;
         });
 

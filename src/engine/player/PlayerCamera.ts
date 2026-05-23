@@ -14,7 +14,7 @@ export default class PlayerCamera extends Component {
     private readonly cam: THREE.PerspectiveCamera;
     private readonly canvas: HTMLCanvasElement;
     private _yaw = 0;
-    private pitch = 0;
+    private _pitch = 0;
     private pointerLocked = false;
     private playerTransform!: Transform;
 
@@ -61,15 +61,19 @@ export default class PlayerCamera extends Component {
         return this._yaw;
     }
 
+    get pitch(): number {
+        return this._pitch;
+    }
+
     update(_deltaTime: number) {
         if (this.pointerLocked) {
             this._yaw -= input.mouseDeltaX * ROTATE_SPEED;
-            this.pitch -= input.mouseDeltaY * ROTATE_SPEED;
-            this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
+            this._pitch -= input.mouseDeltaY * ROTATE_SPEED;
+            this._pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this._pitch));
         }
 
         this.cam.rotation.y = this._yaw;
-        this.cam.rotation.x = this.pitch;
+        this.cam.rotation.x = this._pitch;
         this.cam.position.set(this.playerTransform.x, this.playerTransform.y + EYE_OFFSET, this.playerTransform.z);
     }
 
