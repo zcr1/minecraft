@@ -15,16 +15,22 @@ export interface SkyPreset {
     /** Colour of the scene directional (sun) light. */
     lightColor: THREE.ColorRepresentation;
     lightIntensity: number;
+    /** Exponential fog density. Set to 0 to disable fog. */
+    fogDensity: number;
+    /** Fog colour — should match the mid-sky colour of the preset. */
+    fogColor: THREE.ColorRepresentation;
 }
 
 export const DAYTIME_PRESET: SkyPreset = {
-    turbidity: 6,
-    rayleigh: 1.5,
-    mieCoefficient: 0.003,
-    mieDirectionalG: 0.85,
-    sunDirection: new THREE.Vector3(1, 1.5, 3).normalize(),
+    turbidity: 1.0,
+    rayleigh: 0.3,
+    mieCoefficient: 0.002,
+    mieDirectionalG: 0.97,
+    sunDirection: new THREE.Vector3(0.3, 3, 1).normalize(),
     lightColor: 0xfff5e0,
     lightIntensity: 1.0,
+    fogDensity: 0.0008,
+    fogColor: 0x88b0d8,
 };
 
 export const SUNSET_PRESET: SkyPreset = {
@@ -35,6 +41,8 @@ export const SUNSET_PRESET: SkyPreset = {
     sunDirection: new THREE.Vector3(1, 0.2, 3).normalize(),
     lightColor: 0xffa060,
     lightIntensity: 1.2,
+    fogDensity: 0.0008,
+    fogColor: 0xd4845a,
 };
 
 export default class SkyComponent extends Component {
@@ -74,6 +82,12 @@ export default class SkyComponent extends Component {
         this.dirLight.color.set(preset.lightColor);
         this.dirLight.intensity = preset.lightIntensity;
         this.dirLight.position.copy(preset.sunDirection);
+
+        if (preset.fogDensity > 0) {
+            game.threeScene.fog = new THREE.FogExp2(preset.fogColor, preset.fogDensity);
+        } else {
+            game.threeScene.fog = null;
+        }
     }
 
     dispose() {
@@ -81,5 +95,6 @@ export default class SkyComponent extends Component {
         this.sky.geometry.dispose();
         (this.sky.material as THREE.ShaderMaterial).dispose();
         game.threeScene.remove(this.dirLight);
+        game.threeScene.fog = null;
     }
 }
