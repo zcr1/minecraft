@@ -8,23 +8,39 @@ const ROTATE_SPEED = 0.002;
 const EYE_OFFSET = 0.65;
 const PITCH_LIMIT = Math.PI / 2 - 0.01;
 
+const MOVEMENT_KEYS = ["KeyW", "KeyA", "KeyS", "KeyD", "Space"];
+
 export default class PlayerCamera extends Component {
     private readonly cam: THREE.PerspectiveCamera;
+    private readonly canvas: HTMLCanvasElement;
     private _yaw = 0;
     private pitch = 0;
     private pointerLocked = false;
     private playerTransform!: Transform;
 
+    private readonly onCanvasClick: () => void;
+    private readonly onPointerLockChange: () => void;
+    private readonly onKeyDown: (event: KeyboardEvent) => void;
+
     constructor(camera: Camera, canvas: HTMLCanvasElement) {
         super();
         this.cam = camera.threeCamera;
         this.cam.rotation.order = "YXZ";
+        this.canvas = canvas;
 
-        // todo destroy listeners
-        canvas.addEventListener("click", () => canvas.requestPointerLock());
-        document.addEventListener("pointerlockchange", () => {
+        this.onCanvasClick = () => canvas.requestPointerLock();
+        this.onPointerLockChange = () => {
             this.pointerLocked = document.pointerLockElement === canvas;
-        });
+        };
+        this.onKeyDown = (event: KeyboardEvent) => {
+            if (!this.pointerLocked && MOVEMENT_KEYS.includes(event.code)) {
+                canvas.requestPointerLock();
+            }
+        };
+
+        canvas.addEventListener("click", this.onCanvasClick);
+        document.addEventListener("pointerlockchange", this.onPointerLockChange);
+        document.addEventListener("keydown", this.onKeyDown);
     }
 
     start() {
@@ -45,5 +61,11 @@ export default class PlayerCamera extends Component {
         this.cam.rotation.y = this._yaw;
         this.cam.rotation.x = this.pitch;
         this.cam.position.set(this.playerTransform.x, this.playerTransform.y + EYE_OFFSET, this.playerTransform.z);
+    }
+
+    dispose() {
+        this.canvas.removeEventListener("click", this.onCanvasClick);
+        document.removeEventListener("pointerlockchange", this.onPointerLockChange);
+        document.removeEventListener("keydown", this.onKeyDown);
     }
 }
