@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import TextureManager from "engine/TextureManager";
-import { BlockType } from "engine/chunk/ChunkComponent";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
+import { type InventoryItemStack } from "engine/items/InventoryItem";
 import Inventory from "engine/player/Inventory";
 
 const HELD_SIZE = 0.3;
@@ -17,7 +17,7 @@ export default class HeldItem extends Component {
     private camera!: THREE.PerspectiveCamera;
     private inventory!: Inventory;
     private geometry!: THREE.BoxGeometry;
-    private currentBlockType: BlockType | null = null;
+    private currentItem: InventoryItemStack | null = null;
 
     // Pre-allocated scratch vectors to avoid per-frame allocation.
     private readonly scratchForward = new THREE.Vector3();
@@ -70,11 +70,21 @@ export default class HeldItem extends Component {
         this.geometry.dispose();
     }
 
+    private itemsMatch(a: InventoryItemStack | null, b: InventoryItemStack | null): boolean {
+        if (a === null && b === null) {
+            return true;
+        }
+        if (a === null || b === null) {
+            return false;
+        }
+        return a.kind === b.kind && a.type === b.type;
+    }
+
     private syncMesh(): void {
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
-        const newBlockType = slot ? slot.blockType : null;
+        const newItem = slot ? slot.item : null;
 
-        if (newBlockType === this.currentBlockType) {
+        if (this.itemsMatch(this.currentItem, newItem)) {
             return;
         }
 
@@ -83,16 +93,25 @@ export default class HeldItem extends Component {
             this.mesh = null;
         }
 
-        this.currentBlockType = newBlockType;
+        this.currentItem = newItem;
 
-        if (newBlockType === null) {
+        if (newItem === null) {
             return;
         }
 
         // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z.
         // Only the +Y face (index 2) uses the top-face texture variant.
-        const sideMaterial = TextureManager.getMaterial(newBlockType, 0);
-        const topMaterial = TextureManager.getMaterial(newBlockType, 1);
+        let sideMaterial: THREE.Material;
+        let topMaterial: THREE.Material;
+
+        if (newItem.kind === "block") {
+            sideMaterial = TextureManager.getMaterial(newItem.type, 0);
+            topMaterial = TextureManager.getMaterial(newItem.type, 1);
+        } else {
+            sideMaterial = TextureManager.getItemMaterial(newItem.type, 0);
+            topMaterial = TextureManager.getItemMaterial(newItem.type, 1);
+        }
+
         const materials = [sideMaterial, sideMaterial, topMaterial, sideMaterial, sideMaterial, sideMaterial];
         this.mesh = new THREE.Mesh(this.geometry, materials);
         // Frustum culling is based on the bounding sphere in world space, which is never updated

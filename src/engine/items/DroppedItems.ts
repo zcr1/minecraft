@@ -7,15 +7,17 @@ import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
+import { type InventoryItemStack } from "engine/items/InventoryItem";
+import { ItemType } from "engine/items/ItemType";
 import { applyGravity, stepAxisX, stepAxisY, stepAxisZ } from "engine/physics/voxelPhysics";
 import Inventory from "engine/player/Inventory";
 import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
 
-const BLOCK_DROPS: Partial<Record<BlockType, BlockType>> = {
-    [BlockType.Grass]: BlockType.Dirt,
-    [BlockType.Stone]: BlockType.Cobblestone,
-    [BlockType.CoalOre]: BlockType.Coal,
+const BLOCK_DROPS: Partial<Record<BlockType, InventoryItemStack>> = {
+    [BlockType.Grass]: { kind: "block", type: BlockType.Dirt },
+    [BlockType.Stone]: { kind: "block", type: BlockType.Cobblestone },
+    [BlockType.CoalOre]: { kind: "item", type: ItemType.Coal },
 };
 
 const POOL_SIZE = 64;
@@ -35,7 +37,7 @@ interface DroppedItem {
     mesh: THREE.Mesh;
     velocity: THREE.Vector3;
     age: number;
-    blockType: BlockType;
+    item: InventoryItemStack;
     index: number;
 }
 
@@ -43,7 +45,8 @@ export default class DroppedItems extends Component {
     private readonly items: DroppedItem[] = [];
     private readonly freeIndices: number[] = [];
     private readonly activeIndices = new Set<number>();
-    private readonly materialsByType = new Map<BlockType, THREE.Material[]>();
+    private readonly blockMaterialsByType = new Map<BlockType, THREE.Material[]>();
+    private readonly itemMaterialsByType = new Map<ItemType, THREE.Material[]>();
     private readonly scratchToPlayer = new THREE.Vector3();
     private readonly expired: number[] = [];
     private chunkManager!: ChunkManager;
@@ -65,11 +68,23 @@ export default class DroppedItems extends Component {
             BlockType.Bedrock,
             BlockType.Stone,
             BlockType.Cobblestone,
-            BlockType.Coal,
         ]) {
             const sideMaterial = TextureManager.getMaterial(blockType, 0);
             const topMaterial = TextureManager.getMaterial(blockType, 1);
-            this.materialsByType.set(blockType, [
+            this.blockMaterialsByType.set(blockType, [
+                sideMaterial,
+                sideMaterial,
+                topMaterial,
+                sideMaterial,
+                sideMaterial,
+                sideMaterial,
+            ]);
+        }
+
+        for (const itemType of [ItemType.Coal]) {
+            const sideMaterial = TextureManager.getItemMaterial(itemType, 0);
+            const topMaterial = TextureManager.getItemMaterial(itemType, 1);
+            this.itemMaterialsByType.set(itemType, [
                 sideMaterial,
                 sideMaterial,
                 topMaterial,
@@ -83,14 +98,14 @@ export default class DroppedItems extends Component {
             // Each item needs its own geometry because the chunk shader reads a per-vertex `aLight`
             // attribute and we sample that per-item from the item's world position each frame.
             // A shared geometry would force every item to the same light value.
-            const mesh = new THREE.Mesh(this.createItemGeometry(), this.materialsByType.get(BlockType.Dirt)!);
+            const mesh = new THREE.Mesh(this.createItemGeometry(), this.blockMaterialsByType.get(BlockType.Dirt)!);
             mesh.visible = false;
             game.threeScene.add(mesh);
             this.items.push({
                 mesh,
                 velocity: new THREE.Vector3(),
                 age: 0,
-                blockType: BlockType.Air,
+                item: { kind: "block", type: BlockType.Dirt }, // placeholder; overwritten in handleBlockBroken before visible
                 index: i,
             });
             this.freeIndices.push(i);
@@ -102,35 +117,35 @@ export default class DroppedItems extends Component {
     update(deltaTime: number) {
         this.expired.length = 0;
         for (const index of this.activeIndices) {
-            const item = this.items[index];
-            item.age += deltaTime;
-            if (item.age >= LIFETIME_SECONDS) {
+            const droppedItem = this.items[index];
+            droppedItem.age += deltaTime;
+            if (droppedItem.age >= LIFETIME_SECONDS) {
                 this.expired.push(index);
                 continue;
             }
 
-            const deltaX = this.playerTransform.x - item.mesh.position.x;
-            const deltaY = this.playerTransform.y - item.mesh.position.y;
-            const deltaZ = this.playerTransform.z - item.mesh.position.z;
+            const deltaX = this.playerTransform.x - droppedItem.mesh.position.x;
+            const deltaY = this.playerTransform.y - droppedItem.mesh.position.y;
+            const deltaZ = this.playerTransform.z - droppedItem.mesh.position.z;
             const distanceSquared = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
             if (distanceSquared <= PICKUP_RADIUS * PICKUP_RADIUS) {
-                if (this.inventory.add(item.blockType)) {
+                if (this.inventory.add(droppedItem.item)) {
                     this.expired.push(index);
                     continue;
                 }
             }
 
             const body = {
-                position: item.mesh.position,
-                velocity: item.velocity,
+                position: droppedItem.mesh.position,
+                velocity: droppedItem.velocity,
                 halfWidth: COLLISION_HALF,
                 halfHeight: COLLISION_HALF,
             };
 
             if (distanceSquared <= MAGNET_RADIUS * MAGNET_RADIUS) {
                 this.scratchToPlayer.set(deltaX, deltaY, deltaZ).normalize().multiplyScalar(MAGNET_SPEED);
-                item.velocity.copy(this.scratchToPlayer);
+                droppedItem.velocity.copy(this.scratchToPlayer);
             } else {
                 applyGravity(body, deltaTime, GRAVITY, TERMINAL_VELOCITY);
             }
@@ -139,20 +154,20 @@ export default class DroppedItems extends Component {
             if (yHit === "foot") {
                 // Zero horizontal velocity too so items settle quickly on landing
                 // instead of sliding across uneven terrain.
-                item.velocity.set(0, 0, 0);
+                droppedItem.velocity.set(0, 0, 0);
             } else if (yHit === "head") {
-                item.velocity.y = 0;
+                droppedItem.velocity.y = 0;
             }
             if (stepAxisX(body, this.chunkManager, deltaTime)) {
-                item.velocity.x = 0;
+                droppedItem.velocity.x = 0;
             }
             if (stepAxisZ(body, this.chunkManager, deltaTime)) {
-                item.velocity.z = 0;
+                droppedItem.velocity.z = 0;
             }
 
-            item.mesh.rotation.y += SPIN_SPEED * deltaTime;
+            droppedItem.mesh.rotation.y += SPIN_SPEED * deltaTime;
 
-            this.updateItemLight(item);
+            this.updateItemLight(droppedItem);
         }
 
         for (const index of this.expired) {
@@ -169,13 +184,13 @@ export default class DroppedItems extends Component {
         return geometry;
     }
 
-    private updateItemLight(item: DroppedItem): void {
+    private updateItemLight(droppedItem: DroppedItem): void {
         const sampled = this.chunkManager.getLightAtWorld(
-            item.mesh.position.x,
-            item.mesh.position.y,
-            item.mesh.position.z,
+            droppedItem.mesh.position.x,
+            droppedItem.mesh.position.y,
+            droppedItem.mesh.position.z,
         );
-        const attribute = item.mesh.geometry.attributes.aLight as THREE.BufferAttribute;
+        const attribute = droppedItem.mesh.geometry.attributes.aLight as THREE.BufferAttribute;
         const array = attribute.array as Float32Array;
         if (array[0] === sampled) {
             return;
@@ -186,53 +201,72 @@ export default class DroppedItems extends Component {
 
     dispose() {
         eventManager.unsubscribe("blockBroken", this.blockBrokenListener);
-        for (const item of this.items) {
-            game.threeScene.remove(item.mesh);
-            item.mesh.geometry.dispose();
+        for (const droppedItem of this.items) {
+            game.threeScene.remove(droppedItem.mesh);
+            droppedItem.mesh.geometry.dispose();
         }
         this.items.length = 0;
         this.freeIndices.length = 0;
         this.activeIndices.clear();
-        this.materialsByType.clear();
+        this.blockMaterialsByType.clear();
+        this.itemMaterialsByType.clear();
+    }
+
+    private getMaterialsForItem(inventoryItem: InventoryItemStack): THREE.Material[] {
+        if (inventoryItem.kind === "block") {
+            const materials = this.blockMaterialsByType.get(inventoryItem.type);
+            if (!materials) {
+                throw new Error(`DroppedItems has no material mapping for BlockType ${inventoryItem.type}`);
+            }
+            return materials;
+        } else {
+            const materials = this.itemMaterialsByType.get(inventoryItem.type);
+            if (!materials) {
+                throw new Error(`DroppedItems has no material mapping for ItemType ${inventoryItem.type}`);
+            }
+            return materials;
+        }
     }
 
     private handleBlockBroken(event: BlockBreakEvent): void {
-        const dropType = BLOCK_DROPS[event.blockType] ?? event.blockType;
-        const materials = this.materialsByType.get(dropType);
-        if (!materials) {
-            throw new Error(`DroppedItems has no material mapping for BlockType ${dropType}`);
-        }
+        const dropItem: InventoryItemStack = BLOCK_DROPS[event.blockType] ?? {
+            kind: "block",
+            type: event.blockType,
+        };
+        const materials = this.getMaterialsForItem(dropItem);
 
         const index = this.freeIndices.pop();
         if (index === undefined) {
-            console.warn(`DroppedItems pool exhausted (size ${POOL_SIZE}); dropping spawn for BlockType ${dropType}`);
+            console.warn(
+                `DroppedItems pool exhausted (size ${POOL_SIZE}); dropping spawn for ${dropItem.kind} ${dropItem.type}`,
+            );
             return;
         }
 
-        const item = this.items[index];
+        const droppedItem = this.items[index];
         this.activeIndices.add(index);
 
-        item.mesh.material = materials;
-        item.blockType = dropType;
-        item.mesh.position.set(
+        droppedItem.mesh.material = materials;
+        droppedItem.item = dropItem;
+        droppedItem.mesh.position.set(
             event.chunk.mesh.position.x + event.blockX,
             event.chunk.mesh.position.y + event.blockY,
             event.chunk.mesh.position.z + event.blockZ,
         );
-        item.mesh.rotation.set(0, Math.random() * Math.PI * 2, 0);
-        item.velocity.set(
+        droppedItem.mesh.rotation.set(0, Math.random() * Math.PI * 2, 0);
+        droppedItem.velocity.set(
             (Math.random() - 0.5) * POP_HORIZONTAL * 2,
             POP_UP_VELOCITY,
             (Math.random() - 0.5) * POP_HORIZONTAL * 2,
         );
-        item.age = 0;
-        item.mesh.visible = true;
+        droppedItem.age = 0;
+        droppedItem.mesh.visible = true;
     }
 
     private recycle(index: number): void {
-        const item = this.items[index];
-        item.mesh.visible = false;
-        item.age = 0;
+        const droppedItem = this.items[index];
+        droppedItem.mesh.visible = false;
+        droppedItem.age = 0;
         this.activeIndices.delete(index);
         this.freeIndices.push(index);
     }

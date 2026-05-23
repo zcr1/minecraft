@@ -5,7 +5,7 @@ import Inventory, { HOTBAR_SIZE, type InventorySlot, TOTAL_SLOTS } from "engine/
 import GameObjectName from "engine/utils/gameObjectNames";
 import { useGame } from "./GameContext";
 import "./InventoryHUD.scss";
-import { BLOCK_TEXTURE_URLS } from "./blockTextures";
+import { BLOCK_TEXTURE_URLS, ITEM_TEXTURE_URLS } from "./blockTextures";
 
 interface SlotCellProps {
     slot: InventorySlot | null;
@@ -13,7 +13,14 @@ interface SlotCellProps {
 }
 
 function SlotCell({ slot, isSelected }: SlotCellProps) {
-    const textureUrl = slot ? BLOCK_TEXTURE_URLS[slot.blockType] : undefined;
+    let textureUrl: string | undefined;
+    if (slot) {
+        if (slot.item.kind === "block") {
+            textureUrl = BLOCK_TEXTURE_URLS[slot.item.type];
+        } else {
+            textureUrl = ITEM_TEXTURE_URLS[slot.item.type];
+        }
+    }
     return (
         <div className={classNames("inventory-slot", { "inventory-slot-selected": isSelected })}>
             {slot && textureUrl && (

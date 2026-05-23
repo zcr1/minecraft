@@ -12,7 +12,6 @@ export enum BlockType {
     Stone = 4,
     Cobblestone = 5,
     CoalOre = 6,
-    Coal = 7,
 }
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
@@ -65,7 +64,6 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Stone]: 4,
     [BlockType.Cobblestone]: 3,
     [BlockType.CoalOre]: 4,
-    [BlockType.Coal]: 0,
 };
 
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.

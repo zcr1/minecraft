@@ -1,15 +1,17 @@
-import { BlockType } from "engine/chunk/ChunkComponent";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import input from "engine/input/Input";
+import { type InventoryItemStack } from "engine/items/InventoryItem";
 
 export const HOTBAR_SIZE = 9;
 export const INVENTORY_SIZE = 27;
 export const TOTAL_SLOTS = HOTBAR_SIZE + INVENTORY_SIZE;
 export const MAX_STACK_SIZE = 64;
 
+export type { InventoryItemStack };
+
 export interface InventorySlot {
-    blockType: BlockType;
+    item: InventoryItemStack;
     count: number;
 }
 
@@ -34,12 +36,17 @@ export default class Inventory extends Component {
     // Phase 1: stack onto an existing partial stack of the same type.
     // Phase 2: place in the first empty slot.
     // Phase 3: inventory full — reject without mutation.
-    add(blockType: BlockType, count = 1): boolean {
+    add(item: InventoryItemStack, count = 1): boolean {
         let firstOpenSlot: number | null = null;
 
         for (let index = 0; index < TOTAL_SLOTS; index++) {
             const slot = this.slots[index];
-            if (slot?.blockType === blockType && slot.count < MAX_STACK_SIZE) {
+            if (
+                slot !== null &&
+                slot.item.kind === item.kind &&
+                slot.item.type === item.type &&
+                slot.count < MAX_STACK_SIZE
+            ) {
                 slot.count = Math.min(slot.count + count, MAX_STACK_SIZE);
                 eventManager.emit("inventoryChanged", undefined);
                 return true;
@@ -51,7 +58,7 @@ export default class Inventory extends Component {
         }
 
         if (firstOpenSlot !== null) {
-            this.slots[firstOpenSlot] = { blockType, count: Math.min(count, MAX_STACK_SIZE) };
+            this.slots[firstOpenSlot] = { item, count: Math.min(count, MAX_STACK_SIZE) };
             eventManager.emit("inventoryChanged", undefined);
             return true;
         }
