@@ -29,6 +29,7 @@ const BLOCK_DROP_CHANCES: Partial<Record<BlockType, number>> = {
 
 const POOL_SIZE = 64;
 const ITEM_SIZE = 0.3;
+const FLAT_ITEM_SIZE = 0.4;
 const GRAVITY = -20;
 const TERMINAL_VELOCITY = -25;
 const LIFETIME_SECONDS = 30;
@@ -42,6 +43,8 @@ const COLLISION_HALF = ITEM_SIZE / 2;
 
 interface DroppedItem {
     mesh: THREE.Mesh;
+    boxGeometry: THREE.BufferGeometry;
+    flatGeometry: THREE.BufferGeometry;
     velocity: THREE.Vector3;
     age: number;
     item: InventoryItemStack;
@@ -53,7 +56,6 @@ export default class DroppedItems extends Component {
     private readonly freeIndices: number[] = [];
     private readonly activeIndices = new Set<number>();
     private readonly blockMaterialsByType = new Map<BlockType, THREE.Material[]>();
-    private readonly itemMaterialsByType = new Map<ItemType, THREE.Material[]>();
     private readonly scratchToPlayer = new THREE.Vector3();
     private readonly expired: number[] = [];
     private chunkManager!: ChunkManager;
@@ -89,28 +91,19 @@ export default class DroppedItems extends Component {
             ]);
         }
 
-        for (const itemType of [ItemType.Coal, ItemType.Stick]) {
-            const sideMaterial = TextureManager.getItemMaterial(itemType, 0);
-            const topMaterial = TextureManager.getItemMaterial(itemType, 1);
-            this.itemMaterialsByType.set(itemType, [
-                sideMaterial,
-                sideMaterial,
-                topMaterial,
-                sideMaterial,
-                sideMaterial,
-                sideMaterial,
-            ]);
-        }
-
         for (let i = 0; i < POOL_SIZE; i++) {
             // Each item needs its own geometry because the chunk shader reads a per-vertex `aLight`
             // attribute and we sample that per-item from the item's world position each frame.
             // A shared geometry would force every item to the same light value.
-            const mesh = new THREE.Mesh(this.createItemGeometry(), this.blockMaterialsByType.get(BlockType.Dirt)!);
+            const boxGeometry = this.createBoxGeometry();
+            const flatGeometry = this.createFlatGeometry();
+            const mesh = new THREE.Mesh(boxGeometry, this.blockMaterialsByType.get(BlockType.Dirt)!);
             mesh.visible = false;
             game.threeScene.add(mesh);
             this.items.push({
                 mesh,
+                boxGeometry,
+                flatGeometry,
                 velocity: new THREE.Vector3(),
                 age: 0,
                 item: { kind: "block", type: BlockType.Dirt }, // placeholder; overwritten in handleBlockBroken before visible
@@ -183,8 +176,21 @@ export default class DroppedItems extends Component {
         }
     }
 
-    private createItemGeometry(): THREE.BoxGeometry {
+    private createBoxGeometry(): THREE.BoxGeometry {
         const geometry = new THREE.BoxGeometry(ITEM_SIZE, ITEM_SIZE, ITEM_SIZE);
+        const vertexCount = geometry.attributes.position.count;
+        const lightArray = new Float32Array(vertexCount);
+        lightArray.fill(MAX_LIGHT);
+        geometry.setAttribute("aLight", new THREE.BufferAttribute(lightArray, 1));
+        return geometry;
+    }
+
+    // Flat quad used for pure items (coal, stick, etc.) — rendered as a spinning 2-D sprite.
+    // PlaneGeometry sits in the XY plane by default (facing +Z); spinning around Y shows the
+    // texture face-on throughout most of the rotation cycle. DoubleSide material handles the
+    // back face so it's visible from either direction.
+    private createFlatGeometry(): THREE.PlaneGeometry {
+        const geometry = new THREE.PlaneGeometry(FLAT_ITEM_SIZE, FLAT_ITEM_SIZE);
         const vertexCount = geometry.attributes.position.count;
         const lightArray = new Float32Array(vertexCount);
         lightArray.fill(MAX_LIGHT);
@@ -211,29 +217,21 @@ export default class DroppedItems extends Component {
         eventManager.unsubscribe("blockBroken", this.blockBrokenListener);
         for (const droppedItem of this.items) {
             game.threeScene.remove(droppedItem.mesh);
-            droppedItem.mesh.geometry.dispose();
+            droppedItem.boxGeometry.dispose();
+            droppedItem.flatGeometry.dispose();
         }
         this.items.length = 0;
         this.freeIndices.length = 0;
         this.activeIndices.clear();
         this.blockMaterialsByType.clear();
-        this.itemMaterialsByType.clear();
     }
 
-    private getMaterialsForItem(inventoryItem: InventoryItemStack): THREE.Material[] {
-        if (inventoryItem.kind === "block") {
-            const materials = this.blockMaterialsByType.get(inventoryItem.type);
-            if (!materials) {
-                throw new Error(`DroppedItems has no material mapping for BlockType ${inventoryItem.type}`);
-            }
-            return materials;
-        } else {
-            const materials = this.itemMaterialsByType.get(inventoryItem.type);
-            if (!materials) {
-                throw new Error(`DroppedItems has no material mapping for ItemType ${inventoryItem.type}`);
-            }
-            return materials;
+    private getBlockMaterials(inventoryItem: InventoryItemStack & { kind: "block" }): THREE.Material[] {
+        const materials = this.blockMaterialsByType.get(inventoryItem.type);
+        if (!materials) {
+            throw new Error(`DroppedItems has no material mapping for BlockType ${inventoryItem.type}`);
         }
+        return materials;
     }
 
     private handleBlockBroken(event: BlockBreakEvent): void {
@@ -246,7 +244,6 @@ export default class DroppedItems extends Component {
             kind: "block",
             type: event.blockType,
         };
-        const materials = this.getMaterialsForItem(dropItem);
 
         const index = this.freeIndices.pop();
         if (index === undefined) {
@@ -259,7 +256,15 @@ export default class DroppedItems extends Component {
         const droppedItem = this.items[index];
         this.activeIndices.add(index);
 
-        droppedItem.mesh.material = materials;
+        if (dropItem.kind === "item") {
+            // Pure items (coal, stick, etc.) render as a spinning flat sprite.
+            droppedItem.mesh.geometry = droppedItem.flatGeometry;
+            droppedItem.mesh.material = TextureManager.getFlatItemMaterial(dropItem.type);
+        } else {
+            droppedItem.mesh.geometry = droppedItem.boxGeometry;
+            droppedItem.mesh.material = this.getBlockMaterials(dropItem);
+        }
+
         droppedItem.item = dropItem;
         droppedItem.mesh.position.set(
             event.chunk.mesh.position.x + event.blockX,
