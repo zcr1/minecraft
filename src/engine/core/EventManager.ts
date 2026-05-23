@@ -1,10 +1,11 @@
-import type { BlockBreakEvent, StageAdvancedEvent } from "engine/player/PlayerBlockInteraction";
+import type { BlockBreakEvent, StageAdvancedEvent, TargetedBlock } from "engine/player/PlayerBlockInteraction";
 
 export interface GameEventMap {
     blockBroken: BlockBreakEvent;
     blockDamageStageAdvanced: StageAdvancedEvent;
     inventoryChanged: void;
     hotbarSelectionChanged: number;
+    targetedBlockChanged: TargetedBlock | null;
 }
 
 type Listener<K extends keyof GameEventMap> = (event: GameEventMap[K]) => void;

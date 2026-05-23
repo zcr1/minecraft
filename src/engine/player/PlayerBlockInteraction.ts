@@ -79,6 +79,7 @@ export default class PlayerBlockInteraction extends Component {
 
         if (!this.sameTarget(target, this.targetedBlock)) {
             this.resetProgress();
+            eventManager.emit("targetedBlockChanged", target);
         }
         this.targetedBlock = target;
 
@@ -110,6 +111,7 @@ export default class PlayerBlockInteraction extends Component {
             eventManager.emit("blockBroken", broken);
             this.resetProgress();
             this.targetedBlock = null;
+            eventManager.emit("targetedBlockChanged", null);
             return;
         }
 
@@ -193,6 +195,11 @@ export default class PlayerBlockInteraction extends Component {
         const blockY = Math.round(this.scratchLocal.y);
         const blockZ = Math.round(this.scratchLocal.z);
 
+        const blockType = chunk.getBlock(blockX, blockY, blockZ);
+        if (blockType === BlockType.Air) {
+            return null;
+        }
+
         this.hitPoint.copy(hit.point);
         this.hitNormal.copy(hit.face.normal);
 
@@ -201,7 +208,7 @@ export default class PlayerBlockInteraction extends Component {
             blockX,
             blockY,
             blockZ,
-            blockType: chunk.getBlock(blockX, blockY, blockZ),
+            blockType,
         };
     }
 }
