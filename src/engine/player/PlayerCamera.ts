@@ -33,18 +33,18 @@ export default class PlayerCamera extends Component {
                 canvas.requestPointerLock();
             } catch {}
         };
-        this.onPointerLockChange = () => {
-            this.pointerLocked = document.pointerLockElement === canvas;
-            if (this.pointerLocked && document.activeElement instanceof HTMLElement) {
-                // Blurs debug menu
-                document.activeElement.blur();
-            }
-        };
         this.onKeyDown = (event: KeyboardEvent) => {
             if (!this.pointerLocked && MOVEMENT_KEYS.includes(event.code)) {
                 try {
                     canvas.requestPointerLock();
                 } catch {}
+            }
+        };
+        this.onPointerLockChange = () => {
+            this.pointerLocked = document.pointerLockElement === canvas;
+            if (this.pointerLocked && document.activeElement instanceof HTMLElement) {
+                // Blurs debug menu
+                document.activeElement.blur();
             }
         };
 
