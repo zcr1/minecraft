@@ -2,6 +2,7 @@ import { Pane } from "tweakpane";
 import { useEffect, useRef, useState } from "react";
 import Transform from "engine/components/Transform";
 import DebugCameraController from "engine/debug/DebugCameraController";
+import PlayerBlockInteraction, { BREAK_TIME_SECONDS } from "engine/player/PlayerBlockInteraction";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
 import GameObjectName from "engine/utils/gameObjectNames";
@@ -16,11 +17,12 @@ export default function DebugMenu() {
 
     useEffect(() => {
         const pane = new Pane({ title: "Debug" });
-        const params = { debugCamera: false, showFpsGraph: false, showPlayerPosition: false };
+        const params = { debugCamera: false, showFpsGraph: false, showPlayerPosition: false, breakTimeZero: false };
 
         const player = game.getGameObject(GameObjectName.Player);
         const playerCamera = player.getComponent(PlayerCamera);
         const playerController = player.getComponent(PlayerController);
+        const playerBlockInteraction = player.getComponent(PlayerBlockInteraction);
         const debugCameraController = game
             .getGameObject(GameObjectName.DebugCamera)
             .getComponent(DebugCameraController);
@@ -37,6 +39,10 @@ export default function DebugMenu() {
 
         pane.addBinding(params, "showPlayerPosition", { label: "Show Player Position" }).on("change", ({ value }) => {
             setShowPlayerPosition(value);
+        });
+
+        pane.addBinding(params, "breakTimeZero", { label: "Break Time Zero" }).on("change", ({ value }) => {
+            playerBlockInteraction.breakTimeSeconds = value ? 0.01 : BREAK_TIME_SECONDS;
         });
 
         return () => pane.dispose();

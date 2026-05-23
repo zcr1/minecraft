@@ -12,7 +12,7 @@ import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
 
 const RAY_DISTANCE = 3;
-const BREAK_TIME_SECONDS = 1.2;
+export const BREAK_TIME_SECONDS = 1.2;
 
 // Items that can be held and picked up but cannot be placed as world blocks.
 const NON_PLACEABLE_BLOCKS = new Set<BlockType>([BlockType.Coal]);
@@ -50,6 +50,7 @@ export default class PlayerBlockInteraction extends Component {
 
     targetedBlock: TargetedBlock | null = null;
     damageProgress = 0;
+    breakTimeSeconds = BREAK_TIME_SECONDS;
 
     private readonly hitPoint = new THREE.Vector3();
     // Exposed for sibling effects (e.g. BlockPlacementPreview). Only valid when targetedBlock is non-null.
@@ -95,7 +96,7 @@ export default class PlayerBlockInteraction extends Component {
             return;
         }
 
-        this.damageProgress += deltaTime / BREAK_TIME_SECONDS;
+        this.damageProgress += deltaTime / this.breakTimeSeconds;
 
         if (this.damageProgress >= 1) {
             const broken: BlockBreakEvent = {
