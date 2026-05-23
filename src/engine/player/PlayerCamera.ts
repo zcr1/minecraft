@@ -31,6 +31,10 @@ export default class PlayerCamera extends Component {
         this.onCanvasClick = () => canvas.requestPointerLock();
         this.onPointerLockChange = () => {
             this.pointerLocked = document.pointerLockElement === canvas;
+            if (this.pointerLocked && document.activeElement instanceof HTMLElement) {
+                // Blurs debug menu
+                document.activeElement.blur();
+            }
         };
         this.onKeyDown = (event: KeyboardEvent) => {
             if (!this.pointerLocked && MOVEMENT_KEYS.includes(event.code)) {
