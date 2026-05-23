@@ -15,6 +15,11 @@ import desetroy9Url from "assets/textures/destroy_9.png";
 import dirtUrl from "assets/textures/dirt.png";
 import grassSideUrl from "assets/textures/grass_side.png";
 import grassTopUrl from "assets/textures/grass_top.png";
+import oakLeaves1Url from "assets/textures/oak_leaves_1.png";
+import oakLeaves2Url from "assets/textures/oak_leaves_2.png";
+import oakLogUrl from "assets/textures/oak_log.png";
+import oakLogTopUrl from "assets/textures/oak_log_top.png";
+import stickUrl from "assets/textures/stick.png";
 import stoneUrl from "assets/textures/stone.png";
 import * as THREE from "three";
 import { BlockType } from "engine/chunk/ChunkComponent";
@@ -41,6 +46,13 @@ class TextureManager {
     private grassTopMat!: THREE.MeshStandardMaterial;
     private grassSideMat!: THREE.MeshStandardMaterial;
 
+    // Oak log has two face variants: top/bottom use the end-grain texture, sides use the bark.
+    private oakLogTopMat!: THREE.MeshStandardMaterial;
+    private oakLogSideMat!: THREE.MeshStandardMaterial;
+
+    // Oak leaves use two textures distributed randomly by world position to break up repetition.
+    private oakLeavesMats!: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial];
+
     private blockMaterials!: Partial<Record<BlockType, THREE.Material>>;
     private itemMaterials!: Record<ItemType, THREE.Material>;
     // Flat-sprite materials for items rendered as planes (held item). Transparent + double-sided
@@ -55,6 +67,13 @@ class TextureManager {
         this.grassTopMat = this.loadMat(loader, grassTopUrl);
         this.grassSideMat = this.loadMat(loader, grassSideUrl);
 
+        this.oakLogTopMat = this.loadMat(loader, oakLogTopUrl);
+        this.oakLogSideMat = this.loadMat(loader, oakLogUrl);
+        this.oakLeavesMats = [
+            this.loadTransparentMat(loader, oakLeaves1Url),
+            this.loadTransparentMat(loader, oakLeaves2Url),
+        ];
+
         this.blockMaterials = {
             [BlockType.Dirt]: this.loadMat(loader, dirtUrl),
             [BlockType.Bedrock]: this.loadMat(loader, bedrockUrl),
@@ -65,10 +84,12 @@ class TextureManager {
 
         this.itemMaterials = {
             [ItemType.Coal]: this.loadMat(loader, coalUrl),
+            [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
         };
 
         this.flatItemMaterials = {
             [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
+            [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
         };
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
@@ -89,11 +110,22 @@ class TextureManager {
         if (blockType === BlockType.Grass) {
             return normalY === 1 ? this.grassTopMat : this.grassSideMat;
         }
+        if (blockType === BlockType.OakLog) {
+            // normalY !== 0 covers both +Y (top) and -Y (bottom) — both show end-grain texture.
+            return normalY !== 0 ? this.oakLogTopMat : this.oakLogSideMat;
+        }
         const material = this.blockMaterials[blockType];
         if (!material) {
             throw new Error(`TextureManager: no material registered for BlockType ${blockType}`);
         }
         return material;
+    }
+
+    // Returns one of the two leaf materials. The variant (0 or 1) is chosen per-block by
+    // a world-position hash in ChunkComponent.buildMesh so the canopy looks random but
+    // stays deterministic across rebuilds.
+    getLeavesMaterial(variant: 0 | 1): THREE.Material {
+        return this.oakLeavesMats[variant];
     }
 
     // Returns the material for a held or dropped item. The `normalY` parameter mirrors
@@ -146,6 +178,17 @@ class TextureManager {
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.magFilter = THREE.NearestFilter;
         const material = new THREE.MeshStandardMaterial({ map: tex });
+        applyVertexLighting(material);
+        return material;
+    }
+
+    // Alpha-cutout variant for leaf blocks: transparent pixels are discarded (alphaTest),
+    // but the face is otherwise lit and shaded like a regular opaque block.
+    private loadTransparentMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
+        const tex = loader.load(url);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.magFilter = THREE.NearestFilter;
+        const material = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.5 });
         applyVertexLighting(material);
         return material;
     }

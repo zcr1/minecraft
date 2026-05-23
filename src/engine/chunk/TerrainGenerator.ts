@@ -6,6 +6,7 @@ import { BlockType } from "engine/chunk/ChunkComponent";
 // ChunkComponent already imports TerrainGenerator, so the import can only go one way.
 export interface ChunkVolume {
     readonly worldOriginX: number;
+    readonly worldOriginY: number;
     readonly worldOriginZ: number;
     readonly width: number;
     readonly height: number;
@@ -47,6 +48,157 @@ function mulberry32(seed: number): () => number {
         return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
     };
 }
+
+// ─── Tree generation helpers ──────────────────────────────────────────────────
+
+type TreeBlock = { dx: number; dy: number; dz: number; type: BlockType };
+type TreePlacement = { localX: number; localZ: number; variation: 0 | 1 | 2 };
+
+// Returns the full list of blocks that make up a tree, relative to the trunk
+// base (dy=0 is the first log above the surface). Trunk blocks always come
+// first so that when a log position is later overwritten by a neighbour's leaf
+// the log wins (placeTrees processes logs in a second pass).
+function getTreeBlocks(variation: 0 | 1 | 2): TreeBlock[] {
+    const blocks: TreeBlock[] = [];
+
+    if (variation === 0) {
+        // Classic: 4-block trunk, 5×5 lower canopy then 3×3 cap.
+        for (let dy = 0; dy < 4; dy++) {
+            blocks.push({ dx: 0, dy, dz: 0, type: BlockType.OakLog });
+        }
+        // dy=3,4: 5×5 minus the 4 diagonal corners.
+        // Centre is skipped only at dy=3 where the trunk log already occupies that position.
+        // At dy=4 the trunk has ended, so the centre gets a leaf like the rest of the ring.
+        for (const dy of [3, 4]) {
+            for (let dx = -2; dx <= 2; dx++) {
+                for (let dz = -2; dz <= 2; dz++) {
+                    if (Math.abs(dx) === 2 && Math.abs(dz) === 2) {
+                        continue;
+                    }
+                    if (dx === 0 && dz === 0 && dy === 3) {
+                        continue;
+                    }
+                    blocks.push({ dx, dy, dz, type: BlockType.OakLeaves });
+                }
+            }
+        }
+        // dy=5,6: 3×3 full grid (centre is leaves, trunk ends at dy=3).
+        for (const dy of [5, 6]) {
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    blocks.push({ dx, dy, dz, type: BlockType.OakLeaves });
+                }
+            }
+        }
+    } else if (variation === 1) {
+        // Tall: 6-block trunk, three wide canopy layers then a narrow cap.
+        for (let dy = 0; dy < 6; dy++) {
+            blocks.push({ dx: 0, dy, dz: 0, type: BlockType.OakLog });
+        }
+        // dy=5 is the last trunk log; dy=6,7 have no trunk so their centres are leaves.
+        for (const dy of [5, 6, 7]) {
+            for (let dx = -2; dx <= 2; dx++) {
+                for (let dz = -2; dz <= 2; dz++) {
+                    if (Math.abs(dx) === 2 && Math.abs(dz) === 2) {
+                        continue;
+                    }
+                    if (dx === 0 && dz === 0 && dy === 5) {
+                        continue;
+                    }
+                    blocks.push({ dx, dy, dz, type: BlockType.OakLeaves });
+                }
+            }
+        }
+        for (const dy of [8, 9]) {
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    blocks.push({ dx, dy, dz, type: BlockType.OakLeaves });
+                }
+            }
+        }
+    } else {
+        // Compact: 4-block trunk, tight canopy with a cross-shaped tip.
+        for (let dy = 0; dy < 4; dy++) {
+            blocks.push({ dx: 0, dy, dz: 0, type: BlockType.OakLog });
+        }
+        // dy=3: 5×5 minus corners, skip trunk centre.
+        for (let dx = -2; dx <= 2; dx++) {
+            for (let dz = -2; dz <= 2; dz++) {
+                if (Math.abs(dx) === 2 && Math.abs(dz) === 2) {
+                    continue;
+                }
+                if (dx === 0 && dz === 0) {
+                    continue;
+                }
+                blocks.push({ dx, dy: 3, dz, type: BlockType.OakLeaves });
+            }
+        }
+        // dy=4,5: 3×3 full.
+        for (const dy of [4, 5]) {
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    blocks.push({ dx, dy, dz, type: BlockType.OakLeaves });
+                }
+            }
+        }
+        // dy=6: cross tip (centre + 4 cardinal neighbours).
+        for (const [dx, dz] of [
+            [0, 0],
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ] as const) {
+            blocks.push({ dx, dy: 6, dz, type: BlockType.OakLeaves });
+        }
+    }
+
+    return blocks;
+}
+
+// seeded pseudo-random number generator (xorshift32)
+function getRngFunction(originX: number, originZ: number) {
+    // | 1 guarantees a non-zero seed — xorshift32 on 0 always produces 0
+    let seed = (Math.imul(originX, 374761393) ^ Math.imul(originZ, 668265263)) | 1;
+
+    return () => {
+        // xorshift32 — fast, statistically decent, no dependencies.
+        seed ^= seed << 13;
+        seed ^= seed >> 17;
+        seed ^= seed << 5;
+        // >>> 0 coerces to an unsigned 32-bit int, then divide to get [0, 1).
+        return (seed >>> 0) / 4294967295;
+    };
+}
+
+// Returns the deterministic tree positions for one chunk, using the same xorshift32
+// PRNG pattern as placeCoalVeins so world generation stays fully seeded.
+// 40% chance of no tree, 50% one tree, 10% two trees per chunk.
+function getChunkTrees(originX: number, originZ: number, chunkWidth: number, chunkDepth: number): TreePlacement[] {
+    const rng = getRngFunction(originX, originZ);
+
+    const roll = rng();
+    let treeCount = 0;
+    if (roll >= 0.9) {
+        treeCount = 4;
+    } else if (roll >= 0.5) {
+        treeCount = 3;
+    } else if (roll >= 0.2) {
+        treeCount = 2;
+    }
+
+    const trees: TreePlacement[] = [];
+    for (let index = 0; index < treeCount; index++) {
+        const localX = Math.floor(rng() * chunkWidth);
+        const localZ = Math.floor(rng() * chunkDepth);
+        const variationRoll = rng();
+        const variation: 0 | 1 | 2 = variationRoll < 0.5 ? 0 : variationRoll < 0.85 ? 2 : 1;
+        trees.push({ localX, localZ, variation });
+    }
+    return trees;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default class TerrainGenerator {
     private readonly noise2D: NoiseFunction2D;
@@ -112,17 +264,7 @@ export default class TerrainGenerator {
         // Coal veins are generated with a seeded pseudo-random number generator (xorshift32)
         // so the same chunk coordinates always produce the same ore layout. The seed is derived
         // from the chunk's world origin, making each chunk's result independent from its neighbors.
-        // | 1 guarantees a non-zero seed — xorshift32 on 0 always produces 0, which would make
-        // rng() return 0 forever (origin chunk corner case).
-        let seed = (Math.imul(chunk.worldOriginX, 374761393) ^ Math.imul(chunk.worldOriginZ, 668265263)) | 1;
-        const rng = (): number => {
-            // xorshift32 — fast, statistically decent, no dependencies.
-            seed ^= seed << 13;
-            seed ^= seed >> 17;
-            seed ^= seed << 5;
-            // >>> 0 coerces to an unsigned 32-bit int, then divide to get [0, 1).
-            return (seed >>> 0) / 4294967295;
-        };
+        const rng = getRngFunction(chunk.worldOriginX, chunk.worldOriginZ);
 
         // Each vein attempt picks a random starting block anywhere in the chunk and then
         // performs a short random walk, converting stone blocks it lands on into coal ore.
@@ -161,6 +303,60 @@ export default class TerrainGenerator {
                     localZ++;
                 } else {
                     localZ--;
+                }
+            }
+        }
+    }
+
+    // Places tree blocks for this chunk and all 8 horizontal neighbours so canopy
+    // that bleeds across a chunk border is written during the receiving chunk's own
+    // generate() call. Blocks are only placed on Air; OakLog may overwrite OakLeaves
+    // when two trees from neighbouring chunks happen to overlap.
+    placeTrees(chunk: ChunkVolume): void {
+        for (let neighborDeltaX = -1; neighborDeltaX <= 1; neighborDeltaX++) {
+            for (let neighborDeltaZ = -1; neighborDeltaZ <= 1; neighborDeltaZ++) {
+                const neighborOriginX = chunk.worldOriginX + neighborDeltaX * chunk.width;
+                const neighborOriginZ = chunk.worldOriginZ + neighborDeltaZ * chunk.depth;
+                const trees = getChunkTrees(neighborOriginX, neighborOriginZ, chunk.width, chunk.depth);
+
+                for (const tree of trees) {
+                    const worldTreeX = neighborOriginX + tree.localX;
+                    const worldTreeZ = neighborOriginZ + tree.localZ;
+                    const surface = Math.floor(this.getHeight(worldTreeX, worldTreeZ));
+                    const trunkBaseY = surface + 1;
+
+                    for (const treeBlock of getTreeBlocks(tree.variation)) {
+                        const worldX = worldTreeX + treeBlock.dx;
+                        const worldY = trunkBaseY + treeBlock.dy;
+                        const worldZ = worldTreeZ + treeBlock.dz;
+
+                        const localX = worldX - chunk.worldOriginX;
+                        const localY = worldY - chunk.worldOriginY;
+                        const localZ = worldZ - chunk.worldOriginZ;
+
+                        if (
+                            localX < 0 ||
+                            localX >= chunk.width ||
+                            localY < 0 ||
+                            localY >= chunk.height ||
+                            localZ < 0 ||
+                            localZ >= chunk.depth
+                        ) {
+                            continue;
+                        }
+
+                        const existing = chunk.getBlock(localX, localY, localZ);
+                        if (existing !== BlockType.Air) {
+                            // Trunk wins over leaves when two trees from adjacent chunks overlap.
+                            if (treeBlock.type === BlockType.OakLog && existing === BlockType.OakLeaves) {
+                                // fall through and overwrite
+                            } else {
+                                continue;
+                            }
+                        }
+
+                        chunk.setBlock(localX, localY, localZ, treeBlock.type);
+                    }
                 }
             }
         }

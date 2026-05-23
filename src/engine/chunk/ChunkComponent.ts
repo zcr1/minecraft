@@ -12,6 +12,8 @@ export enum BlockType {
     Stone = 4,
     Cobblestone = 5,
     CoalOre = 6,
+    OakLog = 7,
+    OakLeaves = 8,
 }
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
@@ -64,6 +66,8 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Stone]: 4,
     [BlockType.Cobblestone]: 3,
     [BlockType.CoalOre]: 4,
+    [BlockType.OakLog]: 3,
+    [BlockType.OakLeaves]: 1,
 };
 
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
@@ -155,7 +159,8 @@ export default class ChunkComponent extends Component {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) {
             return true;
         }
-        return this.getBlock(x, y, z) === BlockType.Air;
+        const block = this.getBlock(x, y, z);
+        return block === BlockType.Air || block === BlockType.OakLeaves;
     }
 
     private isInBounds(x: number, y: number, z: number): boolean {
@@ -186,6 +191,7 @@ export default class ChunkComponent extends Component {
             }
         }
         generator.placeCoalVeins(this);
+        generator.placeTrees(this);
     }
 
     rebuild(chunkManager: ChunkManager): void {
@@ -200,6 +206,10 @@ export default class ChunkComponent extends Component {
         const stone = createSubMesh();
         const cobblestone = createSubMesh();
         const coalOre = createSubMesh();
+        const oakLogTop = createSubMesh();
+        const oakLogSide = createSubMesh();
+        const oakLeaves1 = createSubMesh();
+        const oakLeaves2 = createSubMesh();
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -244,6 +254,20 @@ export default class ChunkComponent extends Component {
                             this.pushFace(face, x, y, z, grassSide, lightValue);
                         } else if (block === BlockType.Bedrock) {
                             this.pushFace(face, x, y, z, bedrock, lightValue);
+                        } else if (block === BlockType.OakLog && face.normal[1] !== 0) {
+                            this.pushFace(face, x, y, z, oakLogTop, lightValue);
+                        } else if (block === BlockType.OakLog) {
+                            this.pushFace(face, x, y, z, oakLogSide, lightValue);
+                        } else if (block === BlockType.OakLeaves) {
+                            const worldX = this.worldOriginX + x;
+                            const worldY = this.worldOriginY + y;
+                            const worldZ = this.worldOriginZ + z;
+                            const hash =
+                                (Math.imul(worldX, 73856093) ^
+                                    Math.imul(worldY, 19349663) ^
+                                    Math.imul(worldZ, 83492791)) &
+                                1;
+                            this.pushFace(face, x, y, z, hash === 0 ? oakLeaves1 : oakLeaves2, lightValue);
                         } else {
                             this.pushFace(face, x, y, z, dirt, lightValue);
                         }
@@ -283,6 +307,22 @@ export default class ChunkComponent extends Component {
             this.mesh.add(
                 new THREE.Mesh(this.buildGeometry(coalOre), textureManager.getMaterial(BlockType.CoalOre, 0)),
             );
+        }
+        if (oakLogTop.indices.length > 0) {
+            this.mesh.add(
+                new THREE.Mesh(this.buildGeometry(oakLogTop), textureManager.getMaterial(BlockType.OakLog, 1)),
+            );
+        }
+        if (oakLogSide.indices.length > 0) {
+            this.mesh.add(
+                new THREE.Mesh(this.buildGeometry(oakLogSide), textureManager.getMaterial(BlockType.OakLog, 0)),
+            );
+        }
+        if (oakLeaves1.indices.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeometry(oakLeaves1), textureManager.getLeavesMaterial(0)));
+        }
+        if (oakLeaves2.indices.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeometry(oakLeaves2), textureManager.getLeavesMaterial(1)));
         }
     }
 

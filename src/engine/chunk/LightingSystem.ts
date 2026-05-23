@@ -15,6 +15,18 @@ const NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number, number]> = [
 ];
 
 class LightingSystem {
+    // OakLeaves are transparent to the BFS propagation passes (seedFromNeighbors,
+    // propagate) so light spreads through canopy at –1 per hop. The top-down column
+    // seed (seedTopDown) intentionally uses a stricter Air-only check so the column
+    // seed breaks when it hits the first leaf layer — without that, full sky-light (15)
+    // would flood straight through the canopy and the ground below would look identical
+    // to open sky. With the column seed blocked, the only path for light under the
+    // canopy is BFS: each leaf layer costs one level, so a 3–4 block deep canopy drops
+    // ground light to ~11–12, which is visibly darker.
+    private isLightTransparent(blockType: BlockType): boolean {
+        return blockType === BlockType.Air || blockType === BlockType.OakLeaves;
+    }
+
     // Three-pass BFS:
     //   1. Top-down column seed - air voxels inherit the light value from the voxel one above
     //      the chunk (open sky returns 15; a partially-obstructed column above returns less).
@@ -52,6 +64,9 @@ class LightingSystem {
                     continue;
                 }
                 for (let localY = height - 1; localY >= 0; localY--) {
+                    // Strict air-only check: leaves block the direct column seed so the
+                    // canopy casts a real shadow. BFS (seedFromNeighbors + propagate) then
+                    // spreads light through the leaves at –1 per hop, giving natural dimming.
                     if (chunk.getBlock(localX, localY, localZ) !== BlockType.Air) {
                         break;
                     }
@@ -82,7 +97,7 @@ class LightingSystem {
             for (let localX = startX; localX <= endX; localX++) {
                 for (let localY = startY; localY <= endY; localY++) {
                     for (let localZ = startZ; localZ <= endZ; localZ++) {
-                        if (chunk.getBlock(localX, localY, localZ) !== BlockType.Air) {
+                        if (!this.isLightTransparent(chunk.getBlock(localX, localY, localZ))) {
                             continue;
                         }
 
@@ -140,7 +155,7 @@ class LightingSystem {
                 if (nextZ < 0 || nextZ >= depth) {
                     continue;
                 }
-                if (chunk.getBlock(nextX, nextY, nextZ) !== BlockType.Air) {
+                if (!this.isLightTransparent(chunk.getBlock(nextX, nextY, nextZ))) {
                     continue;
                 }
                 if (chunk.getSkyLight(nextX, nextY, nextZ) >= propagated) {

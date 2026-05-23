@@ -18,6 +18,13 @@ const BLOCK_DROPS: Partial<Record<BlockType, InventoryItemStack>> = {
     [BlockType.Grass]: { kind: "block", type: BlockType.Dirt },
     [BlockType.Stone]: { kind: "block", type: BlockType.Cobblestone },
     [BlockType.CoalOre]: { kind: "item", type: ItemType.Coal },
+    // OakLog omitted — falls through to the default "drop itself" path.
+    [BlockType.OakLeaves]: { kind: "item", type: ItemType.Stick },
+};
+
+// Drop probability per block type (0–1). Absent means 1.0 — always drops.
+const BLOCK_DROP_CHANCES: Partial<Record<BlockType, number>> = {
+    [BlockType.OakLeaves]: 0.25,
 };
 
 const POOL_SIZE = 64;
@@ -68,6 +75,7 @@ export default class DroppedItems extends Component {
             BlockType.Bedrock,
             BlockType.Stone,
             BlockType.Cobblestone,
+            BlockType.OakLog,
         ]) {
             const sideMaterial = TextureManager.getMaterial(blockType, 0);
             const topMaterial = TextureManager.getMaterial(blockType, 1);
@@ -81,7 +89,7 @@ export default class DroppedItems extends Component {
             ]);
         }
 
-        for (const itemType of [ItemType.Coal]) {
+        for (const itemType of [ItemType.Coal, ItemType.Stick]) {
             const sideMaterial = TextureManager.getItemMaterial(itemType, 0);
             const topMaterial = TextureManager.getItemMaterial(itemType, 1);
             this.itemMaterialsByType.set(itemType, [
@@ -229,6 +237,11 @@ export default class DroppedItems extends Component {
     }
 
     private handleBlockBroken(event: BlockBreakEvent): void {
+        const dropChance = BLOCK_DROP_CHANCES[event.blockType];
+        if (dropChance !== undefined && Math.random() >= dropChance) {
+            return;
+        }
+
         const dropItem: InventoryItemStack = BLOCK_DROPS[event.blockType] ?? {
             kind: "block",
             type: event.blockType,
