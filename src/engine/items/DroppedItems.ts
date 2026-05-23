@@ -271,7 +271,10 @@ export default class DroppedItems extends Component {
             event.chunk.mesh.position.y + event.blockY,
             event.chunk.mesh.position.z + event.blockZ,
         );
-        droppedItem.mesh.rotation.set(0, Math.random() * Math.PI * 2, 0);
+        // Flat sprites get a slight forward tilt so they read well at low viewing angles
+        // instead of appearing as a perfectly vertical card.
+        const tiltX = dropItem.kind === "item" ? Math.PI / 12 : 0;
+        droppedItem.mesh.rotation.set(tiltX, Math.random() * Math.PI * 2, 0);
         droppedItem.velocity.set(
             (Math.random() - 0.5) * POP_HORIZONTAL * 2,
             POP_UP_VELOCITY,

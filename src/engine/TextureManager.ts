@@ -54,7 +54,6 @@ class TextureManager {
     private oakLeavesMats!: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial];
 
     private blockMaterials!: Partial<Record<BlockType, THREE.Material>>;
-    private itemMaterials!: Record<ItemType, THREE.Material>;
     // Flat-sprite materials for items rendered as planes (held item). Transparent + double-sided
     // so the alpha channel is respected and the face is visible from either direction.
     private flatItemMaterials!: Record<ItemType, THREE.Material>;
@@ -80,11 +79,6 @@ class TextureManager {
             [BlockType.Stone]: this.loadMat(loader, stoneUrl),
             [BlockType.Cobblestone]: this.loadMat(loader, cobbleUrl),
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
-        };
-
-        this.itemMaterials = {
-            [ItemType.Coal]: this.loadMat(loader, coalUrl),
-            [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
         };
 
         this.flatItemMaterials = {
@@ -126,18 +120,6 @@ class TextureManager {
     // stays deterministic across rebuilds.
     getLeavesMaterial(variant: 0 | 1): THREE.Material {
         return this.oakLeavesMats[variant];
-    }
-
-    // Returns the material for a held or dropped item. The `normalY` parameter mirrors
-    // getMaterial so callers can use the same face-index convention (normalY === 1 → top face).
-    // New item types must be added to itemMaterials in init() — the Record type enforces this
-    // at compile time. The runtime guard below defends against invalid numeric casts.
-    getItemMaterial(itemType: ItemType, _normalY: number): THREE.Material {
-        const material = this.itemMaterials[itemType] as THREE.Material | undefined;
-        if (!material) {
-            throw new Error(`TextureManager: no material registered for ItemType ${itemType}`);
-        }
-        return material;
     }
 
     createBlockBreakMaterial(): THREE.MeshBasicMaterial {
