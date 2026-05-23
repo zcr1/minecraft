@@ -14,7 +14,7 @@ const BREAK_PARTICLES = 10;
 const BLOCK_COLORS: Record<BlockType, number> = {
     [BlockType.Air]: 0xffffff,
     [BlockType.Dirt]: 0x8a5a3b,
-    [BlockType.Grass]: 0x6cb04c,
+    [BlockType.Grass]: 0x4a7935,
     [BlockType.Bedrock]: 0x3a3a3a,
     [BlockType.Stone]: 0x888888,
     [BlockType.Cobblestone]: 0x6a6a6a,

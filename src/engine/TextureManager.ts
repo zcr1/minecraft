@@ -43,6 +43,9 @@ class TextureManager {
 
     private blockMaterials!: Partial<Record<BlockType, THREE.Material>>;
     private itemMaterials!: Record<ItemType, THREE.Material>;
+    // Flat-sprite materials for items rendered as planes (held item). Transparent + double-sided
+    // so the alpha channel is respected and the face is visible from either direction.
+    private flatItemMaterials!: Record<ItemType, THREE.Material>;
 
     private desetroyTextures: THREE.Texture[] = [];
 
@@ -62,6 +65,10 @@ class TextureManager {
 
         this.itemMaterials = {
             [ItemType.Coal]: this.loadMat(loader, coalUrl),
+        };
+
+        this.flatItemMaterials = {
+            [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
         };
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
@@ -123,11 +130,36 @@ class TextureManager {
         }
     }
 
+    // Returns the flat-sprite material for an item rendered as a plane (e.g. the held-item view).
+    // Transparent + double-sided so the texture's alpha channel is honoured and the face is
+    // visible regardless of which side the camera sees.
+    getFlatItemMaterial(itemType: ItemType): THREE.Material {
+        const material = this.flatItemMaterials[itemType] as THREE.Material | undefined;
+        if (!material) {
+            throw new Error(`TextureManager: no flat material registered for ItemType ${itemType}`);
+        }
+        return material;
+    }
+
     private loadMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
         const tex = loader.load(url);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.magFilter = THREE.NearestFilter;
         const material = new THREE.MeshStandardMaterial({ map: tex });
+        applyVertexLighting(material);
+        return material;
+    }
+
+    private loadFlatMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
+        const tex = loader.load(url);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.magFilter = THREE.NearestFilter;
+        const material = new THREE.MeshStandardMaterial({
+            map: tex,
+            transparent: true,
+            alphaTest: 0.5,
+            side: THREE.DoubleSide,
+        });
         applyVertexLighting(material);
         return material;
     }

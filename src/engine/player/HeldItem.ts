@@ -8,6 +8,7 @@ import { type InventoryItemStack } from "engine/items/InventoryItem";
 import Inventory from "engine/player/Inventory";
 
 const HELD_SIZE = 0.3;
+const HELD_FLAT_SIZE = 0.28;
 const HELD_OFFSET_FORWARD = 0.45;
 const HELD_OFFSET_RIGHT = 0.3;
 const HELD_OFFSET_DOWN = -0.25;
@@ -16,13 +17,21 @@ export default class HeldItem extends Component {
     private mesh: THREE.Mesh | null = null;
     private camera!: THREE.PerspectiveCamera;
     private inventory!: Inventory;
-    private geometry!: THREE.BoxGeometry;
+    private boxGeometry!: THREE.BoxGeometry;
+    private flatGeometry!: THREE.PlaneGeometry;
     private currentItem: InventoryItemStack | null = null;
+    private isFlatMesh = false;
 
     // Pre-allocated scratch vectors to avoid per-frame allocation.
     private readonly scratchForward = new THREE.Vector3();
     private readonly scratchRight = new THREE.Vector3();
     private readonly worldUp = new THREE.Vector3(0, 1, 0);
+
+    // Quaternion tilt applied on top of camera rotation for flat (item) sprites.
+    // Precomputed once so update() doesn't allocate or chain quaternion ops each frame.
+    private readonly flatTiltQuaternion = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(-Math.PI / 10, 0, -Math.PI / 8),
+    );
 
     // Arrow-function fields so the same reference can be passed to both subscribe and unsubscribe.
     private readonly onInventoryChanged = () => this.syncMesh();
@@ -32,10 +41,15 @@ export default class HeldItem extends Component {
         this.camera = game.camera.threeCamera;
         this.inventory = this.gameObject.getComponent(Inventory);
 
-        this.geometry = new THREE.BoxGeometry(HELD_SIZE, HELD_SIZE, HELD_SIZE);
-        const vertexCount = this.geometry.attributes.position.count;
-        const lightArray = new Float32Array(vertexCount).fill(MAX_LIGHT);
-        this.geometry.setAttribute("aLight", new THREE.BufferAttribute(lightArray, 1));
+        this.boxGeometry = new THREE.BoxGeometry(HELD_SIZE, HELD_SIZE, HELD_SIZE);
+        const boxVertexCount = this.boxGeometry.attributes.position.count;
+        const boxLightArray = new Float32Array(boxVertexCount).fill(MAX_LIGHT);
+        this.boxGeometry.setAttribute("aLight", new THREE.BufferAttribute(boxLightArray, 1));
+
+        this.flatGeometry = new THREE.PlaneGeometry(HELD_FLAT_SIZE, HELD_FLAT_SIZE);
+        const flatVertexCount = this.flatGeometry.attributes.position.count;
+        const flatLightArray = new Float32Array(flatVertexCount).fill(MAX_LIGHT);
+        this.flatGeometry.setAttribute("aLight", new THREE.BufferAttribute(flatLightArray, 1));
 
         eventManager.subscribe("inventoryChanged", this.onInventoryChanged);
         eventManager.subscribe("hotbarSelectionChanged", this.onHotbarSelectionChanged);
@@ -58,6 +72,11 @@ export default class HeldItem extends Component {
             .addScaledVector(this.worldUp, HELD_OFFSET_DOWN);
 
         this.mesh.rotation.copy(this.camera.rotation);
+
+        if (this.isFlatMesh) {
+            // Tilt the sprite so it reads as a held object rather than a floating card.
+            this.mesh.quaternion.multiply(this.flatTiltQuaternion);
+        }
     }
 
     dispose() {
@@ -67,7 +86,8 @@ export default class HeldItem extends Component {
             game.threeScene.remove(this.mesh);
             this.mesh = null;
         }
-        this.geometry.dispose();
+        this.boxGeometry.dispose();
+        this.flatGeometry.dispose();
     }
 
     private itemsMatch(a: InventoryItemStack | null, b: InventoryItemStack | null): boolean {
@@ -99,21 +119,19 @@ export default class HeldItem extends Component {
             return;
         }
 
-        // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z.
-        // Only the +Y face (index 2) uses the top-face texture variant.
-        let sideMaterial: THREE.Material;
-        let topMaterial: THREE.Material;
-
         if (newItem.kind === "block") {
-            sideMaterial = TextureManager.getMaterial(newItem.type, 0);
-            topMaterial = TextureManager.getMaterial(newItem.type, 1);
+            // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z.
+            // Only the +Y face (index 2) uses the top-face texture variant.
+            const sideMaterial = TextureManager.getMaterial(newItem.type, 0);
+            const topMaterial = TextureManager.getMaterial(newItem.type, 1);
+            const materials = [sideMaterial, sideMaterial, topMaterial, sideMaterial, sideMaterial, sideMaterial];
+            this.mesh = new THREE.Mesh(this.boxGeometry, materials);
+            this.isFlatMesh = false;
         } else {
-            sideMaterial = TextureManager.getItemMaterial(newItem.type, 0);
-            topMaterial = TextureManager.getItemMaterial(newItem.type, 1);
+            // Non-block items (e.g. coal) are rendered as flat sprites.
+            this.mesh = new THREE.Mesh(this.flatGeometry, TextureManager.getFlatItemMaterial(newItem.type));
+            this.isFlatMesh = true;
         }
-
-        const materials = [sideMaterial, sideMaterial, topMaterial, sideMaterial, sideMaterial, sideMaterial];
-        this.mesh = new THREE.Mesh(this.geometry, materials);
         // Frustum culling is based on the bounding sphere in world space, which is never updated
         // for a mesh that moves every frame — disable it to prevent spurious disappearance.
         this.mesh.frustumCulled = false;
