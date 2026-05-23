@@ -14,7 +14,7 @@ import GameObjectName from "engine/utils/gameObjectNames";
 
 // Slightly larger than 1 so the wireframe sits just outside the block face and avoids z-fighting.
 const PREVIEW_SIZE = 1.002;
-const LINE_WIDTH_PX = 2;
+const LINE_WIDTH_PX = 4;
 
 export default class BlockPlacementPreview extends Component {
     private lines!: LineSegments2;
@@ -41,7 +41,7 @@ export default class BlockPlacementPreview extends Component {
         edgesGeometry.dispose();
 
         const material = new LineMaterial({
-            color: 0xffffff,
+            color: 0x000001,
             linewidth: LINE_WIDTH_PX,
             transparent: true,
             opacity: 0.4,
