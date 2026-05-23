@@ -28,7 +28,11 @@ export default class PlayerCamera extends Component {
         this.cam.rotation.order = "YXZ";
         this.canvas = canvas;
 
-        this.onCanvasClick = () => canvas.requestPointerLock();
+        this.onCanvasClick = () => {
+            try {
+                canvas.requestPointerLock();
+            } catch {}
+        };
         this.onPointerLockChange = () => {
             this.pointerLocked = document.pointerLockElement === canvas;
             if (this.pointerLocked && document.activeElement instanceof HTMLElement) {
