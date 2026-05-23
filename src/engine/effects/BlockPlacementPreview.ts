@@ -1,7 +1,5 @@
+import blockOverlayUrl from "assets/textures/block_overlay.png";
 import * as THREE from "three";
-import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
-import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
-import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import game from "engine/Game";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
@@ -12,12 +10,13 @@ import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
 
-// Slightly larger than 1 so the wireframe sits just outside the block face and avoids z-fighting.
+// Slightly larger than 1 so the overlay sits just outside the block face and avoids z-fighting.
 const PREVIEW_SIZE = 1.002;
-const LINE_WIDTH_PX = 4;
 
 export default class BlockPlacementPreview extends Component {
-    private lines!: LineSegments2;
+    private mesh!: THREE.Mesh;
+    private geometry!: THREE.BoxGeometry;
+    private material!: THREE.MeshBasicMaterial;
     private playerInteraction!: PlayerBlockInteraction;
     private inventory!: Inventory;
     private chunkManager!: ChunkManager;
@@ -30,31 +29,26 @@ export default class BlockPlacementPreview extends Component {
         this.playerTransform = playerObject.getComponent(Transform);
         this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
 
-        // Build edge positions from a BoxGeometry, then convert to LineSegmentsGeometry which the
-        // fat-line shader requires. EdgesGeometry gives us 12 unique edges with no diagonals.
-        const boxGeometry = new THREE.BoxGeometry(PREVIEW_SIZE, PREVIEW_SIZE, PREVIEW_SIZE);
-        const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
-        boxGeometry.dispose();
+        const loader = new THREE.TextureLoader();
+        const texture = loader.load(blockOverlayUrl);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestFilter;
 
-        const lineGeometry = new LineSegmentsGeometry();
-        lineGeometry.setPositions(edgesGeometry.attributes.position.array as Float32Array);
-        edgesGeometry.dispose();
-
-        const material = new LineMaterial({
-            color: 0x000001,
-            linewidth: LINE_WIDTH_PX,
+        this.geometry = new THREE.BoxGeometry(PREVIEW_SIZE, PREVIEW_SIZE, PREVIEW_SIZE);
+        this.material = new THREE.MeshBasicMaterial({
+            map: texture,
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.5,
             depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
         });
 
-        // LineMaterial needs the viewport size to convert linewidth (pixels) to clip space.
-        const canvas = game.renderer.domElement;
-        material.resolution.set(canvas.clientWidth, canvas.clientHeight);
-
-        this.lines = new LineSegments2(lineGeometry, material);
-        this.lines.visible = false;
-        game.threeScene.add(this.lines);
+        this.mesh = new THREE.Mesh(this.geometry, this.material);
+        this.mesh.visible = false;
+        game.threeScene.add(this.mesh);
     }
 
     update(_deltaTime: number) {
@@ -62,7 +56,7 @@ export default class BlockPlacementPreview extends Component {
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
 
         if (!target || !slot || slot.item.kind !== "block") {
-            this.lines.visible = false;
+            this.mesh.visible = false;
             return;
         }
 
@@ -71,22 +65,23 @@ export default class BlockPlacementPreview extends Component {
         const worldZ = target.chunk.worldOriginZ + target.blockZ + this.playerInteraction.hitNormal.z;
 
         if (this.chunkManager.getBlockAtWorld(worldX, worldY, worldZ) !== BlockType.Air) {
-            this.lines.visible = false;
+            this.mesh.visible = false;
             return;
         }
 
         if (playerOverlapsBlock(this.playerTransform, worldX, worldY, worldZ)) {
-            this.lines.visible = false;
+            this.mesh.visible = false;
             return;
         }
 
-        this.lines.position.set(worldX, worldY, worldZ);
-        this.lines.visible = true;
+        this.mesh.position.set(worldX, worldY, worldZ);
+        this.mesh.visible = true;
     }
 
     dispose() {
-        game.threeScene.remove(this.lines);
-        this.lines.geometry.dispose();
-        (this.lines.material as LineMaterial).dispose();
+        game.threeScene.remove(this.mesh);
+        this.geometry.dispose();
+        this.material.map?.dispose();
+        this.material.dispose();
     }
 }
