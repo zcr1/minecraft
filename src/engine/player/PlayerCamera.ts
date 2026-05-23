@@ -38,7 +38,9 @@ export default class PlayerCamera extends Component {
         };
         this.onKeyDown = (event: KeyboardEvent) => {
             if (!this.pointerLocked && MOVEMENT_KEYS.includes(event.code)) {
-                canvas.requestPointerLock();
+                try {
+                    canvas.requestPointerLock();
+                } catch {}
             }
         };
 
