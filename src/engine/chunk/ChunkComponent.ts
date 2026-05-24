@@ -494,7 +494,7 @@ export default class ChunkComponent extends Component {
                                 break;
 
                             default: {
-                                throw new Error(`buildMesh: unhandled block type ${block}`);
+                                throw new Error(`buildMesh: unhandled BlockType.${BlockType[block]}`);
                             }
                         }
                     }

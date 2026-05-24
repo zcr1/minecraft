@@ -244,7 +244,7 @@ export default class DroppedItems extends Component {
     private getBlockMaterials(inventoryItem: InventoryItemStack & { kind: "block" }): THREE.Material[] {
         const materials = this.blockMaterialsByType.get(inventoryItem.type);
         if (!materials) {
-            throw new Error(`DroppedItems has no material mapping for BlockType ${inventoryItem.type}`);
+            throw new Error(`DroppedItems has no material mapping for BlockType.${BlockType[inventoryItem.type]}`);
         }
         return materials;
     }

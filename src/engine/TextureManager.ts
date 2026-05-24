@@ -129,7 +129,7 @@ class TextureManager {
         }
         const material = this.blockMaterials[blockType];
         if (!material) {
-            throw new Error(`TextureManager: no material registered for BlockType ${blockType}`);
+            throw new Error(`TextureManager: no material registered for BlockType.${BlockType[blockType]}`);
         }
         return material;
     }
