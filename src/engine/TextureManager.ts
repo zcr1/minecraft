@@ -94,6 +94,12 @@ class TextureManager {
         };
 
         this.torchCrossMat = this.loadFlatMat(loader, torchUrl);
+        // Emissive warm-amber tint so placed torches glow with the same colour as the held-item
+        // PointLight (0xffaa44). Without this, applyVertexLighting multiplies by a greyscale
+        // aLight and the sprite renders under neutral ambient/sun — matching the held version
+        // requires the material to self-illuminate with the torch-flame colour.
+        this.torchCrossMat.emissive.setHex(0xffaa44);
+        this.torchCrossMat.emissiveIntensity = 0.6;
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
             const tex = loader.load(url);
