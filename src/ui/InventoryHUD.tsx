@@ -133,7 +133,7 @@ export default function InventoryHUD() {
             } else if (targetSlot === null) {
                 // Dropped outside the inventory — remove from slot and spawn in the world.
                 inventory.removeSlot(dragState.sourceSlot);
-                eventManager.emit("itemDropped", dragState.item.item);
+                eventManager.emit("itemDropped", dragState.item);
             }
             setDragState(null);
             hoveredSlotRef.current = null;

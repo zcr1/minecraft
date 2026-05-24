@@ -10,7 +10,7 @@ import eventManager from "engine/core/EventManager";
 import { type InventoryItemStack } from "engine/items/InventoryItem";
 import { ItemType } from "engine/items/ItemType";
 import { applyGravity, stepAxisX, stepAxisY, stepAxisZ } from "engine/physics/voxelPhysics";
-import Inventory from "engine/player/Inventory";
+import Inventory, { type InventorySlot } from "engine/player/Inventory";
 import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
 
@@ -46,6 +46,7 @@ const DROP_PICKUP_COOLDOWN = 2.0;
 interface DroppedItem {
     age: number;
     boxGeometry: THREE.BufferGeometry;
+    count: number;
     flatGeometry: THREE.BufferGeometry;
     index: number;
     item: InventoryItemStack;
@@ -65,7 +66,7 @@ export default class DroppedItems extends Component {
     private playerTransform!: Transform;
     private inventory!: Inventory;
     private readonly blockBrokenListener = (event: BlockBreakEvent) => this.handleBlockBroken(event);
-    private readonly itemDroppedListener = (item: InventoryItemStack) => this.handleItemDropped(item);
+    private readonly itemDroppedListener = (slot: InventorySlot) => this.handleItemDropped(slot);
 
     start() {
         const playerObject = game.getGameObject(GameObjectName.Player);
@@ -110,6 +111,7 @@ export default class DroppedItems extends Component {
                 flatGeometry,
                 velocity: new THREE.Vector3(),
                 age: 0,
+                count: 1,
                 pickupCooldown: 0,
                 item: { kind: "block", type: BlockType.Dirt }, // placeholder; overwritten before visible
                 index: i,
@@ -139,7 +141,7 @@ export default class DroppedItems extends Component {
             if (droppedItem.pickupCooldown > 0) {
                 droppedItem.pickupCooldown -= deltaTime;
             } else if (distanceSquared <= PICKUP_RADIUS * PICKUP_RADIUS) {
-                if (this.inventory.add(droppedItem.item)) {
+                if (this.inventory.add(droppedItem.item, droppedItem.count)) {
                     this.expired.push(index);
                     continue;
                 }
@@ -269,7 +271,7 @@ export default class DroppedItems extends Component {
         );
     }
 
-    private handleItemDropped(item: InventoryItemStack): void {
+    private handleItemDropped(slot: InventorySlot): void {
         const forward = new THREE.Vector3();
         game.camera.threeCamera.getWorldDirection(forward);
         forward.y = 0;
@@ -278,7 +280,7 @@ export default class DroppedItems extends Component {
         }
 
         this.spawnItem(
-            item,
+            slot.item,
             new THREE.Vector3(
                 this.playerTransform.x + forward.x,
                 this.playerTransform.y,
@@ -290,6 +292,7 @@ export default class DroppedItems extends Component {
                 (Math.random() - 0.5) * POP_HORIZONTAL * 3,
             ),
             DROP_PICKUP_COOLDOWN,
+            slot.count,
         );
     }
 
@@ -300,6 +303,7 @@ export default class DroppedItems extends Component {
         position: THREE.Vector3,
         velocity: THREE.Vector3,
         pickupCooldown = 0,
+        count = 1,
     ): void {
         const index = this.freeIndices.pop();
         if (index === undefined) {
@@ -322,6 +326,7 @@ export default class DroppedItems extends Component {
         }
 
         droppedItem.item = item;
+        droppedItem.count = count;
         droppedItem.mesh.position.copy(position);
         // Flat sprites get a slight forward tilt so they read well at low viewing angles
         // instead of appearing as a perfectly vertical card.
