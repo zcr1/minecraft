@@ -469,14 +469,17 @@ export default class ChunkComponent extends Component {
                         }
 
                         switch (block) {
+                            case BlockType.Bedrock:
+                                this.pushFace(face, x, y, z, meshes.bedrock.subMesh, lightValue);
+                                break;
                             case BlockType.CoalOre:
                                 this.pushFace(face, x, y, z, meshes.coalOre.subMesh, lightValue);
                                 break;
-                            case BlockType.Stone:
-                                this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);
-                                break;
                             case BlockType.Cobblestone:
                                 this.pushFace(face, x, y, z, meshes.cobblestone.subMesh, lightValue);
+                                break;
+                            case BlockType.Dirt:
+                                this.pushFace(face, x, y, z, meshes.dirt.subMesh, lightValue);
                                 break;
                             case BlockType.Grass:
                                 this.pushFace(
@@ -485,19 +488,6 @@ export default class ChunkComponent extends Component {
                                     y,
                                     z,
                                     face.normal[1] === 1 ? meshes.grassTop.subMesh : meshes.grassSide.subMesh,
-                                    lightValue,
-                                );
-                                break;
-                            case BlockType.Bedrock:
-                                this.pushFace(face, x, y, z, meshes.bedrock.subMesh, lightValue);
-                                break;
-                            case BlockType.OakLog:
-                                this.pushFace(
-                                    face,
-                                    x,
-                                    y,
-                                    z,
-                                    face.normal[1] !== 0 ? meshes.oakLogTop.subMesh : meshes.oakLogSide.subMesh,
                                     lightValue,
                                 );
                                 break;
@@ -520,11 +510,21 @@ export default class ChunkComponent extends Component {
                                 );
                                 break;
                             }
-                            case BlockType.Dirt:
-                                this.pushFace(face, x, y, z, meshes.dirt.subMesh, lightValue);
+                            case BlockType.OakLog:
+                                this.pushFace(
+                                    face,
+                                    x,
+                                    y,
+                                    z,
+                                    face.normal[1] !== 0 ? meshes.oakLogTop.subMesh : meshes.oakLogSide.subMesh,
+                                    lightValue,
+                                );
                                 break;
                             case BlockType.OakPlanks:
                                 this.pushFace(face, x, y, z, meshes.oakPlanks.subMesh, lightValue);
+                                break;
+                            case BlockType.Stone:
+                                this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);
                                 break;
 
                             default: {
