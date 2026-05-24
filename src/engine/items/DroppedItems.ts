@@ -40,6 +40,8 @@ const MAGNET_RADIUS = 2;
 const MAGNET_SPEED = 6;
 const SPIN_SPEED = 2;
 const COLLISION_HALF = ITEM_SIZE / 2;
+// Time in seconds before a player-dropped item can be picked up again.
+const DROP_PICKUP_COOLDOWN = 2.0;
 
 interface DroppedItem {
     mesh: THREE.Mesh;
@@ -47,6 +49,7 @@ interface DroppedItem {
     flatGeometry: THREE.BufferGeometry;
     velocity: THREE.Vector3;
     age: number;
+    pickupCooldown: number;
     item: InventoryItemStack;
     index: number;
 }
@@ -62,6 +65,7 @@ export default class DroppedItems extends Component {
     private playerTransform!: Transform;
     private inventory!: Inventory;
     private readonly blockBrokenListener = (event: BlockBreakEvent) => this.handleBlockBroken(event);
+    private readonly itemDroppedListener = (item: InventoryItemStack) => this.handleItemDropped(item);
 
     start() {
         const playerObject = game.getGameObject(GameObjectName.Player);
@@ -106,13 +110,15 @@ export default class DroppedItems extends Component {
                 flatGeometry,
                 velocity: new THREE.Vector3(),
                 age: 0,
-                item: { kind: "block", type: BlockType.Dirt }, // placeholder; overwritten in handleBlockBroken before visible
+                pickupCooldown: 0,
+                item: { kind: "block", type: BlockType.Dirt }, // placeholder; overwritten before visible
                 index: i,
             });
             this.freeIndices.push(i);
         }
 
         eventManager.subscribe("blockBroken", this.blockBrokenListener);
+        eventManager.subscribe("itemDropped", this.itemDroppedListener);
     }
 
     update(deltaTime: number) {
@@ -130,7 +136,9 @@ export default class DroppedItems extends Component {
             const deltaZ = this.playerTransform.z - droppedItem.mesh.position.z;
             const distanceSquared = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
-            if (distanceSquared <= PICKUP_RADIUS * PICKUP_RADIUS) {
+            if (droppedItem.pickupCooldown > 0) {
+                droppedItem.pickupCooldown -= deltaTime;
+            } else if (distanceSquared <= PICKUP_RADIUS * PICKUP_RADIUS) {
                 if (this.inventory.add(droppedItem.item)) {
                     this.expired.push(index);
                     continue;
@@ -144,7 +152,7 @@ export default class DroppedItems extends Component {
                 halfHeight: COLLISION_HALF,
             };
 
-            if (distanceSquared <= MAGNET_RADIUS * MAGNET_RADIUS) {
+            if (droppedItem.pickupCooldown <= 0 && distanceSquared <= MAGNET_RADIUS * MAGNET_RADIUS) {
                 this.scratchToPlayer.set(deltaX, deltaY, deltaZ).normalize().multiplyScalar(MAGNET_SPEED);
                 droppedItem.velocity.copy(this.scratchToPlayer);
             } else {
@@ -215,6 +223,7 @@ export default class DroppedItems extends Component {
 
     dispose() {
         eventManager.unsubscribe("blockBroken", this.blockBrokenListener);
+        eventManager.unsubscribe("itemDropped", this.itemDroppedListener);
         for (const droppedItem of this.items) {
             game.threeScene.remove(droppedItem.mesh);
             droppedItem.boxGeometry.dispose();
@@ -240,15 +249,62 @@ export default class DroppedItems extends Component {
             return;
         }
 
-        const dropItem: InventoryItemStack = BLOCK_DROPS[event.blockType] ?? {
+        const item: InventoryItemStack = BLOCK_DROPS[event.blockType] ?? {
             kind: "block",
             type: event.blockType,
         };
 
+        this.spawnItem(
+            item,
+            new THREE.Vector3(
+                event.chunk.mesh.position.x + event.blockX,
+                event.chunk.mesh.position.y + event.blockY,
+                event.chunk.mesh.position.z + event.blockZ,
+            ),
+            new THREE.Vector3(
+                (Math.random() - 0.5) * POP_HORIZONTAL * 2,
+                POP_UP_VELOCITY,
+                (Math.random() - 0.5) * POP_HORIZONTAL * 2,
+            ),
+        );
+    }
+
+    private handleItemDropped(item: InventoryItemStack): void {
+        const forward = new THREE.Vector3();
+        game.camera.threeCamera.getWorldDirection(forward);
+        forward.y = 0;
+        if (forward.lengthSq() > 0) {
+            forward.normalize();
+        }
+
+        this.spawnItem(
+            item,
+            new THREE.Vector3(
+                this.playerTransform.x + forward.x,
+                this.playerTransform.y,
+                this.playerTransform.z + forward.z,
+            ),
+            new THREE.Vector3(
+                (Math.random() - 0.5) * POP_HORIZONTAL * 3,
+                POP_UP_VELOCITY * 0.5,
+                (Math.random() - 0.5) * POP_HORIZONTAL * 3,
+            ),
+            DROP_PICKUP_COOLDOWN,
+        );
+    }
+
+    // Activates a pooled item mesh at the given position with the given velocity.
+    // pickupCooldown delays magnet attraction and auto-collection (seconds).
+    private spawnItem(
+        item: InventoryItemStack,
+        position: THREE.Vector3,
+        velocity: THREE.Vector3,
+        pickupCooldown = 0,
+    ): void {
         const index = this.freeIndices.pop();
         if (index === undefined) {
             console.warn(
-                `DroppedItems pool exhausted (size ${POOL_SIZE}); dropping spawn for ${dropItem.kind} ${dropItem.type}`,
+                `DroppedItems pool exhausted (size ${POOL_SIZE}); dropping spawn for ${item.kind} ${item.type}`,
             );
             return;
         }
@@ -256,31 +312,24 @@ export default class DroppedItems extends Component {
         const droppedItem = this.items[index];
         this.activeIndices.add(index);
 
-        if (dropItem.kind === "item") {
+        if (item.kind === "item") {
             // Pure items (coal, stick, etc.) render as a spinning flat sprite.
             droppedItem.mesh.geometry = droppedItem.flatGeometry;
-            droppedItem.mesh.material = TextureManager.getFlatItemMaterial(dropItem.type);
+            droppedItem.mesh.material = TextureManager.getFlatItemMaterial(item.type);
         } else {
             droppedItem.mesh.geometry = droppedItem.boxGeometry;
-            droppedItem.mesh.material = this.getBlockMaterials(dropItem);
+            droppedItem.mesh.material = this.getBlockMaterials(item);
         }
 
-        droppedItem.item = dropItem;
-        droppedItem.mesh.position.set(
-            event.chunk.mesh.position.x + event.blockX,
-            event.chunk.mesh.position.y + event.blockY,
-            event.chunk.mesh.position.z + event.blockZ,
-        );
+        droppedItem.item = item;
+        droppedItem.mesh.position.copy(position);
         // Flat sprites get a slight forward tilt so they read well at low viewing angles
         // instead of appearing as a perfectly vertical card.
-        const tiltX = dropItem.kind === "item" ? Math.PI / 12 : 0;
+        const tiltX = item.kind === "item" ? Math.PI / 12 : 0;
         droppedItem.mesh.rotation.set(tiltX, Math.random() * Math.PI * 2, 0);
-        droppedItem.velocity.set(
-            (Math.random() - 0.5) * POP_HORIZONTAL * 2,
-            POP_UP_VELOCITY,
-            (Math.random() - 0.5) * POP_HORIZONTAL * 2,
-        );
+        droppedItem.velocity.copy(velocity);
         droppedItem.age = 0;
+        droppedItem.pickupCooldown = pickupCooldown;
         droppedItem.mesh.visible = true;
     }
 

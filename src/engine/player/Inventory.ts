@@ -83,6 +83,18 @@ export default class Inventory extends Component {
         }
     }
 
+    removeSlot(index: number): void {
+        this.slots[index] = null;
+        eventManager.emit("inventoryChanged", undefined);
+    }
+
+    moveSlot(fromIndex: number, toIndex: number): void {
+        const fromSlot = this.slots[fromIndex];
+        this.slots[fromIndex] = this.slots[toIndex];
+        this.slots[toIndex] = fromSlot;
+        eventManager.emit("inventoryChanged", undefined);
+    }
+
     consumeSelectedSlot(): void {
         const slot = this.slots[this.selectedHotbarSlot];
         if (!slot) {

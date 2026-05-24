@@ -1,3 +1,4 @@
+import type { InventoryItemStack } from "engine/items/InventoryItem";
 import type { BlockBreakEvent, StageAdvancedEvent, TargetedBlock } from "engine/player/PlayerBlockInteraction";
 
 export interface GameEventMap {
@@ -5,6 +6,7 @@ export interface GameEventMap {
     blockDamageStageAdvanced: StageAdvancedEvent;
     inventoryChanged: void;
     hotbarSelectionChanged: number;
+    itemDropped: InventoryItemStack;
     targetedBlockChanged: TargetedBlock | null;
 }
 
