@@ -44,14 +44,14 @@ const COLLISION_HALF = ITEM_SIZE / 2;
 const DROP_PICKUP_COOLDOWN = 2.0;
 
 interface DroppedItem {
-    mesh: THREE.Mesh;
+    age: number;
     boxGeometry: THREE.BufferGeometry;
     flatGeometry: THREE.BufferGeometry;
-    velocity: THREE.Vector3;
-    age: number;
-    pickupCooldown: number;
-    item: InventoryItemStack;
     index: number;
+    item: InventoryItemStack;
+    mesh: THREE.Mesh;
+    pickupCooldown: number;
+    velocity: THREE.Vector3;
 }
 
 export default class DroppedItems extends Component {
