@@ -12,6 +12,8 @@ jest.mock("../src/engine/TextureManager", () => {
             init: jest.fn(),
             getMaterial: () => mat,
             getLeavesMaterial: () => mat,
+            getWaterMaterial: () => mat,
+            getTorchMaterial: () => mat,
             getFlatItemMaterial: () => mat,
             createBlockBreakMaterial: () => new (require("three").MeshBasicMaterial)(),
             setBlockBreakStage: jest.fn(),
@@ -40,6 +42,7 @@ function makeManager(overrides: { renderRadius?: number; worldHeightChunks?: num
         octaves: 1,
         persistence: 0.5,
         lacunarity: 2.0,
+        seaLevel: 0,
     });
     return new ChunkManager({
         renderRadius: overrides.renderRadius ?? 1,

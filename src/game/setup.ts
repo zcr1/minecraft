@@ -36,6 +36,7 @@ export function setupScene(): void {
         octaves: 4,
         persistence: 0.5,
         lacunarity: 2.0,
+        seaLevel: 44,
     });
 
     const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);

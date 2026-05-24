@@ -9,6 +9,7 @@ const defaultConfig: TerrainConfig = {
     octaves: 4,
     persistence: 0.5,
     lacunarity: 2.0,
+    seaLevel: 0,
 };
 
 describe("TerrainGenerator", () => {

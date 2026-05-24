@@ -15,16 +15,22 @@ export enum BlockType {
     OakLog = 7,
     OakLeaves = 8,
     Torch = 9,
+    Water = 10,
 }
 
 // Blocks the player can walk through (non-solid).
 export function isPassableBlock(blockType: BlockType): boolean {
-    return blockType === BlockType.Air || blockType === BlockType.Torch;
+    return blockType === BlockType.Air || blockType === BlockType.Torch || blockType === BlockType.Water;
 }
 
 // Returns true for opaque, solid blocks that can support placements (e.g. torches on walls/floors).
 export function isSolidBlock(blockType: BlockType): boolean {
-    return blockType !== BlockType.Air && blockType !== BlockType.Torch && blockType !== BlockType.OakLeaves;
+    return (
+        blockType !== BlockType.Air &&
+        blockType !== BlockType.Torch &&
+        blockType !== BlockType.OakLeaves &&
+        blockType !== BlockType.Water
+    );
 }
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
@@ -147,6 +153,7 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.OakLog]: 3,
     [BlockType.OakLeaves]: 1,
     [BlockType.Torch]: 1,
+    [BlockType.Water]: 0,
 };
 
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
@@ -296,7 +303,12 @@ export default class ChunkComponent extends Component {
             return true;
         }
         const block = this.getBlock(x, y, z);
-        return block === BlockType.Air || block === BlockType.OakLeaves || block === BlockType.Torch;
+        return (
+            block === BlockType.Air ||
+            block === BlockType.OakLeaves ||
+            block === BlockType.Torch ||
+            block === BlockType.Water
+        );
     }
 
     private isInBounds(x: number, y: number, z: number): boolean {
@@ -320,9 +332,18 @@ export default class ChunkComponent extends Component {
                         continue;
                     }
                     if (worldY > surface) {
+                        // Fill open air below sea level with water.
+                        if (worldY <= generator.seaLevel) {
+                            this.setBlock(localX, localY, localZ, BlockType.Water);
+                        }
                         continue;
                     }
-                    this.setBlock(localX, localY, localZ, generator.blockTypeForLayer(worldY, surface));
+                    // Grass doesn't grow on submerged surfaces — use dirt instead.
+                    const blockType =
+                        worldY === surface && surface < generator.seaLevel
+                            ? BlockType.Dirt
+                            : generator.blockTypeForLayer(worldY, surface);
+                    this.setBlock(localX, localY, localZ, blockType);
                 }
             }
         }
@@ -347,6 +368,7 @@ export default class ChunkComponent extends Component {
         const oakLeaves1 = createSubMesh();
         const oakLeaves2 = createSubMesh();
         const torch = createSubMesh();
+        const water = createSubMesh();
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -362,6 +384,44 @@ export default class ChunkComponent extends Component {
                         const lightValue = Math.max(this.getSkyLight(x, y, z), this.getBlockLight(x, y, z));
                         for (const quadVerts of this.getTorchQuads(x, y, z)) {
                             this.pushCrossQuad(quadVerts, x, y, z, torch, lightValue);
+                        }
+                        continue;
+                    }
+
+                    // Water uses different face culling: only render faces adjacent to air.
+                    // Internal water-water faces are culled; faces against opaque blocks are also
+                    // culled since the opaque block's own face covers that boundary.
+                    // For out-of-bounds neighbours we query the chunk manager so that water blocks
+                    // straddling a chunk boundary don't each render a face toward each other,
+                    // which would produce a doubled semi-transparent seam at the boundary.
+                    if (block === BlockType.Water) {
+                        for (const face of FACES) {
+                            const [dx, dy, dz] = face.neighbor;
+                            const adjacentX = x + dx;
+                            const adjacentY = y + dy;
+                            const adjacentZ = z + dz;
+                            const inBounds = this.isInBounds(adjacentX, adjacentY, adjacentZ);
+                            const adjacentBlock = inBounds
+                                ? this.getBlock(adjacentX, adjacentY, adjacentZ)
+                                : chunkManager.getBlockAtWorld(
+                                      this.worldOriginX + adjacentX,
+                                      this.worldOriginY + adjacentY,
+                                      this.worldOriginZ + adjacentZ,
+                                  );
+                            if (adjacentBlock !== BlockType.Air) {
+                                continue;
+                            }
+                            const lightValue = inBounds
+                                ? Math.max(
+                                      this.getSkyLight(adjacentX, adjacentY, adjacentZ),
+                                      this.getBlockLight(adjacentX, adjacentY, adjacentZ),
+                                  )
+                                : chunkManager.getLightAtWorld(
+                                      this.worldOriginX + adjacentX,
+                                      this.worldOriginY + adjacentY,
+                                      this.worldOriginZ + adjacentZ,
+                                  );
+                            this.pushFace(face, x, y, z, water, lightValue);
                         }
                         continue;
                     }
@@ -392,34 +452,44 @@ export default class ChunkComponent extends Component {
                             );
                         }
 
-                        if (block === BlockType.CoalOre) {
-                            this.pushFace(face, x, y, z, coalOre, lightValue);
-                        } else if (block === BlockType.Stone) {
-                            this.pushFace(face, x, y, z, stone, lightValue);
-                        } else if (block === BlockType.Cobblestone) {
-                            this.pushFace(face, x, y, z, cobblestone, lightValue);
-                        } else if (block === BlockType.Grass && face.normal[1] === 1) {
-                            this.pushFace(face, x, y, z, grassTop, lightValue);
-                        } else if (block === BlockType.Grass && face.normal[1] === 0) {
-                            this.pushFace(face, x, y, z, grassSide, lightValue);
-                        } else if (block === BlockType.Bedrock) {
-                            this.pushFace(face, x, y, z, bedrock, lightValue);
-                        } else if (block === BlockType.OakLog && face.normal[1] !== 0) {
-                            this.pushFace(face, x, y, z, oakLogTop, lightValue);
-                        } else if (block === BlockType.OakLog) {
-                            this.pushFace(face, x, y, z, oakLogSide, lightValue);
-                        } else if (block === BlockType.OakLeaves) {
-                            const worldX = this.worldOriginX + x;
-                            const worldY = this.worldOriginY + y;
-                            const worldZ = this.worldOriginZ + z;
-                            const hash =
-                                (Math.imul(worldX, 73856093) ^
-                                    Math.imul(worldY, 19349663) ^
-                                    Math.imul(worldZ, 83492791)) &
-                                1;
-                            this.pushFace(face, x, y, z, hash === 0 ? oakLeaves1 : oakLeaves2, lightValue);
-                        } else {
-                            this.pushFace(face, x, y, z, dirt, lightValue);
+                        switch (block) {
+                            case BlockType.CoalOre:
+                                this.pushFace(face, x, y, z, coalOre, lightValue);
+                                break;
+                            case BlockType.Stone:
+                                this.pushFace(face, x, y, z, stone, lightValue);
+                                break;
+                            case BlockType.Cobblestone:
+                                this.pushFace(face, x, y, z, cobblestone, lightValue);
+                                break;
+                            case BlockType.Grass:
+                                this.pushFace(face, x, y, z, face.normal[1] === 1 ? grassTop : grassSide, lightValue);
+                                break;
+                            case BlockType.Bedrock:
+                                this.pushFace(face, x, y, z, bedrock, lightValue);
+                                break;
+                            case BlockType.OakLog:
+                                this.pushFace(face, x, y, z, face.normal[1] !== 0 ? oakLogTop : oakLogSide, lightValue);
+                                break;
+                            case BlockType.OakLeaves: {
+                                const worldX = this.worldOriginX + x;
+                                const worldY = this.worldOriginY + y;
+                                const worldZ = this.worldOriginZ + z;
+                                const hash =
+                                    (Math.imul(worldX, 73856093) ^
+                                        Math.imul(worldY, 19349663) ^
+                                        Math.imul(worldZ, 83492791)) &
+                                    1;
+                                this.pushFace(face, x, y, z, hash === 0 ? oakLeaves1 : oakLeaves2, lightValue);
+                                break;
+                            }
+                            case BlockType.Dirt:
+                                this.pushFace(face, x, y, z, dirt, lightValue);
+                                break;
+
+                            default: {
+                                throw new Error(`buildMesh: unhandled block type ${block}`);
+                            }
                         }
                     }
                 }
@@ -476,6 +546,12 @@ export default class ChunkComponent extends Component {
         }
         if (torch.indices.length > 0) {
             this.mesh.add(new THREE.Mesh(this.buildGeometry(torch), textureManager.getTorchMaterial()));
+        }
+        if (water.indices.length > 0) {
+            const waterMesh = new THREE.Mesh(this.buildGeometry(water), textureManager.getWaterMaterial());
+            // Render after all opaque geometry so alpha blending sorts correctly.
+            waterMesh.renderOrder = 1;
+            this.mesh.add(waterMesh);
         }
     }
 

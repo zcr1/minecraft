@@ -23,6 +23,7 @@ import oakPlankUrl from "assets/textures/oak_plank.png";
 import stickUrl from "assets/textures/stick.png";
 import stoneUrl from "assets/textures/stone.png";
 import torchUrl from "assets/textures/torch.png";
+import waterUrl from "assets/textures/water.png";
 import * as THREE from "three";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import { ItemType } from "engine/items/ItemType";
@@ -54,6 +55,8 @@ class TextureManager {
 
     // Separate instance from the held-item flat material so the two can diverge independently.
     private torchCrossMat!: THREE.MeshStandardMaterial;
+
+    private waterMat!: THREE.MeshStandardMaterial;
 
     // Oak leaves use two textures distributed randomly by world position to break up repetition.
     private oakLeavesMats!: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial];
@@ -94,6 +97,7 @@ class TextureManager {
         };
 
         this.torchCrossMat = this.loadFlatMat(loader, torchUrl);
+        this.waterMat = this.loadWaterMat(loader, waterUrl);
         // Emissive warm-amber tint so placed torches glow with the same colour as the held-item
         // PointLight (0xffaa44). Without this, applyVertexLighting multiplies by a greyscale
         // aLight and the sprite renders under neutral ambient/sun — matching the held version
@@ -207,6 +211,28 @@ class TextureManager {
         });
         applyVertexLighting(material);
         return material;
+    }
+
+    // Partially-transparent water surface: blue-tinted texture with alpha blending.
+    // depthWrite is disabled so transparent faces don't incorrectly occlude geometry
+    // behind them when chunks render in arbitrary order.
+    private loadWaterMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
+        const tex = loader.load(url);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.magFilter = THREE.NearestFilter;
+        const material = new THREE.MeshStandardMaterial({
+            map: tex,
+            transparent: true,
+            opacity: 0.75,
+            depthWrite: false,
+            color: new THREE.Color(0x3399ff),
+        });
+        applyVertexLighting(material);
+        return material;
+    }
+
+    getWaterMaterial(): THREE.MeshStandardMaterial {
+        return this.waterMat;
     }
 }
 

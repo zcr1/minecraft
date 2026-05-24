@@ -27,7 +27,12 @@ class LightingSystem {
     // canopy is BFS: each leaf layer costs one level, so a 3–4 block deep canopy drops
     // ground light to ~11–12, which is visibly darker.
     private isLightTransparent(blockType: BlockType): boolean {
-        return blockType === BlockType.Air || blockType === BlockType.OakLeaves || blockType === BlockType.Torch;
+        return (
+            blockType === BlockType.Air ||
+            blockType === BlockType.OakLeaves ||
+            blockType === BlockType.Torch ||
+            blockType === BlockType.Water
+        );
     }
 
     // Three-pass BFS:

@@ -33,6 +33,8 @@ export type TerrainConfig = {
     persistence: number;
     // Per-octave frequency multiplier. >1 means higher octaves wiggle faster (classic value: 2.0).
     lacunarity: number;
+    // World Y at or below which open air voxels are filled with water during generation.
+    seaLevel: number;
 };
 
 // Tiny seeded PRNG. simplex-noise's createNoise2D wants a () => number in [0, 1) to seed
@@ -203,9 +205,12 @@ function getChunkTrees(originX: number, originZ: number, chunkWidth: number, chu
 export default class TerrainGenerator {
     private readonly noise2D: NoiseFunction2D;
     private readonly config: TerrainConfig;
+    // Voxels above the surface and at or below this Y are filled with Water during generation.
+    readonly seaLevel: number;
 
     constructor(config: TerrainConfig) {
         this.config = config;
+        this.seaLevel = config.seaLevel;
         const prng = mulberry32(config.seed ?? 1);
         this.noise2D = createNoise2D(prng);
     }
@@ -323,6 +328,10 @@ export default class TerrainGenerator {
                     const worldTreeX = neighborOriginX + tree.localX;
                     const worldTreeZ = neighborOriginZ + tree.localZ;
                     const surface = Math.floor(this.getHeight(worldTreeX, worldTreeZ));
+                    // Trees don't grow underwater — skip any position whose surface is submerged.
+                    if (surface <= this.seaLevel) {
+                        continue;
+                    }
                     const trunkBaseY = surface + 1;
 
                     for (const treeBlock of getTreeBlocks(tree.variation)) {
