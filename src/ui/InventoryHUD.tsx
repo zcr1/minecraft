@@ -2,8 +2,11 @@ import classNames from "classnames";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import eventManager from "engine/core/EventManager";
+import type { CraftingGrid } from "engine/crafting/recipes";
+import { matchRecipe } from "engine/crafting/recipes";
 import Inventory, { HOTBAR_SIZE, type InventorySlot, TOTAL_SLOTS } from "engine/player/Inventory";
 import GameObjectName from "engine/utils/gameObjectNames";
+import CraftingPanel, { CRAFTING_OUTPUT_SLOT, CRAFTING_SLOT_OFFSET } from "./CraftingPanel";
 import { useGame } from "./GameContext";
 import "./InventoryHUD.scss";
 import { BLOCK_TEXTURE_URLS, ITEM_TEXTURE_URLS } from "./blockTextures";
@@ -59,16 +62,29 @@ function SlotCell({
     );
 }
 
+const EMPTY_CRAFTING_GRID: (InventorySlot | null)[] = [null, null, null, null];
+
 export default function InventoryHUD() {
     const game = useGame();
     const [, forceRender] = useReducer((value: number) => value + 1, 0);
     const [inventoryOpen, setInventoryOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState(0);
     const [dragState, setDragState] = useState<{ sourceSlot: number; item: InventorySlot } | null>(null);
+    const [craftingGrid, setCraftingGrid] = useState<(InventorySlot | null)[]>([...EMPTY_CRAFTING_GRID]);
     const hoveredSlotRef = useRef<number | null>(null);
     const dragCursorRef = useRef<HTMLDivElement>(null);
 
     const inventory = useMemo(() => game.getGameObject(GameObjectName.Player).getComponent(Inventory), [game]);
+
+    // Derive the crafting output from the current grid contents.
+    const craftingOutput = useMemo(() => {
+        const grid = craftingGrid.map(slot => slot?.item ?? null) as CraftingGrid;
+        const recipe = matchRecipe(grid);
+        if (!recipe) {
+            return null;
+        }
+        return { item: recipe.output, count: recipe.outputCount } satisfies InventorySlot;
+    }, [craftingGrid]);
 
     // Re-render whenever inventory contents change.
     useEffect(() => {
@@ -128,22 +144,99 @@ export default function InventoryHUD() {
         }
         const handleMouseUp = () => {
             const targetSlot = hoveredSlotRef.current;
-            if (targetSlot !== null && targetSlot !== dragState.sourceSlot) {
-                inventory.moveSlot(dragState.sourceSlot, targetSlot);
-            } else if (targetSlot === null) {
-                // Dropped outside the inventory — remove from slot and spawn in the world.
-                inventory.removeSlot(dragState.sourceSlot);
+            const sourceSlot = dragState.sourceSlot;
+
+            if (targetSlot === null) {
+                // Dropped outside — remove from source and spawn in the world.
+                if (sourceSlot < CRAFTING_SLOT_OFFSET) {
+                    inventory.removeSlot(sourceSlot);
+                } else {
+                    setCraftingGrid(previous => {
+                        const next = [...previous];
+                        next[sourceSlot - CRAFTING_SLOT_OFFSET] = null;
+                        return next;
+                    });
+                }
                 eventManager.emit("itemDropped", dragState.item);
+            } else if (targetSlot !== sourceSlot) {
+                const sourceIsInventory = sourceSlot < CRAFTING_SLOT_OFFSET;
+                const targetIsInventory = targetSlot < CRAFTING_SLOT_OFFSET;
+                const targetIsCraftingGrid = targetSlot >= CRAFTING_SLOT_OFFSET && targetSlot < CRAFTING_OUTPUT_SLOT;
+                const targetIsOutput = targetSlot === CRAFTING_OUTPUT_SLOT;
+
+                if (targetIsOutput) {
+                    // Dropping onto the output slot is not allowed — cancel the drag.
+                } else if (sourceIsInventory && targetIsInventory) {
+                    // Both inventory slots: swap normally.
+                    inventory.moveSlot(sourceSlot, targetSlot);
+                } else if (sourceIsInventory && targetIsCraftingGrid) {
+                    // Inventory → crafting grid: place exactly 1 item, consume 1 from source.
+                    const craftingIndex = targetSlot - CRAFTING_SLOT_OFFSET;
+                    const displaced = craftingGrid[craftingIndex];
+                    // Skip the drop if the displaced crafting item has nowhere to go.
+                    if (!displaced || inventory.canAdd(displaced.item)) {
+                        if (dragState.item.count > 1) {
+                            inventory.setSlot(sourceSlot, { ...dragState.item, count: dragState.item.count - 1 });
+                        } else {
+                            inventory.removeSlot(sourceSlot);
+                        }
+                        setCraftingGrid(previous => {
+                            const next = [...previous];
+                            next[craftingIndex] = { item: dragState.item.item, count: 1 };
+                            return next;
+                        });
+                        if (displaced) {
+                            inventory.add(displaced.item, displaced.count);
+                        }
+                    }
+                } else if (!sourceIsInventory && targetIsInventory) {
+                    // Crafting grid → inventory slot: swap the two slots.
+                    const craftingIndex = sourceSlot - CRAFTING_SLOT_OFFSET;
+                    const displaced = inventory.getSlot(targetSlot);
+                    inventory.setSlot(targetSlot, dragState.item);
+                    setCraftingGrid(previous => {
+                        const next = [...previous];
+                        next[craftingIndex] = displaced;
+                        return next;
+                    });
+                } else {
+                    // Both crafting grid: swap within the grid.
+                    const sourceCraftingIndex = sourceSlot - CRAFTING_SLOT_OFFSET;
+                    const targetCraftingIndex = targetSlot - CRAFTING_SLOT_OFFSET;
+                    setCraftingGrid(previous => {
+                        const next = [...previous];
+                        [next[sourceCraftingIndex], next[targetCraftingIndex]] = [
+                            next[targetCraftingIndex],
+                            next[sourceCraftingIndex],
+                        ];
+                        return next;
+                    });
+                }
             }
+
             setDragState(null);
             hoveredSlotRef.current = null;
         };
         document.addEventListener("mouseup", handleMouseUp);
         return () => document.removeEventListener("mouseup", handleMouseUp);
-    }, [dragState, inventory]);
+    }, [dragState, inventory, craftingGrid]);
 
     const handleSlotMouseDown = (slotIndex: number, event: React.MouseEvent) => {
-        const slot = inventory.getSlot(slotIndex);
+        // Clicking the output slot triggers a craft rather than starting a drag.
+        if (slotIndex === CRAFTING_OUTPUT_SLOT) {
+            if (craftingOutput) {
+                handleCraft();
+            }
+            return;
+        }
+
+        let slot: InventorySlot | null;
+        if (slotIndex < CRAFTING_SLOT_OFFSET) {
+            slot = inventory.getSlot(slotIndex);
+        } else {
+            slot = craftingGrid[slotIndex - CRAFTING_SLOT_OFFSET];
+        }
+
         if (!slot) {
             return;
         }
@@ -153,6 +246,24 @@ export default function InventoryHUD() {
             dragCursorRef.current.style.top = `${event.clientY}px`;
         }
         setDragState({ sourceSlot: slotIndex, item: slot });
+    };
+
+    // Consume one of each ingredient and add the output to the player's inventory.
+    const handleCraft = () => {
+        const grid = craftingGrid.map(slot => slot?.item ?? null) as CraftingGrid;
+        const recipe = matchRecipe(grid);
+        if (!recipe) {
+            return;
+        }
+        inventory.add(recipe.output, recipe.outputCount);
+        setCraftingGrid(previous =>
+            previous.map(slot => {
+                if (!slot) {
+                    return null;
+                }
+                return slot.count > 1 ? { ...slot, count: slot.count - 1 } : null;
+            }),
+        );
     };
 
     const handleSlotMouseEnter = (slotIndex: number) => {
@@ -173,21 +284,31 @@ export default function InventoryHUD() {
         <>
             <div className={classNames("inventory-hud", { "inventory-hud-interactive": inventoryOpen })}>
                 {inventoryOpen && (
-                    <div className="inventory-grid">
-                        {mainSlots.map((slot, index) => (
-                            <SlotCell
-                                key={index}
-                                slot={slot}
-                                slotIndex={HOTBAR_SIZE + index}
-                                isSelected={false}
-                                isDragSource={dragState?.sourceSlot === HOTBAR_SIZE + index}
-                                isInteractive={inventoryOpen}
-                                onSlotMouseDown={handleSlotMouseDown}
-                                onSlotMouseEnter={handleSlotMouseEnter}
-                                onSlotMouseLeave={handleSlotMouseLeave}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <CraftingPanel
+                            craftingGrid={craftingGrid}
+                            outputSlot={craftingOutput}
+                            dragSourceSlot={dragState?.sourceSlot ?? null}
+                            onSlotMouseDown={handleSlotMouseDown}
+                            onSlotMouseEnter={handleSlotMouseEnter}
+                            onSlotMouseLeave={handleSlotMouseLeave}
+                        />
+                        <div className="inventory-grid">
+                            {mainSlots.map((slot, index) => (
+                                <SlotCell
+                                    key={index}
+                                    slot={slot}
+                                    slotIndex={HOTBAR_SIZE + index}
+                                    isSelected={false}
+                                    isDragSource={dragState?.sourceSlot === HOTBAR_SIZE + index}
+                                    isInteractive={inventoryOpen}
+                                    onSlotMouseDown={handleSlotMouseDown}
+                                    onSlotMouseEnter={handleSlotMouseEnter}
+                                    onSlotMouseLeave={handleSlotMouseLeave}
+                                />
+                            ))}
+                        </div>
+                    </>
                 )}
                 <div className="hotbar">
                     {hotbarSlots.map((slot, index) => (

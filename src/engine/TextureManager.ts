@@ -19,6 +19,7 @@ import oakLeaves1Url from "assets/textures/oak_leaves_1.png";
 import oakLeaves2Url from "assets/textures/oak_leaves_2.png";
 import oakLogUrl from "assets/textures/oak_log.png";
 import oakLogTopUrl from "assets/textures/oak_log_top.png";
+import oakPlankUrl from "assets/textures/oak_plank.png";
 import stickUrl from "assets/textures/stick.png";
 import stoneUrl from "assets/textures/stone.png";
 import * as THREE from "three";
@@ -56,7 +57,7 @@ class TextureManager {
     private blockMaterials!: Partial<Record<BlockType, THREE.Material>>;
     // Flat-sprite materials for items rendered as planes (held item). Transparent + double-sided
     // so the alpha channel is respected and the face is visible from either direction.
-    private flatItemMaterials!: Record<ItemType, THREE.Material>;
+    private flatItemMaterials!: Partial<Record<ItemType, THREE.Material>>;
 
     private desetroyTextures: THREE.Texture[] = [];
 
@@ -84,6 +85,7 @@ class TextureManager {
         this.flatItemMaterials = {
             [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
             [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
+            [ItemType.OakPlanks]: this.loadFlatMat(loader, oakPlankUrl),
         };
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {

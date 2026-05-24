@@ -1,0 +1,47 @@
+.crafting-panel {
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    padding: 6px 8px;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: default;
+}
+
+.crafting-label {
+    font-family: monospace;
+    font-size: 10px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.crafting-panel-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.crafting-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 40px);
+    gap: 2px;
+}
+
+.crafting-arrow {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    padding: 0 2px;
+    user-select: none;
+}
+
+.crafting-output-slot {
+    background: rgba(0, 0, 0, 0.35);
+    border-color: #888;
+
+    &:hover {
+        border-color: #ccc;
+    }
+}

@@ -1,7 +1,7 @@
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import input from "engine/input/Input";
-import { type InventoryItemStack } from "engine/items/InventoryItem";
+import { type InventoryItemStack, itemStacksEqual } from "engine/items/InventoryItem";
 
 export const HOTBAR_SIZE = 9;
 export const INVENTORY_SIZE = 27;
@@ -66,6 +66,20 @@ export default class Inventory extends Component {
         return false;
     }
 
+    // Returns true if add() would accept the item without mutation.
+    canAdd(item: InventoryItemStack): boolean {
+        for (let index = 0; index < TOTAL_SLOTS; index++) {
+            const slot = this.slots[index];
+            if (slot === null) {
+                return true;
+            }
+            if (slot.item.kind === item.kind && slot.item.type === item.type && slot.count < MAX_STACK_SIZE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     getSlot(index: number): InventorySlot | null {
         return this.slots[index] ?? null;
     }
@@ -88,10 +102,25 @@ export default class Inventory extends Component {
         eventManager.emit("inventoryChanged", undefined);
     }
 
+    setSlot(index: number, slot: InventorySlot | null): void {
+        this.slots[index] = slot;
+        eventManager.emit("inventoryChanged", undefined);
+    }
+
     moveSlot(fromIndex: number, toIndex: number): void {
         const fromSlot = this.slots[fromIndex];
-        this.slots[fromIndex] = this.slots[toIndex];
-        this.slots[toIndex] = fromSlot;
+        const toSlot = this.slots[toIndex];
+
+        if (fromSlot !== null && toSlot !== null && itemStacksEqual(fromSlot.item, toSlot.item)) {
+            // Same item type: merge up to MAX_STACK_SIZE, leave any overflow in the source slot.
+            const total = fromSlot.count + toSlot.count;
+            toSlot.count = Math.min(total, MAX_STACK_SIZE);
+            this.slots[fromIndex] = total > MAX_STACK_SIZE ? { ...fromSlot, count: total - MAX_STACK_SIZE } : null;
+        } else {
+            this.slots[fromIndex] = toSlot;
+            this.slots[toIndex] = fromSlot;
+        }
+
         eventManager.emit("inventoryChanged", undefined);
     }
 

@@ -5,6 +5,7 @@ import dirtUrl from "assets/textures/dirt.png";
 import grassTopUrl from "assets/textures/grass_top.png";
 import oakLeaves1Url from "assets/textures/oak_leaves_1.png";
 import oakLogTopUrl from "assets/textures/oak_log_top.png";
+import oakPlankUrl from "assets/textures/oak_plank.png";
 import stickUrl from "assets/textures/stick.png";
 import stoneUrl from "assets/textures/stone.png";
 import { BlockType } from "engine/chunk/ChunkComponent";
@@ -27,4 +28,5 @@ export const BLOCK_TEXTURE_URLS: Partial<Record<BlockType, string>> = {
 export const ITEM_TEXTURE_URLS: Partial<Record<ItemType, string>> = {
     [ItemType.Coal]: coalUrl,
     [ItemType.Stick]: stickUrl,
+    [ItemType.OakPlanks]: oakPlankUrl,
 };

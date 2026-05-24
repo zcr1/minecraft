@@ -1,4 +1,6 @@
 export enum ItemType {
-    Coal = 1,
-    Stick = 2,
+    Coal = "Coal",
+    Stick = "Stick",
+    OakPlanks = "OakPlanks",
+    Torch = "Torch",
 }

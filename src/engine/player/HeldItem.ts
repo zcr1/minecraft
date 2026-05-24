@@ -4,7 +4,7 @@ import TextureManager from "engine/TextureManager";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
-import { type InventoryItemStack } from "engine/items/InventoryItem";
+import { type InventoryItemStack, itemStacksEqual } from "engine/items/InventoryItem";
 import Inventory from "engine/player/Inventory";
 
 const HELD_SIZE = 0.3;
@@ -90,21 +90,11 @@ export default class HeldItem extends Component {
         this.flatGeometry.dispose();
     }
 
-    private itemsMatch(a: InventoryItemStack | null, b: InventoryItemStack | null): boolean {
-        if (a === null && b === null) {
-            return true;
-        }
-        if (a === null || b === null) {
-            return false;
-        }
-        return a.kind === b.kind && a.type === b.type;
-    }
-
     private syncMesh(): void {
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
         const newItem = slot ? slot.item : null;
 
-        if (this.itemsMatch(this.currentItem, newItem)) {
+        if (itemStacksEqual(this.currentItem, newItem)) {
             return;
         }
 
