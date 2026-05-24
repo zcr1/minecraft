@@ -107,6 +107,35 @@ const TORCH_QUADS: ReadonlyArray<{
     },
 ];
 
+// The 5 possible attachment-offset directions, one per TORCH_QUADS entry (index = blockMeta value).
+// Exported so ChunkManager can walk adjacent positions when a support block is destroyed.
+export const TORCH_ATTACHMENT_OFFSETS: ReadonlyArray<readonly [number, number, number]> = TORCH_QUADS.map(
+    ({ offset }) => offset,
+);
+
+// Maps a placement hit-normal to the TORCH_QUADS index for that attachment direction.
+// The hit normal is the outward face of the clicked block; the torch attaches on the opposite
+// side, so its support offset equals −hitNormal. Returns −1 for the bottom face (ceiling),
+// which has no geometry entry and should be rejected at the call site.
+export function torchQuadIndexFromHitNormal(normalX: number, normalY: number, normalZ: number): number {
+    if (normalY === 1) {
+        return 0; // top face hit → torch sits on floor (solid below)
+    }
+    if (normalX === 1) {
+        return 1; // +X face hit → torch on −X wall (solid to its left)
+    }
+    if (normalX === -1) {
+        return 2; // −X face hit → torch on +X wall (solid to its right)
+    }
+    if (normalZ === 1) {
+        return 3; // +Z face hit → torch on −Z wall (solid behind)
+    }
+    if (normalZ === -1) {
+        return 4; // −Z face hit → torch on +Z wall (solid in front)
+    }
+    return -1; // bottom face hit (ceiling) — no torch geometry for this case
+}
+
 const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Air]: 0,
     [BlockType.Bedrock]: 0,
@@ -149,6 +178,11 @@ export default class ChunkComponent extends Component {
     // Packing both channels into one byte keeps the per-chunk light memory at width*height*depth
     // bytes instead of doubling it when block-light gets implemented.
     private readonly lightLevels: Uint8Array;
+    // Auxiliary byte per voxel for block-type-specific data. For torches this stores the
+    // TORCH_QUADS index (0-4) set at placement time via torchQuadIndexFromHitNormal, locking
+    // the visual orientation to the face the player actually clicked rather than re-inferring it
+    // from whichever neighbour happens to be solid at the next mesh rebuild.
+    private readonly blockMeta: Uint8Array;
 
     constructor(
         width: number,
@@ -169,6 +203,7 @@ export default class ChunkComponent extends Component {
         this.blocks = new Uint8Array(width * height * depth);
         this.blockHitPoints = new Uint8Array(width * height * depth);
         this.lightLevels = new Uint8Array(width * height * depth);
+        this.blockMeta = new Uint8Array(width * height * depth);
         this.mesh = new THREE.Group();
         this.mesh.userData.chunk = this;
     }
@@ -237,36 +272,13 @@ export default class ChunkComponent extends Component {
         subMesh.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
 
-    // Returns the set of quads to render for a torch at (x, y, z) based on which adjacent block
-    // is solid. Checks the 5 candidates in priority order (floor first) and falls back to floor.
-    private getTorchQuads(
-        x: number,
-        y: number,
-        z: number,
-        chunkManager: ChunkManager,
-    ): ReadonlyArray<ReadonlyArray<number>> {
-        for (const {
-            offset: [deltaX, deltaY, deltaZ],
-            quads,
-        } of TORCH_QUADS) {
-            const neighborX = x + deltaX;
-            const neighborY = y + deltaY;
-            const neighborZ = z + deltaZ;
-            let neighborType: BlockType;
-            if (this.isInBounds(neighborX, neighborY, neighborZ)) {
-                neighborType = this.getBlock(neighborX, neighborY, neighborZ);
-            } else {
-                neighborType = chunkManager.getBlockAtWorld(
-                    this.worldOriginX + neighborX,
-                    this.worldOriginY + neighborY,
-                    this.worldOriginZ + neighborZ,
-                );
-            }
-            if (isSolidBlock(neighborType)) {
-                return quads;
-            }
-        }
-        return TORCH_QUADS[0].quads; // fallback to floor
+    // Returns the quad vertices for a torch at (x, y, z) using the attachment direction
+    // stored in blockMeta (set at placement time via torchQuadIndexFromHitNormal). This locks
+    // the orientation to the face the player clicked and prevents it from silently flipping when
+    // neighbours change (e.g. after a relight-rebuild triggered by a different block).
+    private getTorchQuads(x: number, y: number, z: number): ReadonlyArray<ReadonlyArray<number>> {
+        const meta = this.getBlockMeta(x, y, z);
+        return (TORCH_QUADS[meta] ?? TORCH_QUADS[0]).quads;
     }
 
     private buildGeometry(subMesh: SubMesh) {
@@ -345,10 +357,10 @@ export default class ChunkComponent extends Component {
                     }
 
                     // Torch renders as a surface-affixed sprite rather than cube faces.
-                    // Geometry depends on which adjacent face is solid (inferred at mesh time).
+                    // Attachment direction is stored in blockMeta at placement time.
                     if (block === BlockType.Torch) {
                         const lightValue = Math.max(this.getSkyLight(x, y, z), this.getBlockLight(x, y, z));
-                        for (const quadVerts of this.getTorchQuads(x, y, z, chunkManager)) {
+                        for (const quadVerts of this.getTorchQuads(x, y, z)) {
                             this.pushCrossQuad(quadVerts, x, y, z, torch, lightValue);
                         }
                         continue;
@@ -496,6 +508,14 @@ export default class ChunkComponent extends Component {
         this.lightLevels[index] = (this.lightLevels[index] & 0xf0) | (level & 0x0f);
     }
 
+    getBlockMeta(x: number, y: number, z: number): number {
+        return this.blockMeta[this.getBlockIndex(x, y, z)];
+    }
+
+    setBlockMeta(x: number, y: number, z: number, meta: number): void {
+        this.blockMeta[this.getBlockIndex(x, y, z)] = meta;
+    }
+
     clearLightLevels(): void {
         this.lightLevels.fill(0);
     }
@@ -530,6 +550,7 @@ export default class ChunkComponent extends Component {
 
         if (damage >= currentHitPoints) {
             this.setBlock(x, y, z, BlockType.Air);
+            this.blockMeta[index] = 0;
             return true;
         }
         this.blockHitPoints[index] = currentHitPoints - damage;

@@ -3,7 +3,7 @@ import game from "../Game";
 import Transform from "../components/Transform";
 import Component from "../core/Component";
 import GameObjectName from "../utils/gameObjectNames";
-import ChunkComponent, { BlockType } from "./ChunkComponent";
+import ChunkComponent, { BlockType, TORCH_ATTACHMENT_OFFSETS } from "./ChunkComponent";
 import lightingSystem, { MAX_LIGHT } from "./LightingSystem";
 import TerrainGenerator from "./TerrainGenerator";
 
@@ -357,7 +357,7 @@ export default class ChunkManager extends Component {
         return result;
     }
 
-    setBlockAtWorld(worldX: number, worldY: number, worldZ: number, blockType: BlockType): boolean {
+    setBlockAtWorld(worldX: number, worldY: number, worldZ: number, blockType: BlockType, meta = 0): boolean {
         const blockX = Math.round(worldX);
         const blockY = Math.round(worldY);
         const blockZ = Math.round(worldZ);
@@ -380,8 +380,75 @@ export default class ChunkManager extends Component {
         const localZ = blockZ - chunkZ * this.chunkDepth;
 
         chunk.setBlock(localX, localY, localZ, blockType);
+        chunk.setBlockMeta(localX, localY, localZ, meta);
         this.relightAround(chunk);
         return true;
+    }
+
+    // Called immediately after a block at (worldX, worldY, worldZ) has been set to Air.
+    // Walks the 5 possible torch-attachment directions: if a torch sits at the mirror position
+    // and its stored meta index points back to the destroyed block, that torch is detached and
+    // removed. Returns the chunk + local coords of every destroyed torch so the caller can emit
+    // blockBroken events and trigger item drops.
+    //
+    // Caller is responsible for calling relightAround after this returns — this method only
+    // updates block data; the relight/rebuild is left to the caller so it can be batched with
+    // any other state changes for the same frame. relightAround(target.chunk) covers the torch
+    // chunks implicitly because torches are always exactly one block from their support, so the
+    // torch chunk is either the same chunk or a face-adjacent neighbour (both covered by
+    // relightLoadedNeighbors).
+    removeDependentTorches(
+        worldX: number,
+        worldY: number,
+        worldZ: number,
+    ): Array<{ chunk: ChunkComponent; localX: number; localY: number; localZ: number }> {
+        const destroyed: Array<{ chunk: ChunkComponent; localX: number; localY: number; localZ: number }> = [];
+
+        for (let index = 0; index < TORCH_ATTACHMENT_OFFSETS.length; index++) {
+            const [deltaX, deltaY, deltaZ] = TORCH_ATTACHMENT_OFFSETS[index];
+
+            // A torch whose attachment offset is [deltaX,deltaY,deltaZ] sits one step in the
+            // opposite direction from its support — so if the support is at (worldX,Y,Z), the torch is at:
+            const torchWorldX = worldX - deltaX;
+            const torchWorldY = worldY - deltaY;
+            const torchWorldZ = worldZ - deltaZ;
+
+            if (this.getBlockAtWorld(torchWorldX, torchWorldY, torchWorldZ) !== BlockType.Torch) {
+                continue;
+            }
+
+            const torchBlockX = Math.round(torchWorldX);
+            const torchBlockY = Math.round(torchWorldY);
+            const torchBlockZ = Math.round(torchWorldZ);
+            const torchChunkX = Math.floor(torchBlockX / this.chunkWidth);
+            const torchChunkY = Math.floor(torchBlockY / this.chunkHeight);
+            const torchChunkZ = Math.floor(torchBlockZ / this.chunkDepth);
+
+            if (torchChunkY < 0 || torchChunkY >= this.worldHeightChunks) {
+                continue;
+            }
+
+            const torchChunk = this.chunks.get(this.getChunkKey(torchChunkX, torchChunkY, torchChunkZ));
+            if (!torchChunk) {
+                continue;
+            }
+
+            const localX = torchBlockX - torchChunkX * this.chunkWidth;
+            const localY = torchBlockY - torchChunkY * this.chunkHeight;
+            const localZ = torchBlockZ - torchChunkZ * this.chunkDepth;
+
+            // Only remove the torch if its stored attachment direction matches this offset —
+            // a torch placed on a different face of the same block slot shouldn't be affected.
+            if (torchChunk.getBlockMeta(localX, localY, localZ) !== index) {
+                continue;
+            }
+
+            torchChunk.setBlock(localX, localY, localZ, BlockType.Air);
+            torchChunk.setBlockMeta(localX, localY, localZ, 0);
+            destroyed.push({ chunk: torchChunk, localX, localY, localZ });
+        }
+
+        return destroyed;
     }
 
     getBlockAtWorld(worldX: number, worldY: number, worldZ: number): BlockType {

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import { BLOCK_BREAK_STAGE_COUNT } from "engine/TextureManager";
-import ChunkComponent, { BlockType, isSolidBlock } from "engine/chunk/ChunkComponent";
+import ChunkComponent, { BlockType, isSolidBlock, torchQuadIndexFromHitNormal } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
@@ -112,6 +112,20 @@ export default class PlayerBlockInteraction extends Component {
             };
             const broke = target.chunk.hitBlock(target.blockX, target.blockY, target.blockZ, 255);
             if (broke) {
+                // If there are any attached torches - break those also
+                const worldX = target.chunk.worldOriginX + target.blockX;
+                const worldY = target.chunk.worldOriginY + target.blockY;
+                const worldZ = target.chunk.worldOriginZ + target.blockZ;
+                const cascadedTorches = this.chunkManager.removeDependentTorches(worldX, worldY, worldZ);
+                for (const { chunk, localX, localY, localZ } of cascadedTorches) {
+                    eventManager.emit("blockBroken", {
+                        chunk,
+                        blockX: localX,
+                        blockY: localY,
+                        blockZ: localZ,
+                        blockType: BlockType.Torch,
+                    });
+                }
                 this.chunkManager.relightAround(target.chunk);
             }
             eventManager.emit("blockBroken", broken);
@@ -141,6 +155,7 @@ export default class PlayerBlockInteraction extends Component {
         }
 
         let blockTypeToPlace: BlockType;
+        let placementMeta = 0;
         if (slot.item.kind === "block") {
             blockTypeToPlace = slot.item.type;
         } else if (slot.item.kind === "item") {
@@ -154,6 +169,13 @@ export default class PlayerBlockInteraction extends Component {
                 return;
             }
             blockTypeToPlace = mapped;
+            if (blockTypeToPlace === BlockType.Torch) {
+                const quadIndex = torchQuadIndexFromHitNormal(this.hitNormal.x, this.hitNormal.y, this.hitNormal.z);
+                if (quadIndex === -1) {
+                    return; // ceiling placement has no geometry — silently disallow
+                }
+                placementMeta = quadIndex;
+            }
         } else {
             return;
         }
@@ -171,7 +193,13 @@ export default class PlayerBlockInteraction extends Component {
             return;
         }
 
-        const placed = this.chunkManager.setBlockAtWorld(worldPlaceX, worldPlaceY, worldPlaceZ, blockTypeToPlace);
+        const placed = this.chunkManager.setBlockAtWorld(
+            worldPlaceX,
+            worldPlaceY,
+            worldPlaceZ,
+            blockTypeToPlace,
+            placementMeta,
+        );
         if (placed) {
             this.inventory.consumeSelectedSlot();
         }
