@@ -250,12 +250,10 @@ export default function InventoryHUD() {
 
     // Consume one of each ingredient and add the output to the player's inventory.
     const handleCraft = () => {
-        const grid = craftingGrid.map(slot => slot?.item ?? null) as CraftingGrid;
-        const recipe = matchRecipe(grid);
-        if (!recipe) {
+        if (!craftingOutput || !inventory.canAdd(craftingOutput.item)) {
             return;
         }
-        inventory.add(recipe.output, recipe.outputCount);
+        inventory.add(craftingOutput.item, craftingOutput.count);
         setCraftingGrid(previous =>
             previous.map(slot => {
                 if (!slot) {

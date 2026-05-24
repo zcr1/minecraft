@@ -60,7 +60,7 @@ function matchShapeless(grid: CraftingGrid, recipe: CraftingRecipe): boolean {
     const used = new Array<boolean>(gridIngredients.length).fill(false);
     for (const recipeItem of recipeIngredients) {
         const matchIndex = gridIngredients.findIndex(
-            (gridItem, index) => !used[index] && gridItem.kind === recipeItem.kind && gridItem.type === recipeItem.type,
+            (gridItem, index) => !used[index] && itemStacksEqual(gridItem, recipeItem),
         );
         if (matchIndex === -1) {
             return false;
