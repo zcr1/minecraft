@@ -16,6 +16,7 @@ export enum BlockType {
     OakLeaves = 8,
     Torch = 9,
     Water = 10,
+    OakPlanks = 11,
 }
 
 // Blocks the player can walk through (non-solid).
@@ -154,6 +155,7 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.OakLeaves]: 1,
     [BlockType.Torch]: 1,
     [BlockType.Water]: 0,
+    [BlockType.OakPlanks]: 2,
 };
 
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
@@ -369,6 +371,7 @@ export default class ChunkComponent extends Component {
         const oakLeaves2 = createSubMesh();
         const torch = createSubMesh();
         const water = createSubMesh();
+        const oakPlanks = createSubMesh();
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -486,6 +489,9 @@ export default class ChunkComponent extends Component {
                             case BlockType.Dirt:
                                 this.pushFace(face, x, y, z, dirt, lightValue);
                                 break;
+                            case BlockType.OakPlanks:
+                                this.pushFace(face, x, y, z, oakPlanks, lightValue);
+                                break;
 
                             default: {
                                 throw new Error(`buildMesh: unhandled block type ${block}`);
@@ -546,6 +552,11 @@ export default class ChunkComponent extends Component {
         }
         if (torch.indices.length > 0) {
             this.mesh.add(new THREE.Mesh(this.buildGeometry(torch), textureManager.getTorchMaterial()));
+        }
+        if (oakPlanks.indices.length > 0) {
+            this.mesh.add(
+                new THREE.Mesh(this.buildGeometry(oakPlanks), textureManager.getMaterial(BlockType.OakPlanks, 0)),
+            );
         }
         if (water.indices.length > 0) {
             const waterMesh = new THREE.Mesh(this.buildGeometry(water), textureManager.getWaterMaterial());

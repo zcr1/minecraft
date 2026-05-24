@@ -4,7 +4,7 @@ import type { InventoryItemStack } from "engine/items/InventoryItem";
 import { ItemType } from "engine/items/ItemType";
 
 const log: InventoryItemStack = { kind: "block", type: BlockType.OakLog };
-const planks: InventoryItemStack = { kind: "item", type: ItemType.OakPlanks };
+const planks: InventoryItemStack = { kind: "block", type: BlockType.OakPlanks };
 const stick: InventoryItemStack = { kind: "item", type: ItemType.Stick };
 const coal: InventoryItemStack = { kind: "item", type: ItemType.Coal };
 const torch: InventoryItemStack = { kind: "item", type: ItemType.Torch };

@@ -14,6 +14,7 @@ import Inventory, { type InventorySlot } from "engine/player/Inventory";
 import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
 
+// Defines drops that are not identical to themselves
 const BLOCK_DROPS: Partial<Record<BlockType, InventoryItemStack>> = {
     [BlockType.Grass]: { kind: "block", type: BlockType.Dirt },
     [BlockType.Stone]: { kind: "block", type: BlockType.Cobblestone },
@@ -85,6 +86,7 @@ export default class DroppedItems extends Component {
             BlockType.Stone,
             BlockType.Cobblestone,
             BlockType.OakLog,
+            BlockType.OakPlanks,
         ]) {
             const sideMaterial = TextureManager.getMaterial(blockType, 0);
             const topMaterial = TextureManager.getMaterial(blockType, 1);

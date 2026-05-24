@@ -23,12 +23,12 @@ export const BLOCK_TEXTURE_URLS: Partial<Record<BlockType, string>> = {
     [BlockType.Cobblestone]: cobbleUrl,
     [BlockType.OakLog]: oakLogTopUrl,
     [BlockType.OakLeaves]: oakLeaves1Url,
+    [BlockType.OakPlanks]: oakPlankUrl,
 };
 
 // Maps each item type to an image URL suitable for use in <img src>.
 export const ITEM_TEXTURE_URLS: Partial<Record<ItemType, string>> = {
     [ItemType.Coal]: coalUrl,
     [ItemType.Stick]: stickUrl,
-    [ItemType.OakPlanks]: oakPlankUrl,
     [ItemType.Torch]: torchUrl,
 };

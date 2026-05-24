@@ -87,14 +87,19 @@ export const CRAFTING_RECIPES: readonly CraftingRecipe[] = [
         id: "oak_planks",
         pattern: [{ kind: "block", type: BlockType.OakLog }, null, null, null],
         shapeless: true,
-        output: { kind: "item", type: ItemType.OakPlanks },
+        output: { kind: "block", type: BlockType.OakPlanks },
         outputCount: 4,
     },
 
     // 2 Oak Planks stacked vertically → 4 Sticks
     {
         id: "sticks",
-        pattern: [{ kind: "item", type: ItemType.OakPlanks }, null, { kind: "item", type: ItemType.OakPlanks }, null],
+        pattern: [
+            { kind: "block", type: BlockType.OakPlanks },
+            null,
+            { kind: "block", type: BlockType.OakPlanks },
+            null,
+        ],
         shapeless: false,
         output: { kind: "item", type: ItemType.Stick },
         outputCount: 4,

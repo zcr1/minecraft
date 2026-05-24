@@ -87,12 +87,12 @@ class TextureManager {
             [BlockType.Stone]: this.loadMat(loader, stoneUrl),
             [BlockType.Cobblestone]: this.loadMat(loader, cobbleUrl),
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
+            [BlockType.OakPlanks]: this.loadMat(loader, oakPlankUrl),
         };
 
         this.flatItemMaterials = {
             [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
             [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
-            [ItemType.OakPlanks]: this.loadFlatMat(loader, oakPlankUrl),
             [ItemType.Torch]: this.loadFlatMat(loader, torchUrl),
         };
 
