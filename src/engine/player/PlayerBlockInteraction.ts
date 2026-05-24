@@ -248,7 +248,7 @@ export default class PlayerBlockInteraction extends Component {
         const blockZ = Math.round(this.scratchLocal.z);
 
         const blockType = chunk.getBlock(blockX, blockY, blockZ);
-        if (blockType === BlockType.Air) {
+        if (blockType === BlockType.Air || blockType === BlockType.Water) {
             return null;
         }
 
