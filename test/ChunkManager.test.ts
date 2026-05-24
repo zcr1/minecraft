@@ -2,6 +2,23 @@ import * as THREE from "three";
 import ChunkManager from "../src/engine/chunk/ChunkManager";
 import TerrainGenerator from "../src/engine/chunk/TerrainGenerator";
 
+jest.mock("../src/engine/TextureManager", () => {
+    // TextureManager.init() is never called in tests so blockMaterials would be
+    // undefined. Return a stub that satisfies every call ChunkComponent.buildMesh makes.
+    const mat = new (require("three").MeshBasicMaterial)();
+    return {
+        __esModule: true,
+        default: {
+            init: jest.fn(),
+            getMaterial: () => mat,
+            getLeavesMaterial: () => mat,
+            getFlatItemMaterial: () => mat,
+            createBlockBreakMaterial: () => new (require("three").MeshBasicMaterial)(),
+            setBlockBreakStage: jest.fn(),
+        },
+    };
+});
+
 jest.mock("../src/engine/Game", () => {
     const transform = { x: 0, y: 0, z: 0 };
     const player = { getComponent: () => transform };

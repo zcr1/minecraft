@@ -62,6 +62,6 @@ describe("TerrainGenerator", () => {
         expect(generator.getBlock(worldX, surface + 5, worldZ)).toBe(BlockType.Air);
         expect(generator.getBlock(worldX, surface, worldZ)).toBe(BlockType.Grass);
         expect(generator.getBlock(worldX, surface - 1, worldZ)).toBe(BlockType.Dirt);
-        expect(generator.getBlock(worldX, surface - 10, worldZ)).toBe(BlockType.Dirt);
+        expect(generator.getBlock(worldX, surface - 10, worldZ)).toBe(BlockType.Stone);
     });
 });
