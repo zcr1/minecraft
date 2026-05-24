@@ -358,20 +358,33 @@ export default class ChunkComponent extends Component {
     }
 
     buildMesh(chunkManager: ChunkManager): void {
-        const dirt = createSubMesh();
-        const grassTop = createSubMesh();
-        const grassSide = createSubMesh();
-        const bedrock = createSubMesh();
-        const stone = createSubMesh();
-        const cobblestone = createSubMesh();
-        const coalOre = createSubMesh();
-        const oakLogTop = createSubMesh();
-        const oakLogSide = createSubMesh();
-        const oakLeaves1 = createSubMesh();
-        const oakLeaves2 = createSubMesh();
-        const torch = createSubMesh();
-        const water = createSubMesh();
-        const oakPlanks = createSubMesh();
+        const meshes: Record<
+            string,
+            {
+                subMesh: SubMesh;
+                material: () => THREE.Material;
+                renderOrder?: number;
+            }
+        > = {
+            bedrock: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Bedrock, 0) },
+            coalOre: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.CoalOre, 0) },
+            cobblestone: {
+                subMesh: createSubMesh(),
+                material: () => textureManager.getMaterial(BlockType.Cobblestone, 0),
+            },
+            dirt: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Dirt, 0) },
+            grassSide: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Grass, 0) },
+            grassTop: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Grass, 1) },
+            oakLeaves1: { subMesh: createSubMesh(), material: () => textureManager.getLeavesMaterial(0) },
+            oakLeaves2: { subMesh: createSubMesh(), material: () => textureManager.getLeavesMaterial(1) },
+            oakLogSide: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakLog, 0) },
+            oakLogTop: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakLog, 1) },
+            oakPlanks: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakPlanks, 0) },
+            stone: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Stone, 0) },
+            torch: { subMesh: createSubMesh(), material: () => textureManager.getTorchMaterial() },
+            // Water renderOrder=1 is it is rendered after all opaque geometry and alpha blending sorts correctly.
+            water: { subMesh: createSubMesh(), material: () => textureManager.getWaterMaterial(), renderOrder: 1 },
+        };
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
@@ -386,7 +399,7 @@ export default class ChunkComponent extends Component {
                     if (block === BlockType.Torch) {
                         const lightValue = Math.max(this.getSkyLight(x, y, z), this.getBlockLight(x, y, z));
                         for (const quadVerts of this.getTorchQuads(x, y, z)) {
-                            this.pushCrossQuad(quadVerts, x, y, z, torch, lightValue);
+                            this.pushCrossQuad(quadVerts, x, y, z, meshes.torch.subMesh, lightValue);
                         }
                         continue;
                     }
@@ -424,7 +437,7 @@ export default class ChunkComponent extends Component {
                                       this.worldOriginY + adjacentY,
                                       this.worldOriginZ + adjacentZ,
                                   );
-                            this.pushFace(face, x, y, z, water, lightValue);
+                            this.pushFace(face, x, y, z, meshes.water.subMesh, lightValue);
                         }
                         continue;
                     }
@@ -457,22 +470,36 @@ export default class ChunkComponent extends Component {
 
                         switch (block) {
                             case BlockType.CoalOre:
-                                this.pushFace(face, x, y, z, coalOre, lightValue);
+                                this.pushFace(face, x, y, z, meshes.coalOre.subMesh, lightValue);
                                 break;
                             case BlockType.Stone:
-                                this.pushFace(face, x, y, z, stone, lightValue);
+                                this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);
                                 break;
                             case BlockType.Cobblestone:
-                                this.pushFace(face, x, y, z, cobblestone, lightValue);
+                                this.pushFace(face, x, y, z, meshes.cobblestone.subMesh, lightValue);
                                 break;
                             case BlockType.Grass:
-                                this.pushFace(face, x, y, z, face.normal[1] === 1 ? grassTop : grassSide, lightValue);
+                                this.pushFace(
+                                    face,
+                                    x,
+                                    y,
+                                    z,
+                                    face.normal[1] === 1 ? meshes.grassTop.subMesh : meshes.grassSide.subMesh,
+                                    lightValue,
+                                );
                                 break;
                             case BlockType.Bedrock:
-                                this.pushFace(face, x, y, z, bedrock, lightValue);
+                                this.pushFace(face, x, y, z, meshes.bedrock.subMesh, lightValue);
                                 break;
                             case BlockType.OakLog:
-                                this.pushFace(face, x, y, z, face.normal[1] !== 0 ? oakLogTop : oakLogSide, lightValue);
+                                this.pushFace(
+                                    face,
+                                    x,
+                                    y,
+                                    z,
+                                    face.normal[1] !== 0 ? meshes.oakLogTop.subMesh : meshes.oakLogSide.subMesh,
+                                    lightValue,
+                                );
                                 break;
                             case BlockType.OakLeaves: {
                                 const worldX = this.worldOriginX + x;
@@ -483,14 +510,21 @@ export default class ChunkComponent extends Component {
                                         Math.imul(worldY, 19349663) ^
                                         Math.imul(worldZ, 83492791)) &
                                     1;
-                                this.pushFace(face, x, y, z, hash === 0 ? oakLeaves1 : oakLeaves2, lightValue);
+                                this.pushFace(
+                                    face,
+                                    x,
+                                    y,
+                                    z,
+                                    hash === 0 ? meshes.oakLeaves1.subMesh : meshes.oakLeaves2.subMesh,
+                                    lightValue,
+                                );
                                 break;
                             }
                             case BlockType.Dirt:
-                                this.pushFace(face, x, y, z, dirt, lightValue);
+                                this.pushFace(face, x, y, z, meshes.dirt.subMesh, lightValue);
                                 break;
                             case BlockType.OakPlanks:
-                                this.pushFace(face, x, y, z, oakPlanks, lightValue);
+                                this.pushFace(face, x, y, z, meshes.oakPlanks.subMesh, lightValue);
                                 break;
 
                             default: {
@@ -505,64 +539,17 @@ export default class ChunkComponent extends Component {
         this.mesh.children.forEach(c => (c as THREE.Mesh).geometry.dispose());
         this.mesh.clear();
 
-        if (dirt.indices.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeometry(dirt), textureManager.getMaterial(BlockType.Dirt, 0)));
-        }
-        if (grassTop.indices.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeometry(grassTop), textureManager.getMaterial(BlockType.Grass, 1)));
-        }
-        if (grassSide.indices.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(this.buildGeometry(grassSide), textureManager.getMaterial(BlockType.Grass, 0)),
-            );
-        }
-        if (bedrock.indices.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(this.buildGeometry(bedrock), textureManager.getMaterial(BlockType.Bedrock, 0)),
-            );
-        }
-        if (stone.indices.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeometry(stone), textureManager.getMaterial(BlockType.Stone, 0)));
-        }
-        if (cobblestone.indices.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(this.buildGeometry(cobblestone), textureManager.getMaterial(BlockType.Cobblestone, 0)),
-            );
-        }
-        if (coalOre.indices.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(this.buildGeometry(coalOre), textureManager.getMaterial(BlockType.CoalOre, 0)),
-            );
-        }
-        if (oakLogTop.indices.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(this.buildGeometry(oakLogTop), textureManager.getMaterial(BlockType.OakLog, 1)),
-            );
-        }
-        if (oakLogSide.indices.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(this.buildGeometry(oakLogSide), textureManager.getMaterial(BlockType.OakLog, 0)),
-            );
-        }
-        if (oakLeaves1.indices.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeometry(oakLeaves1), textureManager.getLeavesMaterial(0)));
-        }
-        if (oakLeaves2.indices.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeometry(oakLeaves2), textureManager.getLeavesMaterial(1)));
-        }
-        if (torch.indices.length > 0) {
-            this.mesh.add(new THREE.Mesh(this.buildGeometry(torch), textureManager.getTorchMaterial()));
-        }
-        if (oakPlanks.indices.length > 0) {
-            this.mesh.add(
-                new THREE.Mesh(this.buildGeometry(oakPlanks), textureManager.getMaterial(BlockType.OakPlanks, 0)),
-            );
-        }
-        if (water.indices.length > 0) {
-            const waterMesh = new THREE.Mesh(this.buildGeometry(water), textureManager.getWaterMaterial());
-            // Render after all opaque geometry so alpha blending sorts correctly.
-            waterMesh.renderOrder = 1;
-            this.mesh.add(waterMesh);
+        for (const { subMesh, material, renderOrder } of Object.values(meshes)) {
+            if (subMesh.indices.length === 0) {
+                continue;
+            }
+
+            const threeMesh = new THREE.Mesh(this.buildGeometry(subMesh), material());
+            if (renderOrder !== undefined) {
+                threeMesh.renderOrder = renderOrder;
+            }
+
+            this.mesh.add(threeMesh);
         }
     }
 
