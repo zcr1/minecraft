@@ -8,6 +8,7 @@ import oakLogTopUrl from "assets/textures/oak_log_top.png";
 import oakPlankUrl from "assets/textures/oak_plank.png";
 import stickUrl from "assets/textures/stick.png";
 import stoneUrl from "assets/textures/stone.png";
+import torchUrl from "assets/textures/torch.png";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import { ItemType } from "engine/items/ItemType";
 
@@ -29,4 +30,5 @@ export const ITEM_TEXTURE_URLS: Partial<Record<ItemType, string>> = {
     [ItemType.Coal]: coalUrl,
     [ItemType.Stick]: stickUrl,
     [ItemType.OakPlanks]: oakPlankUrl,
+    [ItemType.Torch]: torchUrl,
 };

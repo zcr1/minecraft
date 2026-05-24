@@ -22,6 +22,7 @@ import oakLogTopUrl from "assets/textures/oak_log_top.png";
 import oakPlankUrl from "assets/textures/oak_plank.png";
 import stickUrl from "assets/textures/stick.png";
 import stoneUrl from "assets/textures/stone.png";
+import torchUrl from "assets/textures/torch.png";
 import * as THREE from "three";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import { ItemType } from "engine/items/ItemType";
@@ -86,6 +87,7 @@ class TextureManager {
             [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
             [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
             [ItemType.OakPlanks]: this.loadFlatMat(loader, oakPlankUrl),
+            [ItemType.Torch]: this.loadFlatMat(loader, torchUrl),
         };
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
