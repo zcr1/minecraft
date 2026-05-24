@@ -1,15 +1,21 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import { BLOCK_BREAK_STAGE_COUNT } from "engine/TextureManager";
-import ChunkComponent, { BlockType } from "engine/chunk/ChunkComponent";
+import ChunkComponent, { BlockType, isSolidBlock } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import input from "engine/input/Input";
+import { ItemType } from "engine/items/ItemType";
 import Inventory from "engine/player/Inventory";
 import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
+
+// Maps placeable item types to the block they place in the world.
+const ITEM_TO_BLOCK: Partial<Record<ItemType, BlockType>> = {
+    [ItemType.Torch]: BlockType.Torch,
+};
 
 const RAY_DISTANCE = 3;
 export const BREAK_TIME_SECONDS = 1.2;
@@ -130,7 +136,25 @@ export default class PlayerBlockInteraction extends Component {
 
     private tryPlaceBlock(target: TargetedBlock): void {
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
-        if (!slot || slot.item.kind !== "block") {
+        if (!slot) {
+            return;
+        }
+
+        let blockTypeToPlace: BlockType;
+        if (slot.item.kind === "block") {
+            blockTypeToPlace = slot.item.type;
+        } else if (slot.item.kind === "item") {
+            const mapped = ITEM_TO_BLOCK[slot.item.type];
+            if (mapped === undefined) {
+                return;
+            }
+            // Items that place as world objects require a solid block face to attach to —
+            // prevent placing on another torch, leaves, or any passable block.
+            if (!isSolidBlock(target.blockType)) {
+                return;
+            }
+            blockTypeToPlace = mapped;
+        } else {
             return;
         }
 
@@ -147,7 +171,7 @@ export default class PlayerBlockInteraction extends Component {
             return;
         }
 
-        const placed = this.chunkManager.setBlockAtWorld(worldPlaceX, worldPlaceY, worldPlaceZ, slot.item.type);
+        const placed = this.chunkManager.setBlockAtWorld(worldPlaceX, worldPlaceY, worldPlaceZ, blockTypeToPlace);
         if (placed) {
             this.inventory.consumeSelectedSlot();
         }

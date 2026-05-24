@@ -107,6 +107,7 @@ export default class ChunkManager extends Component {
         chunk.mesh.position.set(worldOriginX, worldOriginY, worldOriginZ);
         chunk.generate(this.terrainGenerator);
         lightingSystem.recomputeSkyLight(chunk, this);
+        lightingSystem.recomputeBlockLight(chunk, this);
         chunk.buildMesh(this);
         game.threeScene.add(chunk.mesh);
         this.chunks.set(key, chunk);
@@ -121,6 +122,7 @@ export default class ChunkManager extends Component {
 
     private relightAndRebuild(chunk: ChunkComponent): void {
         lightingSystem.recomputeSkyLight(chunk, this);
+        lightingSystem.recomputeBlockLight(chunk, this);
         chunk.rebuild(this);
     }
 
@@ -140,7 +142,16 @@ export default class ChunkManager extends Component {
         }
     }
 
-    // Self first so neighbors' edge-seed pass reads fresh light when they recompute.
+    // Relight the given chunk then all 6 face-adjacent loaded neighbors. Called after any block
+    // placement or removal so both sky and block light stay consistent across chunk boundaries.
+    //
+    // Two-hop propagation is not needed: with chunkWidth=16 and TORCH_LIGHT_LEVEL=14 a torch
+    // placed at the very edge of a chunk illuminates at most 13 blocks into the neighbor, which
+    // is within one chunk width — so relighting the immediate neighbors is always sufficient.
+    //
+    // Ordering matters: the chunk itself is rebuilt first so the neighbor edge-seed pass
+    // (seedBlockLightFromNeighbors / seedFromNeighbors) reads the already-updated block light
+    // when it samples across the shared face.
     relightAround(chunk: ChunkComponent): void {
         this.relightAndRebuild(chunk);
         const chunkX = Math.floor(chunk.worldOriginX / this.chunkWidth);
@@ -178,7 +189,34 @@ export default class ChunkManager extends Component {
         const localY = blockY - chunkY * this.chunkHeight;
         const localZ = blockZ - chunkZ * this.chunkDepth;
 
-        return chunk.getSkyLight(localX, localY, localZ);
+        return Math.max(chunk.getSkyLight(localX, localY, localZ), chunk.getBlockLight(localX, localY, localZ));
+    }
+
+    // Returns only the block-light nibble for the given world position.
+    // Used by LightingSystem.seedBlockLightFromNeighbors to seed cross-chunk block light.
+    getBlockLightAtWorld(worldX: number, worldY: number, worldZ: number): number {
+        const blockX = Math.round(worldX);
+        const blockY = Math.round(worldY);
+        const blockZ = Math.round(worldZ);
+
+        const chunkY = Math.floor(blockY / this.chunkHeight);
+        if (chunkY >= this.worldHeightChunks || chunkY < 0) {
+            return 0;
+        }
+
+        const chunkX = Math.floor(blockX / this.chunkWidth);
+        const chunkZ = Math.floor(blockZ / this.chunkDepth);
+
+        const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
+        if (!chunk) {
+            return 0;
+        }
+
+        const localX = blockX - chunkX * this.chunkWidth;
+        const localY = blockY - chunkY * this.chunkHeight;
+        const localZ = blockZ - chunkZ * this.chunkDepth;
+
+        return chunk.getBlockLight(localX, localY, localZ);
     }
 
     private generateInitialChunks(): void {

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { isPassableBlock } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 
 export const SKIN_WIDTH = 1e-4;
@@ -30,7 +30,7 @@ export function stepAxisY(body: PhysicsBody, chunkManager: ChunkManager, deltaTi
         const footBlock = Math.round(y - body.halfHeight);
         for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
             for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                if (chunkManager.getBlockAtWorld(blockX, footBlock, blockZ) !== BlockType.Air) {
+                if (!isPassableBlock(chunkManager.getBlockAtWorld(blockX, footBlock, blockZ))) {
                     body.position.y = footBlock + 0.5 + body.halfHeight + SKIN_WIDTH;
                     return "foot";
                 }
@@ -40,7 +40,7 @@ export function stepAxisY(body: PhysicsBody, chunkManager: ChunkManager, deltaTi
         const headBlock = Math.round(y + body.halfHeight);
         for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
             for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                if (chunkManager.getBlockAtWorld(blockX, headBlock, blockZ) !== BlockType.Air) {
+                if (!isPassableBlock(chunkManager.getBlockAtWorld(blockX, headBlock, blockZ))) {
                     body.position.y = headBlock - 0.5 - body.halfHeight - SKIN_WIDTH;
                     return "head";
                 }
@@ -63,7 +63,7 @@ export function stepAxisX(body: PhysicsBody, chunkManager: ChunkManager, deltaTi
         const rightBlock = Math.round(x + body.halfWidth);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                if (chunkManager.getBlockAtWorld(rightBlock, blockY, blockZ) !== BlockType.Air) {
+                if (!isPassableBlock(chunkManager.getBlockAtWorld(rightBlock, blockY, blockZ))) {
                     body.position.x = rightBlock - 0.5 - body.halfWidth - SKIN_WIDTH;
                     return true;
                 }
@@ -73,7 +73,7 @@ export function stepAxisX(body: PhysicsBody, chunkManager: ChunkManager, deltaTi
         const leftBlock = Math.round(x - body.halfWidth);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
-                if (chunkManager.getBlockAtWorld(leftBlock, blockY, blockZ) !== BlockType.Air) {
+                if (!isPassableBlock(chunkManager.getBlockAtWorld(leftBlock, blockY, blockZ))) {
                     body.position.x = leftBlock + 0.5 + body.halfWidth + SKIN_WIDTH;
                     return true;
                 }
@@ -96,7 +96,7 @@ export function stepAxisZ(body: PhysicsBody, chunkManager: ChunkManager, deltaTi
         const frontBlock = Math.round(z + body.halfWidth);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
-                if (chunkManager.getBlockAtWorld(blockX, blockY, frontBlock) !== BlockType.Air) {
+                if (!isPassableBlock(chunkManager.getBlockAtWorld(blockX, blockY, frontBlock))) {
                     body.position.z = frontBlock - 0.5 - body.halfWidth - SKIN_WIDTH;
                     return true;
                 }
@@ -106,7 +106,7 @@ export function stepAxisZ(body: PhysicsBody, chunkManager: ChunkManager, deltaTi
         const backBlock = Math.round(z - body.halfWidth);
         for (let blockY = minBlockY; blockY <= maxBlockY; blockY++) {
             for (let blockX = minBlockX; blockX <= maxBlockX; blockX++) {
-                if (chunkManager.getBlockAtWorld(blockX, blockY, backBlock) !== BlockType.Air) {
+                if (!isPassableBlock(chunkManager.getBlockAtWorld(blockX, blockY, backBlock))) {
                     body.position.z = backBlock + 0.5 + body.halfWidth + SKIN_WIDTH;
                     return true;
                 }

@@ -16,6 +16,7 @@ import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
 import PlayerPhysics from "engine/player/PlayerPhysics";
+import TorchLight from "engine/player/TorchLight";
 import GameObjectName from "engine/utils/gameObjectNames";
 
 export function setupScene(): void {
@@ -48,6 +49,7 @@ export function setupScene(): void {
     player.addComponent(new PlayerBlockInteraction());
     player.addComponent(new Inventory());
     player.addComponent(new HeldItem());
+    player.addComponent(new TorchLight());
     game.threeScene.add(playerMesh);
     game.add(player);
 

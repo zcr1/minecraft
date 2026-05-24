@@ -21,6 +21,7 @@ const BLOCK_COLORS: Record<BlockType, number> = {
     [BlockType.CoalOre]: 0x4a4a4a,
     [BlockType.OakLog]: 0x7a5a2a,
     [BlockType.OakLeaves]: 0x3a6a1a,
+    [BlockType.Torch]: 0xd4a017,
 };
 
 // Blocks with a secondary color randomly mix between the two when spawning particles.

@@ -14,6 +14,17 @@ export enum BlockType {
     CoalOre = 6,
     OakLog = 7,
     OakLeaves = 8,
+    Torch = 9,
+}
+
+// Blocks the player can walk through (non-solid).
+export function isPassableBlock(blockType: BlockType): boolean {
+    return blockType === BlockType.Air || blockType === BlockType.Torch;
+}
+
+// Returns true for opaque, solid blocks that can support placements (e.g. torches on walls/floors).
+export function isSolidBlock(blockType: BlockType): boolean {
+    return blockType !== BlockType.Air && blockType !== BlockType.Torch && blockType !== BlockType.OakLeaves;
 }
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
@@ -58,6 +69,44 @@ const FACES = [
 
 const FACE_UVS = [0, 0, 1, 0, 1, 1, 0, 1];
 
+// Torch geometry keyed by the direction of the solid block the torch is attached to.
+// Each entry lists one or more quads (12 floats = 4 vertices × xyz) relative to the block center.
+// Wall cases: a single flat quad pressed against the attachment face.
+// Floor case: two narrow crossed vertical quads sitting on the block floor.
+const TORCH_QUADS: ReadonlyArray<{
+    readonly offset: readonly [number, number, number];
+    readonly quads: ReadonlyArray<ReadonlyArray<number>>;
+}> = [
+    {
+        // Floor — solid below. Cross of two narrow vertical quads; bottom flush with the block floor.
+        offset: [0, -1, 0],
+        quads: [
+            [-0.1, -0.5, 0, 0.1, -0.5, 0, 0.1, 0.05, 0, -0.1, 0.05, 0],
+            [0, -0.5, -0.1, 0, -0.5, 0.1, 0, 0.05, 0.1, 0, 0.05, -0.1],
+        ],
+    },
+    {
+        // Wall −X — solid to the left. Flat quad pressed against the −X face.
+        offset: [-1, 0, 0],
+        quads: [[-0.45, -0.3, -0.25, -0.45, -0.3, 0.25, -0.45, 0.3, 0.25, -0.45, 0.3, -0.25]],
+    },
+    {
+        // Wall +X — solid to the right. Flat quad pressed against the +X face.
+        offset: [1, 0, 0],
+        quads: [[0.45, -0.3, -0.25, 0.45, -0.3, 0.25, 0.45, 0.3, 0.25, 0.45, 0.3, -0.25]],
+    },
+    {
+        // Wall −Z — solid behind. Flat quad pressed against the −Z face.
+        offset: [0, 0, -1],
+        quads: [[-0.25, -0.3, -0.45, 0.25, -0.3, -0.45, 0.25, 0.3, -0.45, -0.25, 0.3, -0.45]],
+    },
+    {
+        // Wall +Z — solid in front. Flat quad pressed against the +Z face.
+        offset: [0, 0, 1],
+        quads: [[-0.25, -0.3, 0.45, 0.25, -0.3, 0.45, 0.25, 0.3, 0.45, -0.25, 0.3, 0.45]],
+    },
+];
+
 const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Air]: 0,
     [BlockType.Bedrock]: 0,
@@ -68,6 +117,7 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.CoalOre]: 4,
     [BlockType.OakLog]: 3,
     [BlockType.OakLeaves]: 1,
+    [BlockType.Torch]: 1,
 };
 
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
@@ -145,6 +195,80 @@ export default class ChunkComponent extends Component {
         subMesh.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
 
+    // Appends a single quad from TORCH_QUADS to subMesh. The material must be DoubleSide because
+    // each quad must be visible from both faces. Called once per quad in the attachment entry.
+    //
+    // The normal is derived analytically from the quad's own vertex data via (v1−v0) × (v3−v0)
+    // so that directional-light shading in applyVertexLighting runs on the correct axis for each
+    // quad orientation (floor cross-quads get ±X / ±Z normals; wall quads get their inward normal).
+    // Using the hardcoded upward (0,1,0) previously caused vertical torch quads to receive no
+    // directional-sun contribution and rendered them purely by ambient + aLight.
+    private pushCrossQuad(
+        vertices: ReadonlyArray<number>,
+        x: number,
+        y: number,
+        z: number,
+        subMesh: SubMesh,
+        lightValue: number,
+    ) {
+        // Compute face normal from two edge vectors: edge1 = v1−v0, edge2 = v3−v0.
+        // All four vertices of a flat quad share the same normal so we compute it once.
+        const edge1X = vertices[3] - vertices[0];
+        const edge1Y = vertices[4] - vertices[1];
+        const edge1Z = vertices[5] - vertices[2];
+        const edge2X = vertices[9] - vertices[0];
+        const edge2Y = vertices[10] - vertices[1];
+        const edge2Z = vertices[11] - vertices[2];
+        const crossX = edge1Y * edge2Z - edge1Z * edge2Y;
+        const crossY = edge1Z * edge2X - edge1X * edge2Z;
+        const crossZ = edge1X * edge2Y - edge1Y * edge2X;
+        const crossLength = Math.sqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
+        const normalX = crossX / crossLength;
+        const normalY = crossY / crossLength;
+        const normalZ = crossZ / crossLength;
+
+        const base = subMesh.positions.length / 3;
+        for (let v = 0; v < 4; v++) {
+            subMesh.positions.push(vertices[v * 3] + x, vertices[v * 3 + 1] + y, vertices[v * 3 + 2] + z);
+            subMesh.normals.push(normalX, normalY, normalZ);
+            subMesh.uvs.push(FACE_UVS[v * 2], FACE_UVS[v * 2 + 1]);
+            subMesh.lights.push(lightValue);
+        }
+        subMesh.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    }
+
+    // Returns the set of quads to render for a torch at (x, y, z) based on which adjacent block
+    // is solid. Checks the 5 candidates in priority order (floor first) and falls back to floor.
+    private getTorchQuads(
+        x: number,
+        y: number,
+        z: number,
+        chunkManager: ChunkManager,
+    ): ReadonlyArray<ReadonlyArray<number>> {
+        for (const {
+            offset: [deltaX, deltaY, deltaZ],
+            quads,
+        } of TORCH_QUADS) {
+            const neighborX = x + deltaX;
+            const neighborY = y + deltaY;
+            const neighborZ = z + deltaZ;
+            let neighborType: BlockType;
+            if (this.isInBounds(neighborX, neighborY, neighborZ)) {
+                neighborType = this.getBlock(neighborX, neighborY, neighborZ);
+            } else {
+                neighborType = chunkManager.getBlockAtWorld(
+                    this.worldOriginX + neighborX,
+                    this.worldOriginY + neighborY,
+                    this.worldOriginZ + neighborZ,
+                );
+            }
+            if (isSolidBlock(neighborType)) {
+                return quads;
+            }
+        }
+        return TORCH_QUADS[0].quads; // fallback to floor
+    }
+
     private buildGeometry(subMesh: SubMesh) {
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(subMesh.positions, 3));
@@ -160,7 +284,7 @@ export default class ChunkComponent extends Component {
             return true;
         }
         const block = this.getBlock(x, y, z);
-        return block === BlockType.Air || block === BlockType.OakLeaves;
+        return block === BlockType.Air || block === BlockType.OakLeaves || block === BlockType.Torch;
     }
 
     private isInBounds(x: number, y: number, z: number): boolean {
@@ -210,12 +334,23 @@ export default class ChunkComponent extends Component {
         const oakLogSide = createSubMesh();
         const oakLeaves1 = createSubMesh();
         const oakLeaves2 = createSubMesh();
+        const torch = createSubMesh();
 
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
                 for (let z = 0; z < this.depth; z++) {
                     const block = this.getBlock(x, y, z);
                     if (block === BlockType.Air) {
+                        continue;
+                    }
+
+                    // Torch renders as a surface-affixed sprite rather than cube faces.
+                    // Geometry depends on which adjacent face is solid (inferred at mesh time).
+                    if (block === BlockType.Torch) {
+                        const lightValue = Math.max(this.getSkyLight(x, y, z), this.getBlockLight(x, y, z));
+                        for (const quadVerts of this.getTorchQuads(x, y, z, chunkManager)) {
+                            this.pushCrossQuad(quadVerts, x, y, z, torch, lightValue);
+                        }
                         continue;
                     }
 
@@ -228,12 +363,15 @@ export default class ChunkComponent extends Component {
                             continue;
                         }
 
-                        // Face brightness comes from the air voxel we just culled against
-                        // (the block we're emitting is opaque, so its own light level is 0).
+                        // Face brightness comes from the air voxel we just culled against.
+                        // Combine sky and block light: use whichever is brighter.
                         // When that voxel falls outside the chunk we cross into a neighbor.
                         let lightValue: number;
                         if (this.isInBounds(adjacentX, adjacentY, adjacentZ)) {
-                            lightValue = this.getSkyLight(adjacentX, adjacentY, adjacentZ);
+                            lightValue = Math.max(
+                                this.getSkyLight(adjacentX, adjacentY, adjacentZ),
+                                this.getBlockLight(adjacentX, adjacentY, adjacentZ),
+                            );
                         } else {
                             lightValue = chunkManager.getLightAtWorld(
                                 this.worldOriginX + adjacentX,
@@ -324,6 +462,9 @@ export default class ChunkComponent extends Component {
         if (oakLeaves2.indices.length > 0) {
             this.mesh.add(new THREE.Mesh(this.buildGeometry(oakLeaves2), textureManager.getLeavesMaterial(1)));
         }
+        if (torch.indices.length > 0) {
+            this.mesh.add(new THREE.Mesh(this.buildGeometry(torch), textureManager.getTorchMaterial()));
+        }
     }
 
     getBlock(x: number, y: number, z: number): BlockType {
@@ -350,8 +491,27 @@ export default class ChunkComponent extends Component {
         return this.lightLevels[this.getBlockIndex(x, y, z)] & 0x0f;
     }
 
+    setBlockLight(x: number, y: number, z: number, level: number): void {
+        const index = this.getBlockIndex(x, y, z);
+        this.lightLevels[index] = (this.lightLevels[index] & 0xf0) | (level & 0x0f);
+    }
+
     clearLightLevels(): void {
         this.lightLevels.fill(0);
+    }
+
+    // Zeroes only the sky-light nibble (high), preserving any block light already set.
+    clearSkyLight(): void {
+        for (let i = 0; i < this.lightLevels.length; i++) {
+            this.lightLevels[i] &= 0x0f;
+        }
+    }
+
+    // Zeroes only the block-light nibble (low), preserving sky light.
+    clearBlockLight(): void {
+        for (let i = 0; i < this.lightLevels.length; i++) {
+            this.lightLevels[i] &= 0xf0;
+        }
     }
 
     // Returns true if the block was destroyed. The caller (ChunkManager.relightAround via

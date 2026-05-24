@@ -52,6 +52,9 @@ class TextureManager {
     private oakLogTopMat!: THREE.MeshStandardMaterial;
     private oakLogSideMat!: THREE.MeshStandardMaterial;
 
+    // Separate instance from the held-item flat material so the two can diverge independently.
+    private torchCrossMat!: THREE.MeshStandardMaterial;
+
     // Oak leaves use two textures distributed randomly by world position to break up repetition.
     private oakLeavesMats!: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial];
 
@@ -89,6 +92,8 @@ class TextureManager {
             [ItemType.OakPlanks]: this.loadFlatMat(loader, oakPlankUrl),
             [ItemType.Torch]: this.loadFlatMat(loader, torchUrl),
         };
+
+        this.torchCrossMat = this.loadFlatMat(loader, torchUrl);
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
             const tex = loader.load(url);
@@ -146,6 +151,11 @@ class TextureManager {
             material.map = texture;
             material.needsUpdate = true;
         }
+    }
+
+    // Returns the DoubleSide transparent material used for torch cross-quad geometry in chunks.
+    getTorchMaterial(): THREE.MeshStandardMaterial {
+        return this.torchCrossMat;
     }
 
     // Returns the flat-sprite material for an item rendered as a plane (e.g. the held-item view).

@@ -55,7 +55,10 @@ export default class BlockPlacementPreview extends Component {
         const target = this.playerInteraction.targetedBlock;
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
 
-        if (!target || !slot || slot.item.kind !== "block") {
+        // Only show the cube preview for block items. Non-block items like torches render as
+        // cross-quad sprites in the world, so a cube ghost would be misleading; hide it instead.
+        const canPlace = slot && slot.item.kind === "block";
+        if (!target || !canPlace) {
             this.mesh.visible = false;
             return;
         }
