@@ -6,6 +6,7 @@ import Crosshair from "./Crosshair";
 import DebugMenu from "./DebugMenu";
 import { GameProvider } from "./GameContext";
 import InventoryHUD from "./InventoryHUD";
+import UnderwaterOverlay from "./UnderwaterOverlay";
 
 export default function GameCanvas() {
     const gameContainer = useRef<HTMLDivElement>(null);
@@ -34,6 +35,7 @@ export default function GameCanvas() {
                     <DebugMenu />
                     <InventoryHUD />
                     <Crosshair />
+                    <UnderwaterOverlay />
                 </>
             )}
         </GameProvider>

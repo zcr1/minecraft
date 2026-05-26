@@ -43,7 +43,7 @@ export function setupScene(): void {
     const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x4488ff });
     const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
     const player = new GameObject(GameObjectName.Player);
-    player.addComponent(new Transform(playerMesh, 12, 80, 12));
+    player.addComponent(new Transform(playerMesh, 12, 70, 12));
     player.addComponent(new PlayerController());
     player.addComponent(new PlayerPhysics());
     player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
