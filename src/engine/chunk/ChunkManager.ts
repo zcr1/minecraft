@@ -11,21 +11,21 @@ const GENERATION_BUDGET_PER_FRAME = 2;
 const WATER_TICK_INTERVAL = 1.0;
 const MAX_WATER_FLOW_DISTANCE = 7;
 
-const NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number, number]> = [
+const NEIGHBOR_OFFSETS = [
     [1, 0, 0],
     [-1, 0, 0],
     [0, 1, 0],
     [0, -1, 0],
     [0, 0, 1],
     [0, 0, -1],
-];
+] as const;
 
-const WATER_HORIZONTAL_OFFSETS: ReadonlyArray<readonly [number, number, number]> = [
+const WATER_HORIZONTAL_OFFSETS = [
     [1, 0, 0],
     [-1, 0, 0],
     [0, 0, 1],
     [0, 0, -1],
-];
+] as const;
 
 export default class ChunkManager extends Component {
     private readonly chunks: Map<number, ChunkComponent> = new Map();
