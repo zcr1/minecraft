@@ -100,6 +100,12 @@ export default class PlayerBlockInteraction extends Component {
             return;
         }
 
+        // Skip left-click mining for water — water has 0 HP and is only removable by block placement.
+        if (target.blockType === BlockType.Water) {
+            this.resetProgress();
+            return;
+        }
+
         this.damageProgress += deltaTime / this.breakTimeSeconds;
 
         if (this.damageProgress >= 1) {
@@ -181,12 +187,23 @@ export default class PlayerBlockInteraction extends Component {
             return;
         }
 
-        // Step one block outward along the face normal to find the adjacent (placement) cell.
-        const worldPlaceX = target.chunk.worldOriginX + target.blockX + this.hitNormal.x;
-        const worldPlaceY = target.chunk.worldOriginY + target.blockY + this.hitNormal.y;
-        const worldPlaceZ = target.chunk.worldOriginZ + target.blockZ + this.hitNormal.z;
+        // For water blocks, replace the water block itself rather than stepping outward.
+        // For solid blocks, step one block outward along the face normal to find the adjacent (placement) cell.
+        let worldPlaceX: number;
+        let worldPlaceY: number;
+        let worldPlaceZ: number;
+        if (target.blockType === BlockType.Water) {
+            worldPlaceX = target.chunk.worldOriginX + target.blockX;
+            worldPlaceY = target.chunk.worldOriginY + target.blockY;
+            worldPlaceZ = target.chunk.worldOriginZ + target.blockZ;
+        } else {
+            worldPlaceX = target.chunk.worldOriginX + target.blockX + this.hitNormal.x;
+            worldPlaceY = target.chunk.worldOriginY + target.blockY + this.hitNormal.y;
+            worldPlaceZ = target.chunk.worldOriginZ + target.blockZ + this.hitNormal.z;
+        }
 
-        if (this.chunkManager.getBlockAtWorld(worldPlaceX, worldPlaceY, worldPlaceZ) !== BlockType.Air) {
+        const existingBlock = this.chunkManager.getBlockAtWorld(worldPlaceX, worldPlaceY, worldPlaceZ);
+        if (existingBlock !== BlockType.Air && existingBlock !== BlockType.Water) {
             return;
         }
 
@@ -249,7 +266,7 @@ export default class PlayerBlockInteraction extends Component {
         const blockZ = Math.round(this.scratchLocal.z);
 
         const blockType = chunk.getBlock(blockX, blockY, blockZ);
-        if (blockType === BlockType.Air || blockType === BlockType.Water) {
+        if (blockType === BlockType.Air) {
             return null;
         }
 

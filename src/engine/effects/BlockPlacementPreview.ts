@@ -63,11 +63,17 @@ export default class BlockPlacementPreview extends Component {
             return;
         }
 
-        const worldX = target.chunk.worldOriginX + target.blockX + this.playerInteraction.hitNormal.x;
-        const worldY = target.chunk.worldOriginY + target.blockY + this.playerInteraction.hitNormal.y;
-        const worldZ = target.chunk.worldOriginZ + target.blockZ + this.playerInteraction.hitNormal.z;
+        // Water blocks are replaced in-place; all other blocks place on the adjacent face.
+        const isWaterTarget = target.blockType === BlockType.Water;
+        const normalOffsetX = isWaterTarget ? 0 : this.playerInteraction.hitNormal.x;
+        const normalOffsetY = isWaterTarget ? 0 : this.playerInteraction.hitNormal.y;
+        const normalOffsetZ = isWaterTarget ? 0 : this.playerInteraction.hitNormal.z;
+        const worldX = target.chunk.worldOriginX + target.blockX + normalOffsetX;
+        const worldY = target.chunk.worldOriginY + target.blockY + normalOffsetY;
+        const worldZ = target.chunk.worldOriginZ + target.blockZ + normalOffsetZ;
 
-        if (this.chunkManager.getBlockAtWorld(worldX, worldY, worldZ) !== BlockType.Air) {
+        const existingBlock = this.chunkManager.getBlockAtWorld(worldX, worldY, worldZ);
+        if (existingBlock !== BlockType.Air && existingBlock !== BlockType.Water) {
             this.mesh.visible = false;
             return;
         }
