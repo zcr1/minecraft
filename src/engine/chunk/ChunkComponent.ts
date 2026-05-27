@@ -190,7 +190,8 @@ export default class ChunkComponent extends Component {
     // Auxiliary byte per voxel for block-type-specific data. For torches this stores the
     // TORCH_QUADS index (0-4) set at placement time via torchQuadIndexFromHitNormal, locking
     // the visual orientation to the face the player actually clicked rather than re-inferring it
-    // from whichever neighbour happens to be solid at the next mesh rebuild.
+    // from whichever neighbour happens to be solid at the next mesh rebuild. For water it stores
+    // current flow distance
     private readonly blockMeta: Uint8Array;
 
     constructor(

@@ -521,7 +521,7 @@ export default class ChunkManager extends Component {
             return;
         }
 
-        const currentMeta = self.chunk.getBlockMeta(self.localX, self.localY, self.localZ);
+        const currentDistance = self.chunk.getBlockMeta(self.localX, self.localY, self.localZ);
         let didSpread = false;
 
         // Gravity: try to spread down first. Fallen water resets to meta=0 (new source).
@@ -535,8 +535,8 @@ export default class ChunkManager extends Component {
         }
 
         // Horizontal spread only if within flow distance limit.
-        if (currentMeta < MAX_WATER_FLOW_DISTANCE) {
-            const newMeta = currentMeta + 1;
+        if (currentDistance < MAX_WATER_FLOW_DISTANCE) {
+            const newDistance = currentDistance + 1;
 
             for (const [offsetX, , offsetZ] of WATER_HORIZONTAL_OFFSETS) {
                 const neighbor = this.resolveWorldBlock(worldX + offsetX, worldY, worldZ + offsetZ);
@@ -548,14 +548,14 @@ export default class ChunkManager extends Component {
                 const canFlowInto =
                     neighborBlock === BlockType.Air ||
                     (neighborBlock === BlockType.Water &&
-                        neighbor.chunk.getBlockMeta(neighbor.localX, neighbor.localY, neighbor.localZ) > newMeta);
+                        neighbor.chunk.getBlockMeta(neighbor.localX, neighbor.localY, neighbor.localZ) > newDistance);
 
                 if (!canFlowInto) {
                     continue;
                 }
 
                 neighbor.chunk.setBlock(neighbor.localX, neighbor.localY, neighbor.localZ, BlockType.Water);
-                neighbor.chunk.setBlockMeta(neighbor.localX, neighbor.localY, neighbor.localZ, newMeta);
+                neighbor.chunk.setBlockMeta(neighbor.localX, neighbor.localY, neighbor.localZ, newDistance);
 
                 affectedChunks.add(neighbor.chunk);
                 this.scheduleWaterUpdate(neighbor);
