@@ -127,6 +127,7 @@ export default class PlayerBlockInteraction extends Component {
                     });
                 }
                 this.chunkManager.relightAround(target.chunk);
+                this.chunkManager.scheduleNeighborWaterUpdates(worldX, worldY, worldZ);
             }
             eventManager.emit("blockBroken", broken);
             this.resetProgress();
