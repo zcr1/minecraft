@@ -4,6 +4,7 @@ import { BLOCK_BREAK_STAGE_COUNT } from "engine/TextureManager";
 import ChunkComponent, {
     BlockType,
     isInstantBreak,
+    isPassableBlock,
     isSolidBlock,
     torchQuadIndexFromHitNormal,
 } from "engine/chunk/ChunkComponent";
@@ -216,7 +217,10 @@ export default class PlayerBlockInteraction extends Component {
             return;
         }
 
-        if (playerOverlapsBlock(this.playerTransform, worldPlaceX, worldPlaceY, worldPlaceZ)) {
+        if (
+            !isPassableBlock(blockTypeToPlace) &&
+            playerOverlapsBlock(this.playerTransform, worldPlaceX, worldPlaceY, worldPlaceZ)
+        ) {
             return;
         }
 
