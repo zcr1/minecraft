@@ -8,6 +8,7 @@ import GameObject from "engine/core/GameObject";
 import BlockBreakParticles from "engine/effects/BlockBreakParticles";
 import BlockDamageOverlay from "engine/effects/BlockDamageOverlay";
 import BlockPlacementPreview from "engine/effects/BlockPlacementPreview";
+import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
 import SkyComponent, { DAYTIME_PRESET } from "engine/environment/SkyComponent";
 import DroppedItems from "engine/items/DroppedItems";
 import HeldItem from "engine/player/HeldItem";
@@ -84,4 +85,8 @@ export function setupScene(): void {
     const droppedItems = new GameObject(GameObjectName.DroppedItems);
     droppedItems.addComponent(new DroppedItems());
     game.add(droppedItems);
+
+    const chunkBoundaryOverlay = new GameObject(GameObjectName.ChunkBoundaryOverlay);
+    chunkBoundaryOverlay.addComponent(new ChunkBoundaryOverlay());
+    game.add(chunkBoundaryOverlay);
 }

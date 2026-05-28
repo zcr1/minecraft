@@ -1,6 +1,7 @@
 import { Pane } from "tweakpane";
 import { useEffect, useRef, useState } from "react";
 import Transform from "engine/components/Transform";
+import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
 import PlayerBlockInteraction, { BREAK_TIME_SECONDS } from "engine/player/PlayerBlockInteraction";
 import PlayerPhysics from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
@@ -15,11 +16,20 @@ export default function DebugMenu() {
 
     useEffect(() => {
         const pane = new Pane({ title: "Debug" });
-        const params = { noClip: false, showFpsGraph: false, showPlayerPosition: false, instantBreak: false };
+        const params = {
+            noClip: false,
+            showFpsGraph: false,
+            showPlayerPosition: false,
+            instantBreak: false,
+            showChunkBoundaries: false,
+        };
 
         const player = game.getGameObject(GameObjectName.Player);
         const playerPhysics = player.getComponent(PlayerPhysics);
         const playerBlockInteraction = player.getComponent(PlayerBlockInteraction);
+        const chunkBoundaryOverlay = game
+            .getGameObject(GameObjectName.ChunkBoundaryOverlay)
+            .getComponent(ChunkBoundaryOverlay);
 
         pane.addBinding(params, "noClip", { label: "No Clip" }).on("change", ({ value }) => {
             playerPhysics.noClipEnabled = value;
@@ -35,6 +45,10 @@ export default function DebugMenu() {
 
         pane.addBinding(params, "instantBreak", { label: "Instant Break" }).on("change", ({ value }) => {
             playerBlockInteraction.breakTimeSeconds = value ? 0.01 : BREAK_TIME_SECONDS;
+        });
+
+        pane.addBinding(params, "showChunkBoundaries", { label: "Show Chunk Boundaries" }).on("change", ({ value }) => {
+            chunkBoundaryOverlay.showBoundaries = value;
         });
 
         return () => pane.dispose();
