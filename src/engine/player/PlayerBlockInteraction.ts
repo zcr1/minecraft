@@ -268,8 +268,11 @@ export default class PlayerBlockInteraction extends Component {
             return null;
         }
 
-        // step 0.5 inside the face so Math.round lands on the block's integer-coordinate center
-        this.scratchLocal.copy(hit.point).addScaledVector(hit.face.normal, -0.5).sub(chunkGroup.position);
+        // Step a small amount along the ray direction to land just inside the hit block.
+        // Using the ray direction (rather than the face normal) works for both cube faces
+        // (hit.point is at the block boundary) and thin geometry like torches (hit.point is
+        // already inside the voxel, so any forward step keeps us in the same block).
+        this.scratchLocal.copy(hit.point).addScaledVector(this.raycaster.ray.direction, 0.01).sub(chunkGroup.position);
         const blockX = Math.round(this.scratchLocal.x);
         const blockY = Math.round(this.scratchLocal.y);
         const blockZ = Math.round(this.scratchLocal.z);
