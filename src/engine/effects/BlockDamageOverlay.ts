@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import textureManager from "engine/TextureManager";
+import { isInstantBreak } from "engine/chunk/ChunkComponent";
 import Component from "engine/core/Component";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
@@ -24,7 +25,7 @@ export default class BlockDamageOverlay extends Component {
 
     update() {
         const target = this.playerInteraction.targetedBlock;
-        if (!target || this.playerInteraction.damageProgress <= 0) {
+        if (!target || this.playerInteraction.damageProgress <= 0 || isInstantBreak(target.blockType)) {
             this.mesh.visible = false;
             return;
         }

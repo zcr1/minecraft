@@ -158,6 +158,10 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.OakPlanks]: 2,
 };
 
+export function isInstantBreak(blockType: BlockType): boolean {
+    return BLOCK_HITPOINTS[blockType] === 1;
+}
+
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
 interface SubMesh {
     positions: number[];

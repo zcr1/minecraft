@@ -1,7 +1,12 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import { BLOCK_BREAK_STAGE_COUNT } from "engine/TextureManager";
-import ChunkComponent, { BlockType, isSolidBlock, torchQuadIndexFromHitNormal } from "engine/chunk/ChunkComponent";
+import ChunkComponent, {
+    BlockType,
+    isInstantBreak,
+    isSolidBlock,
+    torchQuadIndexFromHitNormal,
+} from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
@@ -107,6 +112,10 @@ export default class PlayerBlockInteraction extends Component {
         }
 
         this.damageProgress += deltaTime / this.breakTimeSeconds;
+
+        if (isInstantBreak(target.blockType)) {
+            this.damageProgress = 1;
+        }
 
         if (this.damageProgress >= 1) {
             const broken: BlockBreakEvent = {
