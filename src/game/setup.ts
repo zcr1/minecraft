@@ -9,7 +9,7 @@ import BlockBreakParticles from "engine/effects/BlockBreakParticles";
 import BlockDamageOverlay from "engine/effects/BlockDamageOverlay";
 import BlockPlacementPreview from "engine/effects/BlockPlacementPreview";
 import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
-import SkyComponent, { DAYTIME_PRESET } from "engine/environment/SkyComponent";
+import DayNightCycle from "engine/environment/DayNightCycle";
 import DroppedItems from "engine/items/DroppedItems";
 import HeldItem from "engine/player/HeldItem";
 import Inventory from "engine/player/Inventory";
@@ -22,10 +22,8 @@ import GameObjectName from "engine/utils/gameObjectNames";
 
 export function setupScene(): void {
     const skyObj = new GameObject(GameObjectName.Sky);
-    skyObj.addComponent(new SkyComponent(DAYTIME_PRESET));
+    skyObj.addComponent(new DayNightCycle());
     game.add(skyObj);
-
-    game.threeScene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
     TextureManager.init();
 

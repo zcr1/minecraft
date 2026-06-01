@@ -2,6 +2,7 @@ import { Pane } from "tweakpane";
 import { useEffect, useRef, useState } from "react";
 import Transform from "engine/components/Transform";
 import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
+import DayNightCycle from "engine/environment/DayNightCycle";
 import PlayerBlockInteraction, { BREAK_TIME_SECONDS } from "engine/player/PlayerBlockInteraction";
 import PlayerPhysics from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
@@ -24,6 +25,7 @@ export default function DebugMenu() {
             showChunkBoundaries: false,
         };
 
+        const dayNightCycle = game.getGameObject(GameObjectName.Sky).getComponent(DayNightCycle);
         const player = game.getGameObject(GameObjectName.Player);
         const playerPhysics = player.getComponent(PlayerPhysics);
         const playerBlockInteraction = player.getComponent(PlayerBlockInteraction);
@@ -51,7 +53,24 @@ export default function DebugMenu() {
             chunkBoundaryOverlay.showBoundaries = value;
         });
 
-        return () => pane.dispose();
+        pane.addBinding(dayNightCycle, "timeOfDay", {
+            label: "Time of Day",
+            min: 0,
+            max: 1,
+            step: 0.0001,
+            format: (value: number) => {
+                const hours = Math.floor(value * 24);
+                const minutes = Math.floor((value * 24 - hours) * 60);
+                return `${hours}:${minutes.toString().padStart(2, "0")}`;
+            },
+        });
+
+        const refreshId = setInterval(() => pane.refresh(), 100);
+
+        return () => {
+            clearInterval(refreshId);
+            pane.dispose();
+        };
     }, [game]);
 
     useEffect(() => {
