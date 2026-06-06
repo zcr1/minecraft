@@ -11,7 +11,7 @@ import {
 import eventManager from "engine/core/EventManager";
 import type Inventory from "engine/player/Inventory";
 import type { InventorySlot } from "engine/player/Inventory";
-import { CRAFTING_OUTPUT_SLOT, CRAFTING_SLOT_OFFSET } from "../CraftingPanel";
+import { CRAFTING_SLOT_OFFSET } from "../CraftingPanel";
 
 export interface DragState {
     sourceSlot: number;
@@ -39,8 +39,9 @@ export interface DragSystem {
  *   a valid target moves or swaps, handling inventory↔crafting-grid transitions.
  */
 export function useDragSystem(
-    inventory: Inventory,
     craftingGrid: (InventorySlot | null)[],
+    craftingOutputSlot: number,
+    inventory: Inventory,
     setCraftingGrid: Dispatch<SetStateAction<(InventorySlot | null)[]>>,
 ): DragSystem {
     const [dragState, setDragState] = useState<DragState | null>(null);
@@ -91,7 +92,15 @@ export function useDragSystem(
                 }
                 eventManager.emit("itemDropped", dragState.item);
             } else if (targetSlot !== sourceSlot) {
-                resolveDrop(sourceSlot, targetSlot, dragState.item, inventory, craftingGrid, setCraftingGrid);
+                resolveDrop({
+                    sourceSlot,
+                    targetSlot,
+                    draggedItem: dragState.item,
+                    inventory,
+                    craftingGrid,
+                    setCraftingGrid,
+                    craftingOutputSlot,
+                });
             }
 
             setDragState(null);
@@ -99,7 +108,7 @@ export function useDragSystem(
         };
         document.addEventListener("mouseup", handleMouseUp);
         return () => document.removeEventListener("mouseup", handleMouseUp);
-    }, [dragState, inventory, craftingGrid, setCraftingGrid]);
+    }, [dragState, inventory, craftingGrid, setCraftingGrid, craftingOutputSlot]);
 
     const startDrag = (slotIndex: number, event: ReactMouseEvent) => {
         const slot =
@@ -133,18 +142,27 @@ export function useDragSystem(
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function resolveDrop(
-    sourceSlot: number,
-    targetSlot: number,
-    draggedItem: InventorySlot,
-    inventory: Inventory,
-    craftingGrid: (InventorySlot | null)[],
-    setCraftingGrid: Dispatch<SetStateAction<(InventorySlot | null)[]>>,
-): void {
+function resolveDrop({
+    craftingGrid,
+    craftingOutputSlot,
+    draggedItem,
+    inventory,
+    setCraftingGrid,
+    sourceSlot,
+    targetSlot,
+}: {
+    craftingGrid: (InventorySlot | null)[];
+    craftingOutputSlot: number;
+    draggedItem: InventorySlot;
+    inventory: Inventory;
+    setCraftingGrid: Dispatch<SetStateAction<(InventorySlot | null)[]>>;
+    sourceSlot: number;
+    targetSlot: number;
+}): void {
     const sourceIsInventory = sourceSlot < CRAFTING_SLOT_OFFSET;
     const targetIsInventory = targetSlot < CRAFTING_SLOT_OFFSET;
-    const targetIsCraftingGrid = targetSlot >= CRAFTING_SLOT_OFFSET && targetSlot < CRAFTING_OUTPUT_SLOT;
-    const targetIsOutput = targetSlot === CRAFTING_OUTPUT_SLOT;
+    const targetIsCraftingGrid = targetSlot >= CRAFTING_SLOT_OFFSET && targetSlot < craftingOutputSlot;
+    const targetIsOutput = targetSlot === craftingOutputSlot;
 
     if (targetIsOutput) {
         // Cannot drop onto the output slot.

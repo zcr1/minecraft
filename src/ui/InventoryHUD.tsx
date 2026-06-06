@@ -1,14 +1,15 @@
 import classNames from "classnames";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import eventManager from "engine/core/EventManager";
 import type { InventorySlot } from "engine/player/Inventory";
 import Inventory, { HOTBAR_SIZE, TOTAL_SLOTS } from "engine/player/Inventory";
 import GameObjectName from "engine/utils/gameObjectNames";
-import CraftingPanel, { CRAFTING_OUTPUT_SLOT } from "./CraftingPanel";
+import CraftingPanel, { CRAFTING_OUTPUT_SLOT, CRAFTING_TABLE_OUTPUT_SLOT } from "./CraftingPanel";
 import { useGame } from "./GameContext";
 import "./InventoryHUD.scss";
 import { BLOCK_TEXTURE_URLS, ITEM_TEXTURE_URLS } from "./blockTextures";
-import { useCraftingState } from "./hooks/useCraftingState";
+import { useCraftingState, useCraftingTableState } from "./hooks/useCraftingState";
 import { useDragSystem } from "./hooks/useDragSystem";
 import { useHotbarSelection } from "./hooks/useHotbarSelection";
 import { useInventorySync } from "./hooks/useInventorySync";
@@ -71,18 +72,45 @@ export default function InventoryHUD() {
 
     useInventorySync();
     const selectedSlot = useHotbarSelection();
-    const { craftingGrid, setCraftingGrid, craftingOutput, handleCraft } = useCraftingState(inventory);
+
+    const [craftingMode, setCraftingMode] = useState<"inventory" | "craftingTable">("inventory");
+
+    const inventoryCraftingState = useCraftingState(inventory);
+    const tableCraftingState = useCraftingTableState(inventory);
+    const activeCraftingState = craftingMode === "craftingTable" ? tableCraftingState : inventoryCraftingState;
+    const craftingOutputSlot = craftingMode === "craftingTable" ? CRAFTING_TABLE_OUTPUT_SLOT : CRAFTING_OUTPUT_SLOT;
+
     const { dragState, dragCursorRef, cancelDrag, startDrag, onSlotMouseEnter, onSlotMouseLeave } = useDragSystem(
         inventory,
-        craftingGrid,
-        setCraftingGrid,
+        activeCraftingState.craftingGrid,
+        activeCraftingState.setCraftingGrid,
+        craftingOutputSlot,
     );
-    const inventoryOpen = useInventoryToggle(cancelDrag);
+
+    const handleClose = () => {
+        setCraftingMode("inventory");
+        cancelDrag();
+    };
+
+    const [inventoryOpen, setInventoryOpen] = useInventoryToggle(handleClose);
+
+    // Subscribe to crafting table right-click event from the engine.
+    useEffect(() => {
+        const handleCraftingTableOpened = () => {
+            setCraftingMode("craftingTable");
+            setInventoryOpen(true);
+            if (document.pointerLockElement) {
+                document.exitPointerLock();
+            }
+        };
+        eventManager.subscribe("craftingTableOpened", handleCraftingTableOpened);
+        return () => eventManager.unsubscribe("craftingTableOpened", handleCraftingTableOpened);
+    }, [setInventoryOpen]);
 
     const handleSlotMouseDown = (slotIndex: number, event: React.MouseEvent) => {
-        if (slotIndex === CRAFTING_OUTPUT_SLOT) {
-            if (craftingOutput) {
-                handleCraft();
+        if (slotIndex === craftingOutputSlot) {
+            if (activeCraftingState.craftingOutput) {
+                activeCraftingState.handleCraft();
             }
             return;
         }
@@ -100,8 +128,9 @@ export default function InventoryHUD() {
                 {inventoryOpen && (
                     <>
                         <CraftingPanel
-                            craftingGrid={craftingGrid}
-                            outputSlot={craftingOutput}
+                            craftingGrid={activeCraftingState.craftingGrid}
+                            outputSlot={activeCraftingState.craftingOutput}
+                            outputSlotIndex={craftingOutputSlot}
                             dragSourceSlot={dragState?.sourceSlot ?? null}
                             onSlotMouseDown={handleSlotMouseDown}
                             onSlotMouseEnter={onSlotMouseEnter}

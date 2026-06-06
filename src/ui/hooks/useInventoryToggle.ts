@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 
 /**
  * Toggles the inventory open/closed when E is pressed.
  * Releases pointer lock on open so the cursor becomes visible.
  * Calls `onClose` when the inventory is dismissed — use this to cancel any active drag.
+ *
+ * Returns a tuple so callers can also force-open the inventory (e.g. when the crafting
+ * table event fires).
  */
-export function useInventoryToggle(onClose: () => void): boolean {
+export function useInventoryToggle(onClose: () => void): [boolean, Dispatch<SetStateAction<boolean>>] {
     const [inventoryOpen, setInventoryOpen] = useState(false);
 
     // Store callback in a ref so the keydown listener never needs to be re-registered
@@ -43,5 +46,5 @@ export function useInventoryToggle(onClose: () => void): boolean {
         }
     }, [inventoryOpen]);
 
-    return inventoryOpen;
+    return [inventoryOpen, setInventoryOpen];
 }

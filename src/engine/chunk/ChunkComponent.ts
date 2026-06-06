@@ -17,6 +17,7 @@ export enum BlockType {
     Torch = 9,
     Water = 10,
     OakPlanks = 11,
+    CraftingTable = 12,
 }
 
 // Blocks the player can walk through (non-solid).
@@ -156,6 +157,7 @@ const BLOCK_HITPOINTS: Record<BlockType, number> = {
     [BlockType.Torch]: 1,
     [BlockType.Water]: 0,
     [BlockType.OakPlanks]: 2,
+    [BlockType.CraftingTable]: 3,
 };
 
 export function isInstantBreak(blockType: BlockType): boolean {
@@ -385,6 +387,10 @@ export default class ChunkComponent extends Component {
             oakLogSide: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakLog, 0) },
             oakLogTop: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakLog, 1) },
             oakPlanks: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakPlanks, 0) },
+            craftingTable: {
+                subMesh: createSubMesh(),
+                material: () => textureManager.getMaterial(BlockType.CraftingTable, 0),
+            },
             stone: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Stone, 0) },
             torch: { subMesh: createSubMesh(), material: () => textureManager.getTorchMaterial() },
             // Water renderOrder=1 is it is rendered after all opaque geometry and alpha blending sorts correctly.
@@ -527,6 +533,9 @@ export default class ChunkComponent extends Component {
                                 break;
                             case BlockType.OakPlanks:
                                 this.pushFace(face, x, y, z, meshes.oakPlanks.subMesh, lightValue);
+                                break;
+                            case BlockType.CraftingTable:
+                                this.pushFace(face, x, y, z, meshes.craftingTable.subMesh, lightValue);
                                 break;
                             case BlockType.Stone:
                                 this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);

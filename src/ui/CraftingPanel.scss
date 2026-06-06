@@ -30,6 +30,10 @@
     gap: 2px;
 }
 
+.crafting-grid-3x3 {
+    grid-template-columns: repeat(3, 40px);
+}
+
 .crafting-arrow {
     color: rgba(255, 255, 255, 0.5);
     font-size: 14px;

@@ -97,6 +97,11 @@ export default class PlayerBlockInteraction extends Component {
 
         // Right-click placement — checked before the mining guard so it works regardless of hand state.
         if (target && input.wasMousePressed(2)) {
+            if (target.blockType === BlockType.CraftingTable) {
+                eventManager.emit("craftingTableOpened", undefined);
+                return;
+            }
+
             this.tryPlaceBlock(target);
             return;
         }

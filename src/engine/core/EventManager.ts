@@ -8,6 +8,7 @@ export interface GameEventMap {
     hotbarSelectionChanged: number;
     itemDropped: InventorySlot;
     targetedBlockChanged: TargetedBlock | null;
+    craftingTableOpened: void;
 }
 
 type Listener<K extends keyof GameEventMap> = (event: GameEventMap[K]) => void;

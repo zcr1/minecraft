@@ -4,9 +4,12 @@ import "./CraftingPanel.scss";
 import { BLOCK_TEXTURE_URLS, ITEM_TEXTURE_URLS } from "./blockTextures";
 
 // Virtual slot indices used to identify crafting slots within the shared drag system.
-// Slots 36–39 are the 2×2 grid (row-major); slot 40 is the output.
+// Only one crafting panel is ever active at a time, so these ranges don't conflict:
+// 2×2 mode: slots 36–39 are the grid, slot 40 is the output.
+// 3×3 mode: slots 36–44 are the grid, slot 45 is the output.
 export const CRAFTING_SLOT_OFFSET = 36;
 export const CRAFTING_OUTPUT_SLOT = 40;
+export const CRAFTING_TABLE_OUTPUT_SLOT = 45;
 
 function getTextureUrl(slot: InventorySlot): string | undefined {
     if (slot.item.kind === "block") {
@@ -58,9 +61,10 @@ function CraftingSlot({
 }
 
 interface CraftingPanelProps {
-    // 4-element array: [top-left, top-right, bottom-left, bottom-right]
+    // 4-element array for 2×2, 9-element array for 3×3 (row-major)
     craftingGrid: (InventorySlot | null)[];
     outputSlot: InventorySlot | null;
+    outputSlotIndex: number;
     dragSourceSlot: number | null;
     onSlotMouseDown: (index: number, event: React.MouseEvent) => void;
     onSlotMouseEnter: (index: number) => void;
@@ -70,6 +74,7 @@ interface CraftingPanelProps {
 export default function CraftingPanel({
     craftingGrid,
     outputSlot,
+    outputSlotIndex,
     dragSourceSlot,
     onSlotMouseDown,
     onSlotMouseEnter,
@@ -79,7 +84,7 @@ export default function CraftingPanel({
         <div className="crafting-panel">
             <span className="crafting-label">Crafting</span>
             <div className="crafting-panel-content">
-                <div className="crafting-grid">
+                <div className={classNames("crafting-grid", { "crafting-grid-3x3": craftingGrid.length === 9 })}>
                     {craftingGrid.map((slot, index) => (
                         <CraftingSlot
                             key={index}
@@ -95,7 +100,7 @@ export default function CraftingPanel({
                 <div className="crafting-arrow">▶</div>
                 <CraftingSlot
                     slot={outputSlot}
-                    slotIndex={CRAFTING_OUTPUT_SLOT}
+                    slotIndex={outputSlotIndex}
                     isDragSource={false}
                     isOutput
                     onSlotMouseDown={onSlotMouseDown}

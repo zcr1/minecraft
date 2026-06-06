@@ -2,6 +2,7 @@ import bedrockUrl from "assets/textures/bedrock.png";
 import coalUrl from "assets/textures/coal.png";
 import coalOreUrl from "assets/textures/coal_ore.png";
 import cobbleUrl from "assets/textures/cobblestone.png";
+import craftingTableUrl from "assets/textures/crafting_table.png";
 import desetroy0Url from "assets/textures/destroy_0.png";
 import desetroy1Url from "assets/textures/destroy_1.png";
 import desetroy2Url from "assets/textures/destroy_2.png";
@@ -88,6 +89,7 @@ class TextureManager {
             [BlockType.Cobblestone]: this.loadMat(loader, cobbleUrl),
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
             [BlockType.OakPlanks]: this.loadMat(loader, oakPlankUrl),
+            [BlockType.CraftingTable]: this.loadMat(loader, craftingTableUrl),
         };
 
         this.flatItemMaterials = {

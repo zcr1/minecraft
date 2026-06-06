@@ -1,10 +1,16 @@
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react";
-import type { CraftingGrid } from "engine/crafting/recipes";
-import { matchRecipe } from "engine/crafting/recipes";
+import type { CraftingGrid, CraftingGrid3x3 } from "engine/crafting/recipes";
+import { matchRecipe, matchRecipe3x3 } from "engine/crafting/recipes";
 import type Inventory from "engine/player/Inventory";
 import type { InventorySlot } from "engine/player/Inventory";
 
 const EMPTY_CRAFTING_GRID: (InventorySlot | null)[] = [null, null, null, null];
+// prettier-ignore
+const EMPTY_CRAFTING_TABLE_GRID: (InventorySlot | null)[] = [
+    null, null, null, 
+    null, null, null, 
+    null, null, null
+];
 
 export interface CraftingState {
     craftingGrid: (InventorySlot | null)[];
@@ -34,6 +40,43 @@ export function useCraftingState(inventory: Inventory): CraftingState {
             return;
         }
         inventory.add(craftingOutput.item, craftingOutput.count);
+        setCraftingGrid(previous =>
+            previous.map(slot => {
+                if (!slot) {
+                    return null;
+                }
+                return slot.count > 1 ? { ...slot, count: slot.count - 1 } : null;
+            }),
+        );
+    };
+
+    return { craftingGrid, setCraftingGrid, craftingOutput, handleCraft };
+}
+
+/**
+ * Manages the 3×3 crafting table grid state, derives the current recipe output,
+ * and provides a handler that consumes one of each ingredient on craft.
+ */
+export function useCraftingTableState(inventory: Inventory): CraftingState {
+    const [craftingGrid, setCraftingGrid] = useState<(InventorySlot | null)[]>([...EMPTY_CRAFTING_TABLE_GRID]);
+
+    const craftingOutput = useMemo(() => {
+        const grid = craftingGrid.map(slot => slot?.item ?? null) as CraftingGrid3x3;
+        const recipe = matchRecipe3x3(grid);
+        if (!recipe) {
+            return null;
+        }
+
+        return { item: recipe.output, count: recipe.outputCount } satisfies InventorySlot;
+    }, [craftingGrid]);
+
+    const handleCraft = () => {
+        if (!craftingOutput || !inventory.canAdd(craftingOutput.item)) {
+            return;
+        }
+
+        inventory.add(craftingOutput.item, craftingOutput.count);
+
         setCraftingGrid(previous =>
             previous.map(slot => {
                 if (!slot) {

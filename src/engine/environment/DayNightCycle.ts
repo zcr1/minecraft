@@ -3,8 +3,10 @@ import { Sky } from "three/addons/objects/Sky.js";
 import game from "engine/Game";
 import Component from "engine/core/Component";
 
-// 2min -> 1hr in game
-const DAY_DURATION_SECONDS = 2 * 24 * 60;
+const DAY_DURATION_SECONDS = 2 * 24 * 60; // 2min -> 1hr in game
+const UPDATE_FREQUENCY = 1; // 1s
+const STAR_COUNT = 2000;
+const STAR_RADIUS = 900;
 const SKY_SCALE = 450000;
 
 export default class DayNightCycle extends Component {
@@ -46,31 +48,34 @@ export default class DayNightCycle extends Component {
 
     update(deltaTime: number) {
         this._timeOfDay = (this._timeOfDay + deltaTime / DAY_DURATION_SECONDS) % 1;
+
         // Stars must follow the camera so they appear fixed in the sky
         this.starField.position.copy(game.camera.threeCamera.position);
+
         this.accumulator += deltaTime;
-        if (this.accumulator >= 1) {
+        if (this.accumulator >= UPDATE_FREQUENCY) {
             this.accumulator = 0;
             this.updateLighting();
         }
     }
 
     private createStarField(): THREE.Points {
-        const starCount = 2000;
-        const radius = 900;
-        const positions = new Float32Array(starCount * 3);
-        for (let i = 0; i < starCount; i++) {
+        const positions = new Float32Array(STAR_COUNT * 3);
+
+        for (let i = 0; i < STAR_COUNT; i++) {
             const theta = Math.random() * Math.PI * 2;
             // acos(1 - u) gives uniform distribution over the upper hemisphere (y >= 0).
             // Full sphere would use acos(1 - 2u); halving the range keeps only y >= 0,
             // which is all that's ever visible — terrain occludes everything below the horizon.
             const phi = Math.acos(1 - Math.random());
-            positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-            positions[i * 3 + 1] = radius * Math.cos(phi);
-            positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+            positions[i * 3] = STAR_RADIUS * Math.sin(phi) * Math.cos(theta);
+            positions[i * 3 + 1] = STAR_RADIUS * Math.cos(phi);
+            positions[i * 3 + 2] = STAR_RADIUS * Math.sin(phi) * Math.sin(theta);
         }
+
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
         const material = new THREE.PointsMaterial({
             color: 0xffffff,
             size: 1.5,
@@ -79,6 +84,7 @@ export default class DayNightCycle extends Component {
             opacity: 0,
             depthWrite: false,
         });
+
         return new THREE.Points(geometry, material);
     }
 
@@ -92,9 +98,10 @@ export default class DayNightCycle extends Component {
         const horizonProximity = Math.max(0, 1 - Math.abs(sunY) / 0.4);
         const nightFactor = Math.max(0, -sunY);
 
-        const turbidity = 1.0 + horizonProximity * 11;
         // Rayleigh fades toward 0 at night, which darkens the sky shader significantly
         const rayleigh = (0.3 + horizonProximity * 2.7) * (1 - nightFactor * 0.95);
+        const turbidity = 1.0 + horizonProximity * 11;
+
         // Larger mie halo near horizon spreads sun glow through orange-tinted atmosphere;
         // softer mieDirectionalG blends the disc into surrounding sky colour
         const mieCoefficient = 0.002 + horizonProximity * 0.018;

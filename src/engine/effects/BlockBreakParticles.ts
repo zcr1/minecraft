@@ -24,6 +24,7 @@ const BLOCK_COLORS: Record<BlockType, number> = {
     [BlockType.Torch]: 0xd4a017,
     [BlockType.Water]: 0x3399ff,
     [BlockType.OakPlanks]: 0xc8a46e,
+    [BlockType.CraftingTable]: 0xa26b36,
 };
 
 // Blocks with a secondary color randomly mix between the two when spawning particles.
