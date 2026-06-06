@@ -387,9 +387,21 @@ export default class ChunkComponent extends Component {
             oakLogSide: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakLog, 0) },
             oakLogTop: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakLog, 1) },
             oakPlanks: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.OakPlanks, 0) },
-            craftingTable: {
+            craftingTableTop: {
                 subMesh: createSubMesh(),
-                material: () => textureManager.getMaterial(BlockType.CraftingTable, 0),
+                material: () => textureManager.getCraftingTableMaterial(0, 1, 0),
+            },
+            craftingTableFront: {
+                subMesh: createSubMesh(),
+                material: () => textureManager.getCraftingTableMaterial(0, 0, -1),
+            },
+            craftingTableBack: {
+                subMesh: createSubMesh(),
+                material: () => textureManager.getCraftingTableMaterial(0, 0, 1),
+            },
+            craftingTableSide: {
+                subMesh: createSubMesh(),
+                material: () => textureManager.getCraftingTableMaterial(1, 0, 0),
             },
             stone: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Stone, 0) },
             torch: { subMesh: createSubMesh(), material: () => textureManager.getTorchMaterial() },
@@ -534,9 +546,18 @@ export default class ChunkComponent extends Component {
                             case BlockType.OakPlanks:
                                 this.pushFace(face, x, y, z, meshes.oakPlanks.subMesh, lightValue);
                                 break;
-                            case BlockType.CraftingTable:
-                                this.pushFace(face, x, y, z, meshes.craftingTable.subMesh, lightValue);
+                            case BlockType.CraftingTable: {
+                                let craftingTableSubMesh = meshes.craftingTableSide.subMesh;
+                                if (face.normal[1] === 1) {
+                                    craftingTableSubMesh = meshes.craftingTableTop.subMesh;
+                                } else if (face.normal[2] === -1) {
+                                    craftingTableSubMesh = meshes.craftingTableFront.subMesh;
+                                } else if (face.normal[2] === 1) {
+                                    craftingTableSubMesh = meshes.craftingTableBack.subMesh;
+                                }
+                                this.pushFace(face, x, y, z, craftingTableSubMesh, lightValue);
                                 break;
+                            }
                             case BlockType.Stone:
                                 this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);
                                 break;

@@ -3,6 +3,9 @@ import coalUrl from "assets/textures/coal.png";
 import coalOreUrl from "assets/textures/coal_ore.png";
 import cobbleUrl from "assets/textures/cobblestone.png";
 import craftingTableUrl from "assets/textures/crafting_table.png";
+import craftingTableBackUrl from "assets/textures/crafting_table_back.png";
+import craftingTableFrontUrl from "assets/textures/crafting_table_front.png";
+import craftingTableTopUrl from "assets/textures/crafting_table_top.png";
 import desetroy0Url from "assets/textures/destroy_0.png";
 import desetroy1Url from "assets/textures/destroy_1.png";
 import desetroy2Url from "assets/textures/destroy_2.png";
@@ -54,6 +57,12 @@ class TextureManager {
     private oakLogTopMat!: THREE.MeshStandardMaterial;
     private oakLogSideMat!: THREE.MeshStandardMaterial;
 
+    // Crafting table has four face variants: top, front (-Z), back (+Z), sides/bottom.
+    private craftingTableTopMat!: THREE.MeshStandardMaterial;
+    private craftingTableFrontMat!: THREE.MeshStandardMaterial;
+    private craftingTableBackMat!: THREE.MeshStandardMaterial;
+    private craftingTableSideMat!: THREE.MeshStandardMaterial;
+
     // Separate instance from the held-item flat material so the two can diverge independently.
     private torchCrossMat!: THREE.MeshStandardMaterial;
 
@@ -77,6 +86,12 @@ class TextureManager {
 
         this.oakLogTopMat = this.loadMat(loader, oakLogTopUrl);
         this.oakLogSideMat = this.loadMat(loader, oakLogUrl);
+
+        this.craftingTableTopMat = this.loadMat(loader, craftingTableTopUrl);
+        this.craftingTableFrontMat = this.loadMat(loader, craftingTableFrontUrl);
+        this.craftingTableBackMat = this.loadMat(loader, craftingTableBackUrl);
+        this.craftingTableSideMat = this.loadMat(loader, craftingTableUrl);
+
         this.oakLeavesMats = [
             this.loadTransparentMat(loader, oakLeaves1Url),
             this.loadTransparentMat(loader, oakLeaves2Url),
@@ -89,7 +104,6 @@ class TextureManager {
             [BlockType.Cobblestone]: this.loadMat(loader, cobbleUrl),
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
             [BlockType.OakPlanks]: this.loadMat(loader, oakPlankUrl),
-            [BlockType.CraftingTable]: this.loadMat(loader, craftingTableUrl),
         };
 
         this.flatItemMaterials = {
@@ -134,6 +148,21 @@ class TextureManager {
             throw new Error(`TextureManager: no material registered for BlockType.${BlockType[blockType]}`);
         }
         return material;
+    }
+
+    // Front (-Z normal) shows the crafting grid face; back (+Z) shows the plain back; top shows
+    // the grid on top; all other faces (±X sides, bottom) use the generic side/bottom texture.
+    getCraftingTableMaterial(_: number, normalY: number, normalZ: number): THREE.Material {
+        if (normalY === 1) {
+            return this.craftingTableTopMat;
+        }
+        if (normalZ === -1) {
+            return this.craftingTableFrontMat;
+        }
+        if (normalZ === 1) {
+            return this.craftingTableBackMat;
+        }
+        return this.craftingTableSideMat;
     }
 
     // Returns one of the two leaf materials. The variant (0 or 1) is chosen per-block by

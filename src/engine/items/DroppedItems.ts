@@ -87,7 +87,6 @@ export default class DroppedItems extends Component {
             BlockType.Cobblestone,
             BlockType.OakLog,
             BlockType.OakPlanks,
-            BlockType.CraftingTable,
         ]) {
             const sideMaterial = TextureManager.getMaterial(blockType, 0);
             const topMaterial = TextureManager.getMaterial(blockType, 1);
@@ -100,6 +99,14 @@ export default class DroppedItems extends Component {
                 sideMaterial,
             ]);
         }
+
+        // Crafting table has distinct textures per face: +X/-X/bottom = side, +Y = top,
+        // +Z = back, -Z = front. BoxGeometry order: +X, -X, +Y, -Y, +Z, -Z.
+        const ctSide = TextureManager.getCraftingTableMaterial(1, 0, 0);
+        const ctTop = TextureManager.getCraftingTableMaterial(0, 1, 0);
+        const ctBack = TextureManager.getCraftingTableMaterial(0, 0, 1);
+        const ctFront = TextureManager.getCraftingTableMaterial(0, 0, -1);
+        this.blockMaterialsByType.set(BlockType.CraftingTable, [ctSide, ctSide, ctTop, ctSide, ctBack, ctFront]);
 
         for (let i = 0; i < POOL_SIZE; i++) {
             // Each item needs its own geometry because the chunk shader reads a per-vertex `aLight`

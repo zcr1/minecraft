@@ -1,7 +1,7 @@
 import bedrockUrl from "assets/textures/bedrock.png";
 import coalUrl from "assets/textures/coal.png";
 import cobbleUrl from "assets/textures/cobblestone.png";
-import craftingTableUrl from "assets/textures/crafting_table.png";
+import craftingTableTopUrl from "assets/textures/crafting_table_top.png";
 import dirtUrl from "assets/textures/dirt.png";
 import grassTopUrl from "assets/textures/grass_top.png";
 import oakLeaves1Url from "assets/textures/oak_leaves_1.png";
@@ -29,7 +29,7 @@ export const BLOCK_TEXTURE_URLS: Partial<Record<BlockType, string>> = {
     [BlockType.OakLog]: oakLogTopUrl,
     [BlockType.OakLeaves]: oakLeaves1Url,
     [BlockType.OakPlanks]: oakPlankUrl,
-    [BlockType.CraftingTable]: craftingTableUrl,
+    [BlockType.CraftingTable]: craftingTableTopUrl,
 };
 
 // Maps each item type to an image URL suitable for use in <img src>.

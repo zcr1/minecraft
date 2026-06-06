@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import TextureManager from "engine/TextureManager";
+import { BlockType } from "engine/chunk/ChunkComponent";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
@@ -111,10 +112,19 @@ export default class HeldItem extends Component {
 
         if (newItem.kind === "block") {
             // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z.
-            // Only the +Y face (index 2) uses the top-face texture variant.
-            const sideMaterial = TextureManager.getMaterial(newItem.type, 0);
-            const topMaterial = TextureManager.getMaterial(newItem.type, 1);
-            const materials = [sideMaterial, sideMaterial, topMaterial, sideMaterial, sideMaterial, sideMaterial];
+            let materials: THREE.Material[];
+            if (newItem.type === BlockType.CraftingTable) {
+                const ctSide = TextureManager.getCraftingTableMaterial(1, 0, 0);
+                const ctTop = TextureManager.getCraftingTableMaterial(0, 1, 0);
+                const ctBack = TextureManager.getCraftingTableMaterial(0, 0, 1);
+                const ctFront = TextureManager.getCraftingTableMaterial(0, 0, -1);
+                materials = [ctSide, ctSide, ctTop, ctSide, ctBack, ctFront];
+            } else {
+                // Only the +Y face (index 2) uses the top-face texture variant.
+                const sideMaterial = TextureManager.getMaterial(newItem.type, 0);
+                const topMaterial = TextureManager.getMaterial(newItem.type, 1);
+                materials = [sideMaterial, sideMaterial, topMaterial, sideMaterial, sideMaterial, sideMaterial];
+            }
             this.mesh = new THREE.Mesh(this.boxGeometry, materials);
             this.isFlatMesh = false;
         } else {

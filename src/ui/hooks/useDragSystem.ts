@@ -39,10 +39,10 @@ export interface DragSystem {
  *   a valid target moves or swaps, handling inventory↔crafting-grid transitions.
  */
 export function useDragSystem(
-    craftingGrid: (InventorySlot | null)[],
-    craftingOutputSlot: number,
     inventory: Inventory,
+    craftingGrid: (InventorySlot | null)[],
     setCraftingGrid: Dispatch<SetStateAction<(InventorySlot | null)[]>>,
+    craftingOutputSlot: number,
 ): DragSystem {
     const [dragState, setDragState] = useState<DragState | null>(null);
     const hoveredSlotRef = useRef<number | null>(null);
