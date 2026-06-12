@@ -104,8 +104,8 @@ export default class DayNightCycle extends Component {
 
         // Larger mie halo near horizon spreads sun glow through orange-tinted atmosphere;
         // softer mieDirectionalG blends the disc into surrounding sky colour
-        const mieCoefficient = 0.002 + horizonProximity * 0.018;
-        const mieDirectionalG = 0.97 - horizonProximity * 0.12;
+        const mieCoefficient = 0.002 + horizonProximity * 0.005;
+        const mieDirectionalG = 0.97 - horizonProximity * 0.04;
 
         const uniforms = this.sky.material.uniforms;
         uniforms["turbidity"].value = turbidity;
