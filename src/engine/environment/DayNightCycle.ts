@@ -114,6 +114,16 @@ export default class DayNightCycle extends Component {
         uniforms["mieDirectionalG"].value = mieDirectionalG;
         uniforms["sunPosition"].value.copy(sunDirection);
 
+        // The Sky shader can't produce a blue night sky — it just renders grey/black
+        // once the sun is below the horizon. Switch to a solid background color at night.
+        if (sunY < -0.1) {
+            this.sky.visible = false;
+            game.threeScene.background = new THREE.Color(0x080e1f);
+        } else {
+            this.sky.visible = true;
+            game.threeScene.background = null;
+        }
+
         const lightIntensity = sunHeight * 1.2;
         const dayColor = new THREE.Color(0xfff5e0);
         const horizonColor = new THREE.Color(0xff8840);
@@ -124,15 +134,15 @@ export default class DayNightCycle extends Component {
 
         const dayFogColor = new THREE.Color(0x88b0d8);
         const sunsetFogColor = new THREE.Color(0xf4905a);
-        const nightFogColor = new THREE.Color(0x030810);
+        const nightFogColor = new THREE.Color(0x0d1f38);
         const fogColor =
             sunY < 0 ? nightFogColor : sunsetFogColor.clone().lerp(dayFogColor, Math.min(1, sunHeight / 0.3));
         game.threeScene.fog = new THREE.FogExp2(fogColor.getHex(), 0.0008);
 
-        const nightAmbient = new THREE.Color(0x1a2a4a);
+        const nightAmbient = new THREE.Color(0x2a4a7a);
         const dayAmbient = new THREE.Color(0xffffff);
         this.ambientLight.color.copy(nightAmbient.clone().lerp(dayAmbient, sunHeight));
-        this.ambientLight.intensity = 0.05 + sunHeight * 0.35;
+        this.ambientLight.intensity = 0.7 + sunHeight * 0.22;
 
         (this.starField.material as THREE.PointsMaterial).opacity = Math.min(1, Math.max(0, -sunY * 3));
     }
