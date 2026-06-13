@@ -13,6 +13,7 @@ import DayNightCycle from "engine/environment/DayNightCycle";
 import DroppedItems from "engine/items/DroppedItems";
 import HeldItem from "engine/player/HeldItem";
 import Inventory from "engine/player/Inventory";
+import PlayerArm from "engine/player/PlayerArm";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerCamera from "engine/player/PlayerCamera";
 import PlayerController from "engine/player/PlayerController";
@@ -49,6 +50,7 @@ export function setupScene(): void {
     player.addComponent(new PlayerBlockInteraction());
     player.addComponent(new Inventory());
     player.addComponent(new HeldItem());
+    player.addComponent(new PlayerArm());
     player.addComponent(new TorchLight());
     game.threeScene.add(playerMesh);
     game.add(player);
