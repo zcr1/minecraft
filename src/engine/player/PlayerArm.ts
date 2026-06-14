@@ -1,7 +1,9 @@
 import armBackUrl from "assets/textures/player/player_arm_back.png";
+import armBottomUrl from "assets/textures/player/player_arm_bottom.png";
 import armFrontUrl from "assets/textures/player/player_arm_front.png";
 import armLeftUrl from "assets/textures/player/player_arm_left.png";
 import armRightUrl from "assets/textures/player/player_arm_right.png";
+import armTopUrl from "assets/textures/player/player_arm_top.png";
 import * as THREE from "three";
 import game from "engine/Game";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
@@ -9,7 +11,7 @@ import Component from "engine/core/Component";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 
 const ARM_WIDTH = 0.24;
-const ARM_HEIGHT = 1.2;
+const ARM_HEIGHT = 1;
 const ARM_DEPTH = 0.24;
 const ARM_OFFSET_FORWARD = 0.45;
 const ARM_OFFSET_RIGHT = 0.38;
@@ -50,9 +52,11 @@ export default class PlayerArm extends Component {
         const backMat = this.loadMat(loader, armBackUrl);
         const leftMat = this.loadMat(loader, armLeftUrl);
         const rightMat = this.loadMat(loader, armRightUrl);
+        const topMat = this.loadMat(loader, armTopUrl);
+        const bottomMat = this.loadMat(loader, armBottomUrl);
 
         // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z
-        this.materials = [rightMat, leftMat, frontMat, frontMat, backMat, frontMat];
+        this.materials = [rightMat, leftMat, bottomMat, topMat, backMat, frontMat];
 
         this.mesh = new THREE.Mesh(this.geometry, this.materials);
         this.mesh.frustumCulled = false;
