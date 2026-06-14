@@ -1,20 +1,25 @@
+import armBackUrl from "assets/textures/player/player_arm_back.png";
+import armFrontUrl from "assets/textures/player/player_arm_front.png";
+import armLeftUrl from "assets/textures/player/player_arm_left.png";
+import armRightUrl from "assets/textures/player/player_arm_right.png";
 import * as THREE from "three";
 import game from "engine/Game";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
+import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 
 const ARM_WIDTH = 0.24;
-const ARM_HEIGHT = 0.6;
+const ARM_HEIGHT = 1.2;
 const ARM_DEPTH = 0.24;
 const ARM_OFFSET_FORWARD = 0.45;
 const ARM_OFFSET_RIGHT = 0.38;
-const ARM_OFFSET_DOWN = -0.55;
+const ARM_OFFSET_DOWN = -0.8;
 
 export default class PlayerArm extends Component {
     private mesh!: THREE.Mesh;
     private camera!: THREE.PerspectiveCamera;
     private geometry!: THREE.BoxGeometry;
-    private material!: THREE.MeshStandardMaterial;
+    private materials!: THREE.MeshStandardMaterial[];
 
     private readonly scratchForward = new THREE.Vector3();
     private readonly scratchRight = new THREE.Vector3();
@@ -32,9 +37,24 @@ export default class PlayerArm extends Component {
         const lightArray = new Float32Array(vertexCount).fill(MAX_LIGHT);
         this.geometry.setAttribute("aLight", new THREE.BufferAttribute(lightArray, 1));
 
-        this.material = new THREE.MeshStandardMaterial({ color: 0xc68642, roughness: 0.9 });
+        // Flip the textures vertically so the shirt/shoulder maps to the top of
+        // the arm and the hand maps to the bottom (they were inverted).
+        const uvAttribute = this.geometry.attributes.uv;
+        for (let i = 0; i < uvAttribute.count; i++) {
+            uvAttribute.setY(i, 1 - uvAttribute.getY(i));
+        }
+        uvAttribute.needsUpdate = true;
 
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
+        const loader = new THREE.TextureLoader();
+        const frontMat = this.loadMat(loader, armFrontUrl);
+        const backMat = this.loadMat(loader, armBackUrl);
+        const leftMat = this.loadMat(loader, armLeftUrl);
+        const rightMat = this.loadMat(loader, armRightUrl);
+
+        // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z
+        this.materials = [rightMat, leftMat, frontMat, frontMat, backMat, frontMat];
+
+        this.mesh = new THREE.Mesh(this.geometry, this.materials);
         this.mesh.frustumCulled = false;
         game.threeScene.add(this.mesh);
     }
@@ -56,6 +76,18 @@ export default class PlayerArm extends Component {
     dispose() {
         game.threeScene.remove(this.mesh);
         this.geometry.dispose();
-        this.material.dispose();
+        for (const material of this.materials) {
+            material.dispose();
+        }
+    }
+
+    private loadMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
+        const tex = loader.load(url);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        const material = new THREE.MeshStandardMaterial({ map: tex });
+        applyVertexLighting(material);
+        return material;
     }
 }
