@@ -219,11 +219,14 @@ export default class TerrainGenerator {
     private readonly config: TerrainConfig;
     // Voxels above the surface and at or below this Y are filled with Water during generation.
     readonly seaLevel: number;
+    // The seed driving all noise/PRNG
+    readonly seed: number;
 
     constructor(config: TerrainConfig) {
         this.config = config;
         this.seaLevel = config.seaLevel;
         const seed = config.seed ?? 1;
+        this.seed = seed;
         const prng = mulberry32(seed);
         this.noise2D = createNoise2D(prng);
         // Offset the cave seed so the cave field is decorrelated from the height field but

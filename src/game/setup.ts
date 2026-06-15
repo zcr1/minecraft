@@ -11,6 +11,7 @@ import BlockPlacementPreview from "engine/effects/BlockPlacementPreview";
 import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
 import DayNightCycle from "engine/environment/DayNightCycle";
 import DroppedItems from "engine/items/DroppedItems";
+import type { SaveData } from "engine/persistence/SaveData";
 import HeldItem from "engine/player/HeldItem";
 import Inventory from "engine/player/Inventory";
 import PlayerArm from "engine/player/PlayerArm";
@@ -21,15 +22,16 @@ import PlayerPhysics from "engine/player/PlayerPhysics";
 import TorchLight from "engine/player/TorchLight";
 import GameObjectName from "engine/utils/gameObjectNames";
 
-export function setupScene(): void {
+export function setupScene(save: SaveData | null): void {
     const skyObj = new GameObject(GameObjectName.Sky);
     skyObj.addComponent(new DayNightCycle());
     game.add(skyObj);
 
     TextureManager.init();
 
+    // Use the saved seed so terrain regenerates identically; otherwise start a fresh random world.
     const terrainGenerator = new TerrainGenerator({
-        seed: Math.random() * 1e6,
+        seed: save?.seed ?? Math.random() * 1e6,
         baseHeight: 48,
         heightAmplitude: 10,
         baseFrequency: 1 / 48,
@@ -65,6 +67,7 @@ export function setupScene(): void {
         chunkHeight: 32,
         chunkDepth: 16,
         terrainGenerator,
+        initialChunkDeltas: save?.chunks,
     });
 
     const managerObj = new GameObject(GameObjectName.ChunkManager);

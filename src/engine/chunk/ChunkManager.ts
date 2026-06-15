@@ -2,6 +2,7 @@ import * as THREE from "three";
 import game from "../Game";
 import Transform from "../components/Transform";
 import Component from "../core/Component";
+import type { ChunkDelta, VoxelDelta } from "../persistence/SaveData";
 import GameObjectName from "../utils/gameObjectNames";
 import ChunkComponent, { BlockType, TORCH_ATTACHMENT_OFFSETS } from "./ChunkComponent";
 import lightingSystem, { MAX_LIGHT } from "./LightingSystem";
@@ -40,6 +41,10 @@ export default class ChunkManager extends Component {
     private previousCenterZ: number | null = null;
     private readonly pendingWaterUpdates = new Map<number, { worldX: number; worldY: number; worldZ: number }>();
     private waterTickAccumulator = 0;
+    // Saved chunk edits awaiting application, keyed by packed chunk key. Consumed in
+    // getOrCreateChunk after generate() — so deltas for far-away chunks wait here until the
+    // player streams them in, then apply exactly once.
+    private readonly pendingDeltas = new Map<number, VoxelDelta[]>();
 
     constructor({
         renderRadius,
@@ -48,6 +53,7 @@ export default class ChunkManager extends Component {
         chunkHeight,
         chunkDepth,
         terrainGenerator,
+        initialChunkDeltas,
     }: {
         renderRadius: number;
         worldHeightChunks: number;
@@ -55,6 +61,7 @@ export default class ChunkManager extends Component {
         chunkHeight: number;
         chunkDepth: number;
         terrainGenerator: TerrainGenerator;
+        initialChunkDeltas?: ReadonlyArray<ChunkDelta>;
     }) {
         super();
         this.renderRadius = renderRadius;
@@ -63,6 +70,11 @@ export default class ChunkManager extends Component {
         this.chunkHeight = chunkHeight;
         this.chunkDepth = chunkDepth;
         this.terrainGenerator = terrainGenerator;
+
+        // Stage saved deltas BEFORE generating initial chunks so they apply during construction.
+        if (initialChunkDeltas) {
+            this.loadPendingDeltas(initialChunkDeltas);
+        }
 
         this.generateInitialChunks();
     }
@@ -117,6 +129,16 @@ export default class ChunkManager extends Component {
         return ((x + 0x800) & 0xfff) | (((z + 0x800) & 0xfff) << 12) | ((y & 0xff) << 24);
     }
 
+    // Inverse of getChunkKey: recovers (chunkX, chunkY, chunkZ) from a packed key, undoing the
+    // +0x800 bias on x and z. Used when serializing still-pending deltas for unloaded chunks.
+    private unpackChunkKey(key: number): { chunkX: number; chunkY: number; chunkZ: number } {
+        return {
+            chunkX: (key & 0xfff) - 0x800,
+            chunkY: (key >> 24) & 0xff,
+            chunkZ: ((key >> 12) & 0xfff) - 0x800,
+        };
+    }
+
     private getPlayerChunkColumn(): { chunkX: number; chunkZ: number } {
         const playerTransform = this.getPlayerTransform();
         return {
@@ -146,6 +168,15 @@ export default class ChunkManager extends Component {
         );
         chunk.mesh.position.set(worldOriginX, worldOriginY, worldOriginZ);
         chunk.generate(this.terrainGenerator);
+
+        // Apply saved player edits on top of the freshly-generated terrain before lighting/meshing,
+        // so light is computed against the loaded block state. Consumed once, then dropped.
+        const pending = this.pendingDeltas.get(key);
+        if (pending) {
+            chunk.applyDeltas(pending);
+            this.pendingDeltas.delete(key);
+        }
+
         lightingSystem.recomputeSkyLight(chunk, this);
         lightingSystem.recomputeBlockLight(chunk, this);
         chunk.buildMesh(this);
@@ -345,6 +376,51 @@ export default class ChunkManager extends Component {
 
     getLoadedChunks(): IterableIterator<ChunkComponent> {
         return this.chunks.values();
+    }
+
+    getSeed(): number {
+        return this.terrainGenerator.seed;
+    }
+
+    // Stage saved chunk edits by chunk key. Idempotent per key; deltas are consumed in
+    // getOrCreateChunk when each chunk is (re)generated.
+    loadPendingDeltas(chunkDeltas: ReadonlyArray<ChunkDelta>): void {
+        for (const chunkDelta of chunkDeltas) {
+            this.pendingDeltas.set(this.getChunkKey(chunkDelta.cx, chunkDelta.cy, chunkDelta.cz), [
+                ...chunkDelta.voxels,
+            ]);
+        }
+    }
+
+    // Snapshots every player edit for saving: diffs each loaded chunk against pristine terrain,
+    // plus any still-pending deltas for chunks the player hasn't revisited yet (so a re-save after
+    // roaming stays lossless). Chunks with no edits are skipped.
+    serializeChunks(): ChunkDelta[] {
+        const result: ChunkDelta[] = [];
+
+        for (const chunk of this.chunks.values()) {
+            const voxels = chunk.diffAgainstPristine(this.terrainGenerator);
+            if (voxels.length === 0) {
+                continue;
+            }
+            result.push({
+                cx: Math.floor(chunk.worldOriginX / this.chunkWidth),
+                cy: Math.floor(chunk.worldOriginY / this.chunkHeight),
+                cz: Math.floor(chunk.worldOriginZ / this.chunkDepth),
+                voxels,
+            });
+        }
+
+        // Include deltas still queued for chunks that were never streamed in this session.
+        for (const [key, voxels] of this.pendingDeltas) {
+            if (this.chunks.has(key) || voxels.length === 0) {
+                continue;
+            }
+            const { chunkX, chunkY, chunkZ } = this.unpackChunkKey(key);
+            result.push({ cx: chunkX, cy: chunkY, cz: chunkZ, voxels: [...voxels] });
+        }
+
+        return result;
     }
 
     getChunksAlongRay(origin: THREE.Vector3, direction: THREE.Vector3, distance: number): ChunkComponent[] {

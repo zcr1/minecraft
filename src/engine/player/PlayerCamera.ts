@@ -61,8 +61,16 @@ export default class PlayerCamera extends Component {
         return this._yaw;
     }
 
+    set yaw(value: number) {
+        this._yaw = value;
+    }
+
     get pitch(): number {
         return this._pitch;
+    }
+
+    set pitch(value: number) {
+        this._pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, value));
     }
 
     update(_deltaTime: number) {

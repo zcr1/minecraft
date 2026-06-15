@@ -88,6 +88,14 @@ export default class Inventory extends Component {
         return this.slots;
     }
 
+    // Bulk-replaces every slot from a saved snapshot, emitting a single change event
+    loadSlots(slots: ReadonlyArray<InventorySlot | null>): void {
+        for (let index = 0; index < TOTAL_SLOTS; index++) {
+            this.slots[index] = slots[index] ?? null;
+        }
+        eventManager.emit("inventoryChanged", undefined);
+    }
+
     update(_deltaTime: number) {
         for (let index = 0; index < Inventory.HOTBAR_KEYS.length; index++) {
             if (input.wasPressed(Inventory.HOTBAR_KEYS[index]) && index !== this.selectedHotbarSlot) {

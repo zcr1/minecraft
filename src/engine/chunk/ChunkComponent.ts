@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import textureManager from "../TextureManager";
 import Component from "../core/Component";
+import type { VoxelDelta } from "../persistence/SaveData";
 import type ChunkManager from "./ChunkManager";
 import type TerrainGenerator from "./TerrainGenerator";
 
@@ -665,6 +666,43 @@ export default class ChunkComponent extends Component {
         }
         this.blockHitPoints[index] = currentHitPoints - damage;
         return false;
+    }
+
+    // Returns only the voxels whose block type or meta differs from freshly-generated terrain.
+    // Builds a throwaway sibling chunk with identical dims/origin, regenerates it from the same
+    // seed, and diffs. Because terrain generation is deterministic, this captures exactly the
+    // player's edits — the compact payload that needs persisting. lightLevels/blockHitPoints are
+    // derived/transient and intentionally excluded. No mesh is built for the pristine chunk.
+    diffAgainstPristine(generator: TerrainGenerator): VoxelDelta[] {
+        const pristine = new ChunkComponent(
+            this.width,
+            this.height,
+            this.depth,
+            this.worldOriginX,
+            this.worldOriginY,
+            this.worldOriginZ,
+        );
+        pristine.generate(generator);
+
+        const deltas: VoxelDelta[] = [];
+        const total = this.width * this.height * this.depth;
+        for (let i = 0; i < total; i++) {
+            if (this.blocks[i] !== pristine.blocks[i] || this.blockMeta[i] !== pristine.blockMeta[i]) {
+                deltas.push({ i, t: this.blocks[i], m: this.blockMeta[i] });
+            }
+        }
+        return deltas;
+    }
+
+    // Writes saved deltas onto the raw arrays by linear index. Resets blockHitPoints to the
+    // restored type's full HP, mirroring setBlock's side effect so loaded blocks break correctly.
+    // Does NOT relight or rebuild — the caller (ChunkManager.getOrCreateChunk) handles that.
+    applyDeltas(deltas: ReadonlyArray<VoxelDelta>): void {
+        for (const { i, t, m } of deltas) {
+            this.blocks[i] = t;
+            this.blockHitPoints[i] = BLOCK_HITPOINTS[t as BlockType];
+            this.blockMeta[i] = m;
+        }
     }
 
     update() {}
