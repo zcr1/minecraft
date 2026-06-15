@@ -1,4 +1,4 @@
-import { NoiseFunction2D, createNoise2D } from "simplex-noise";
+import { NoiseFunction2D, NoiseFunction3D, createNoise2D, createNoise3D } from "simplex-noise";
 import { BlockType } from "engine/chunk/ChunkComponent";
 
 // Minimal interface for the voxel volume that ore placement needs to read and write.
@@ -35,6 +35,13 @@ export type TerrainConfig = {
     lacunarity: number;
     // World Y at or below which open air voxels are filled with water during generation.
     seaLevel: number;
+    // Spatial scale of the 3D cave noise. Higher = smaller, more frequent voids. Default 1/16.
+    caveFrequency?: number;
+    // Noise cutoff above which a stone voxel is carved to air. Higher = rarer/smaller caves. Default 0.55.
+    caveThreshold?: number;
+    // Multiplier on the Y noise coordinate so caves stretch horizontally into more
+    // tunnel-like shapes rather than round blobs. Default 2.0.
+    caveVerticalSquash?: number;
 };
 
 // Tiny seeded PRNG. simplex-noise's createNoise2D wants a () => number in [0, 1) to seed
@@ -204,6 +211,11 @@ function getChunkTrees(originX: number, originZ: number, chunkWidth: number, chu
 
 export default class TerrainGenerator {
     private readonly noise2D: NoiseFunction2D;
+    // Separate 3D noise field for carving caves, seeded independently from the height field.
+    private readonly noise3D: NoiseFunction3D;
+    private readonly caveFrequency: number;
+    private readonly caveThreshold: number;
+    private readonly caveVerticalSquash: number;
     private readonly config: TerrainConfig;
     // Voxels above the surface and at or below this Y are filled with Water during generation.
     readonly seaLevel: number;
@@ -211,8 +223,15 @@ export default class TerrainGenerator {
     constructor(config: TerrainConfig) {
         this.config = config;
         this.seaLevel = config.seaLevel;
-        const prng = mulberry32(config.seed ?? 1);
+        const seed = config.seed ?? 1;
+        const prng = mulberry32(seed);
         this.noise2D = createNoise2D(prng);
+        // Offset the cave seed so the cave field is decorrelated from the height field but
+        // still fully deterministic from the same world seed.
+        this.noise3D = createNoise3D(mulberry32(seed + 1013));
+        this.caveFrequency = config.caveFrequency ?? 1 / 16;
+        this.caveThreshold = config.caveThreshold ?? 0.55;
+        this.caveVerticalSquash = config.caveVerticalSquash ?? 2.0;
     }
 
     // Fractal Brownian motion (fBm): sum several octaves of noise, each at a higher
@@ -263,6 +282,37 @@ export default class TerrainGenerator {
         }
 
         return this.blockTypeForLayer(worldY, surface);
+    }
+
+    // Carves caves by sampling a world-space 3D noise field: any stone voxel whose noise value
+    // exceeds caveThreshold becomes air. Because the field is sampled in world coordinates it is
+    // continuous across chunk borders, so caves line up seamlessly between neighbouring chunks.
+    // Only Stone is carved — this leaves the bedrock floor, dirt, grass, and water untouched, so
+    // the surface skin stays intact and caves remain confined underground.
+    carveCaves(chunk: ChunkVolume): void {
+        for (let localX = 0; localX < chunk.width; localX++) {
+            for (let localY = 0; localY < chunk.height; localY++) {
+                for (let localZ = 0; localZ < chunk.depth; localZ++) {
+                    if (chunk.getBlock(localX, localY, localZ) !== BlockType.Stone) {
+                        continue;
+                    }
+
+                    const worldX = chunk.worldOriginX + localX;
+                    const worldZ = chunk.worldOriginZ + localZ;
+                    const worldY = chunk.worldOriginY + localY;
+
+                    const density = this.noise3D(
+                        worldX * this.caveFrequency,
+                        worldY * this.caveFrequency * this.caveVerticalSquash,
+                        worldZ * this.caveFrequency,
+                    );
+
+                    if (density > this.caveThreshold) {
+                        chunk.setBlock(localX, localY, localZ, BlockType.Air);
+                    }
+                }
+            }
+        }
     }
 
     placeCoalVeins(chunk: ChunkVolume): void {

@@ -356,6 +356,7 @@ export default class ChunkComponent extends Component {
                 }
             }
         }
+        generator.carveCaves(this);
         generator.placeCoalVeins(this);
         generator.placeTrees(this);
     }

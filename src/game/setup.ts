@@ -37,6 +37,9 @@ export function setupScene(): void {
         persistence: 0.5,
         lacunarity: 2.0,
         seaLevel: 44,
+        caveFrequency: 1 / 16,
+        caveThreshold: 0.55,
+        caveVerticalSquash: 2.0,
     });
 
     const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);
