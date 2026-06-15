@@ -2,12 +2,14 @@
 import { useEffect, useRef, useState } from "react";
 import game from "engine/Game";
 import * as SaveManager from "engine/persistence/SaveManager";
+import { idbDelete } from "engine/persistence/idb";
 import { setupScene } from "../game/setup";
 import Crosshair from "./Crosshair";
 import DebugMenu from "./DebugMenu";
 import "./GameCanvas.scss";
 import { GameProvider } from "./GameContext";
 import InventoryHUD from "./InventoryHUD";
+import SettingsMenu from "./SettingsMenu";
 import UnderwaterOverlay from "./UnderwaterOverlay";
 
 const AUTOSAVE_INTERVAL_MS = 30_000;
@@ -16,6 +18,21 @@ export default function GameCanvas() {
     const gameContainer = useRef<HTMLDivElement>(null);
     const [ready, setReady] = useState(false);
     const [saveBannerVisible, setSaveBannerVisible] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const settingsOpenRef = useRef(false);
+
+    const handleSettingsSave = () => {
+        (async () => {
+            await SaveManager.save();
+            settingsOpenRef.current = false;
+            setSettingsOpen(false);
+            game.resume();
+        })();
+    };
+
+    const handleNewWorld = () => {
+        idbDelete("world").then(() => window.location.reload());
+    };
 
     useEffect(() => {
         // ref is always set by mount time; null check required by TypeScript
@@ -43,18 +60,31 @@ export default function GameCanvas() {
             }
         }
 
-        // Ctrl+S (or Cmd+S) forces an immediate save (overriding the browser's "save page"
-        // dialog) and flashes a banner.
         const onKeyDown = (event: KeyboardEvent) => {
+            if (event.code === "Escape") {
+                if (settingsOpenRef.current) {
+                    settingsOpenRef.current = false;
+                    setSettingsOpen(false);
+                    game.resume();
+                } else {
+                    settingsOpenRef.current = true;
+                    setSettingsOpen(true);
+                    game.pause();
+                }
+                return;
+            }
+
+            // Ctrl+S (or Cmd+S) forces an immediate save
             if (event.code !== "KeyS" || !(event.ctrlKey || event.metaKey)) {
                 return;
             }
+
             event.preventDefault();
             if (isSaving) {
                 return;
             }
 
-            void (async () => {
+            (async () => {
                 await saveState();
 
                 setSaveBannerVisible(true);
@@ -109,6 +139,7 @@ export default function GameCanvas() {
                     <InventoryHUD />
                     <Crosshair />
                     <UnderwaterOverlay />
+                    {settingsOpen && <SettingsMenu onSave={handleSettingsSave} onNewWorld={handleNewWorld} />}
                 </>
             )}
 

@@ -16,6 +16,7 @@ class Game {
     private readonly gameObjects = new Set<GameObject>();
     private lastTime = performance.now();
     private rafId = 0;
+    private paused = false;
     private observer!: ResizeObserver;
     private pendingResize: { width: number; height: number } | null = null;
 
@@ -77,14 +78,25 @@ class Game {
             this.lastTime = now;
             this.fps = rawDeltaTime > 0 ? 1 / rawDeltaTime : 0;
 
-            for (const gameObject of this.gameObjects) {
-                gameObject.update(deltaTime);
+            if (!this.paused) {
+                for (const gameObject of this.gameObjects) {
+                    gameObject.update(deltaTime);
+                }
             }
 
             this.renderer.render(this.threeScene, this.camera);
             input.flush();
         };
         loop();
+    }
+
+    pause(): void {
+        this.paused = true;
+    }
+
+    resume(): void {
+        this.paused = false;
+        this.lastTime = performance.now();
     }
 
     stop() {
