@@ -81,6 +81,7 @@ export default class PlayerArm extends Component {
         game.threeScene.remove(this.mesh);
         this.geometry.dispose();
         for (const material of this.materials) {
+            material.map?.dispose();
             material.dispose();
         }
     }
