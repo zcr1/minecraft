@@ -1,4 +1,4 @@
-import blockOverlayUrl from "assets/textures/block_overlay.png";
+import blockOverlayUrl from "assets/textures/misc/block_overlay.png";
 import * as THREE from "three";
 import game from "engine/Game";
 import { BlockType } from "engine/chunk/ChunkComponent";

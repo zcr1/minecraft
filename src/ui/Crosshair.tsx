@@ -1,4 +1,4 @@
-import crosshairUrl from "assets/textures/crosshair.png";
+import crosshairUrl from "assets/textures/misc/crosshair.png";
 import { useEffect, useState } from "react";
 import eventManager from "engine/core/EventManager";
 import type { TargetedBlock } from "engine/player/PlayerBlockInteraction";
