@@ -7,17 +7,20 @@ import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import { type InventoryItemStack, itemStacksEqual } from "engine/items/InventoryItem";
 import Inventory from "engine/player/Inventory";
+import PlayerArm from "engine/player/PlayerArm";
 
-const HELD_SIZE = 0.3;
-const HELD_FLAT_SIZE = 0.28;
-const HELD_OFFSET_FORWARD = 0.45;
-const HELD_OFFSET_RIGHT = 0.3;
-const HELD_OFFSET_DOWN = -0.25;
+const HELD_SIZE = 0.45;
+const HELD_FLAT_SIZE = 0.42;
+// Offset from the arm's hand to where the item is gripped, applied along the
+// camera basis so the item sits in the hand rather than at the very tip.
+const GRIP_OFFSET_FORWARD = 0.05;
+const GRIP_OFFSET_UP = 0.1;
 
 export default class HeldItem extends Component {
     private mesh: THREE.Mesh | null = null;
     private camera!: THREE.PerspectiveCamera;
     private inventory!: Inventory;
+    private playerArm!: PlayerArm;
     private boxGeometry!: THREE.BoxGeometry;
     private flatGeometry!: THREE.PlaneGeometry;
     private currentItem: InventoryItemStack | null = null;
@@ -25,7 +28,6 @@ export default class HeldItem extends Component {
 
     // Pre-allocated scratch vectors to avoid per-frame allocation.
     private readonly scratchForward = new THREE.Vector3();
-    private readonly scratchRight = new THREE.Vector3();
     private readonly worldUp = new THREE.Vector3(0, 1, 0);
 
     // Quaternion tilt applied on top of camera rotation for flat (item) sprites.
@@ -41,6 +43,7 @@ export default class HeldItem extends Component {
     start() {
         this.camera = game.camera.threeCamera;
         this.inventory = this.gameObject.getComponent(Inventory);
+        this.playerArm = this.gameObject.getComponent(PlayerArm);
 
         this.boxGeometry = new THREE.BoxGeometry(HELD_SIZE, HELD_SIZE, HELD_SIZE);
         const boxVertexCount = this.boxGeometry.attributes.position.count;
@@ -64,13 +67,13 @@ export default class HeldItem extends Component {
         }
 
         this.camera.getWorldDirection(this.scratchForward);
-        this.scratchRight.crossVectors(this.scratchForward, this.worldUp).normalize();
 
+        // Anchor the item to the arm's hand so it reads as gripped rather than
+        // floating, then nudge it forward/up so it rests in the hand.
+        this.playerArm.getHandWorldPosition(this.mesh.position);
         this.mesh.position
-            .copy(this.camera.position)
-            .addScaledVector(this.scratchForward, HELD_OFFSET_FORWARD)
-            .addScaledVector(this.scratchRight, HELD_OFFSET_RIGHT)
-            .addScaledVector(this.worldUp, HELD_OFFSET_DOWN);
+            .addScaledVector(this.scratchForward, GRIP_OFFSET_FORWARD)
+            .addScaledVector(this.worldUp, GRIP_OFFSET_UP);
 
         this.mesh.rotation.copy(this.camera.rotation);
 

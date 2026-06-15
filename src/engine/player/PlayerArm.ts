@@ -8,31 +8,62 @@ import * as THREE from "three";
 import game from "engine/Game";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
+import Inventory from "engine/player/Inventory";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 
 const ARM_WIDTH = 0.24;
 const ARM_HEIGHT = 1;
 const ARM_DEPTH = 0.24;
-const ARM_OFFSET_FORWARD = 0.45;
-const ARM_OFFSET_RIGHT = 0.38;
-const ARM_OFFSET_DOWN = -0.8;
+
+interface ArmPose {
+    readonly offsetForward: number;
+    readonly offsetRight: number;
+    readonly offsetDown: number;
+    readonly tilt: THREE.Quaternion;
+    // Scale applied along the arm's length (local Y), shrinking it toward its
+    // center. Also pulls the hand closer to the player.
+    readonly lengthScale: number;
+}
+
+// Relaxed pose used when the hand is empty — arm hangs down and forward.
+const EMPTY_POSE: ArmPose = {
+    offsetForward: 0.45,
+    offsetRight: 0.38,
+    offsetDown: -0.8,
+    tilt: new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 5, 0, Math.PI / 12)),
+    lengthScale: 1,
+};
+
+// Grip pose used when holding an item — forearm raised, angled forward and
+// shortened so the hand sits in front of the player to hold the item.
+const HOLDING_POSE: ArmPose = {
+    offsetForward: 0.5,
+    offsetRight: 0.34,
+    offsetDown: -0.5,
+    tilt: new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2.4, 0, Math.PI / 12)),
+    lengthScale: 0.6,
+};
 
 export default class PlayerArm extends Component {
     private mesh!: THREE.Mesh;
     private camera!: THREE.PerspectiveCamera;
     private geometry!: THREE.BoxGeometry;
     private materials!: THREE.MeshStandardMaterial[];
+    private inventory!: Inventory;
 
     private readonly scratchForward = new THREE.Vector3();
     private readonly scratchRight = new THREE.Vector3();
+    private readonly scratchPosition = new THREE.Vector3();
+    private readonly scratchQuaternion = new THREE.Quaternion();
     private readonly worldUp = new THREE.Vector3(0, 1, 0);
 
-    private readonly tiltQuaternion = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(-Math.PI / 5, 0, Math.PI / 12),
-    );
+    // Local-space position of the hand (the +Y end of the arm box), where a
+    // held item is gripped.
+    private readonly handLocalOffset = new THREE.Vector3(0, ARM_HEIGHT / 2, 0);
 
     start() {
         this.camera = game.camera.threeCamera;
+        this.inventory = this.gameObject.getComponent(Inventory);
 
         this.geometry = new THREE.BoxGeometry(ARM_WIDTH, ARM_HEIGHT, ARM_DEPTH);
         const vertexCount = this.geometry.attributes.position.count;
@@ -64,17 +95,24 @@ export default class PlayerArm extends Component {
     }
 
     update(_deltaTime: number) {
-        this.camera.getWorldDirection(this.scratchForward);
-        this.scratchRight.crossVectors(this.scratchForward, this.worldUp).normalize();
+        const pose = this.currentPose();
+        this.computeTransform(pose, this.mesh.position, this.mesh.quaternion);
+        this.mesh.scale.set(1, pose.lengthScale, 1);
+    }
 
-        this.mesh.position
-            .copy(this.camera.position)
-            .addScaledVector(this.scratchForward, ARM_OFFSET_FORWARD)
-            .addScaledVector(this.scratchRight, ARM_OFFSET_RIGHT)
-            .addScaledVector(this.worldUp, ARM_OFFSET_DOWN);
-
-        this.mesh.rotation.copy(this.camera.rotation);
-        this.mesh.quaternion.multiply(this.tiltQuaternion);
+    /**
+     * World-space position of the hand where a held item should be anchored.
+     * Recomputed from the camera so it is consistent within a frame regardless
+     * of component update order.
+     */
+    getHandWorldPosition(target: THREE.Vector3): THREE.Vector3 {
+        const pose = this.currentPose();
+        this.computeTransform(pose, this.scratchPosition, this.scratchQuaternion);
+        return target
+            .copy(this.handLocalOffset)
+            .multiplyScalar(pose.lengthScale)
+            .applyQuaternion(this.scratchQuaternion)
+            .add(this.scratchPosition);
     }
 
     dispose() {
@@ -84,6 +122,24 @@ export default class PlayerArm extends Component {
             material.map?.dispose();
             material.dispose();
         }
+    }
+
+    private currentPose(): ArmPose {
+        const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
+        return slot && slot.item ? HOLDING_POSE : EMPTY_POSE;
+    }
+
+    private computeTransform(pose: ArmPose, outPosition: THREE.Vector3, outQuaternion: THREE.Quaternion): void {
+        this.camera.getWorldDirection(this.scratchForward);
+        this.scratchRight.crossVectors(this.scratchForward, this.worldUp).normalize();
+
+        outPosition
+            .copy(this.camera.position)
+            .addScaledVector(this.scratchForward, pose.offsetForward)
+            .addScaledVector(this.scratchRight, pose.offsetRight)
+            .addScaledVector(this.worldUp, pose.offsetDown);
+
+        outQuaternion.copy(this.camera.quaternion).multiply(pose.tilt);
     }
 
     private loadMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
