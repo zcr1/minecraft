@@ -8,12 +8,21 @@ import * as THREE from "three";
 import game from "engine/Game";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
+import input from "engine/input/Input";
 import Inventory from "engine/player/Inventory";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 
 const ARM_WIDTH = 0.24;
 const ARM_HEIGHT = 1;
 const ARM_DEPTH = 0.24;
+
+const SWING_DURATION_SECONDS = 0.3;
+// Peak swing displacement, in camera-basis units, and the shoulder pitch in
+// radians. Tune these to dial in the feel.
+const SWING_FORWARD = 0.18;
+const SWING_DOWN = 0.22;
+const SWING_RIGHT = 0.06;
+const SWING_PITCH = Math.PI / 3;
 
 interface ArmPose {
     readonly offsetForward: number;
@@ -55,7 +64,14 @@ export default class PlayerArm extends Component {
     private readonly scratchRight = new THREE.Vector3();
     private readonly scratchPosition = new THREE.Vector3();
     private readonly scratchQuaternion = new THREE.Quaternion();
+    private readonly scratchSwingQuaternion = new THREE.Quaternion();
     private readonly worldUp = new THREE.Vector3(0, 1, 0);
+    private readonly localXAxis = new THREE.Vector3(1, 0, 0);
+
+    // Swing animation state. swingProgress runs 0→1 over one arc; while the mine
+    // button stays held the swing loops continuously.
+    private swingProgress = 0;
+    private isSwinging = false;
 
     // Local-space position of the hand (the +Y end of the arm box), where a
     // held item is gripped.
@@ -94,10 +110,37 @@ export default class PlayerArm extends Component {
         game.threeScene.add(this.mesh);
     }
 
-    update(_deltaTime: number) {
+    update(deltaTime: number) {
+        this.updateSwing(deltaTime);
         const pose = this.currentPose();
         this.computeTransform(pose, this.mesh.position, this.mesh.quaternion);
         this.mesh.scale.set(1, pose.lengthScale, 1);
+    }
+
+    /**
+     * Advances the swing animation. A left/right click starts a one-shot arc;
+     * holding the mine button loops the arc continuously, matching Minecraft.
+     */
+    private updateSwing(deltaTime: number): void {
+        if (input.wasMousePressed(0) || input.wasMousePressed(2)) {
+            this.isSwinging = true;
+            this.swingProgress = 0;
+        }
+
+        if (!this.isSwinging) {
+            return;
+        }
+
+        this.swingProgress += deltaTime / SWING_DURATION_SECONDS;
+        if (this.swingProgress >= 1) {
+            if (input.isMouseHeld(0)) {
+                // Keep the remainder so continuous mining stays smooth.
+                this.swingProgress -= 1;
+            } else {
+                this.swingProgress = 0;
+                this.isSwinging = false;
+            }
+        }
     }
 
     /**
@@ -140,6 +183,23 @@ export default class PlayerArm extends Component {
             .addScaledVector(this.worldUp, pose.offsetDown);
 
         outQuaternion.copy(this.camera.quaternion).multiply(pose.tilt);
+
+        if (this.isSwinging) {
+            // Two sine curves: a symmetric arc and a sharper "attack" that rises
+            // fast and eases back, giving the swing its punchy feel.
+            const arc = Math.sin(this.swingProgress * Math.PI);
+            const attack = Math.sin(Math.sqrt(this.swingProgress) * Math.PI);
+            const wobble = Math.sin(Math.sqrt(this.swingProgress) * Math.PI * 2);
+
+            outPosition
+                .addScaledVector(this.scratchForward, SWING_FORWARD * arc)
+                .addScaledVector(this.worldUp, -SWING_DOWN * attack)
+                .addScaledVector(this.scratchRight, SWING_RIGHT * wobble);
+
+            // Pitch the forearm down/forward at the shoulder, in arm-local space.
+            this.scratchSwingQuaternion.setFromAxisAngle(this.localXAxis, -SWING_PITCH * attack);
+            outQuaternion.multiply(this.scratchSwingQuaternion);
+        }
     }
 
     private loadMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
