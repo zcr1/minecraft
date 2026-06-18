@@ -317,6 +317,36 @@ export default class TerrainGenerator {
         return baseHeight + normalized * heightAmplitude;
     }
 
+    // Searches outward from origin until a non-lake column is found, then returns a position 20 blocks above its surface.
+    getPlayerSpawn(originX: number, originZ: number): { x: number; y: number; z: number } {
+        let spawnX = originX;
+        let spawnZ = originZ;
+        let spawnColumn = this.getColumn(spawnX, spawnZ);
+
+        for (let searchRadius = 4; searchRadius <= 128 && spawnColumn.biome === BiomeType.Lake; searchRadius += 4) {
+            for (let offsetX = -1; offsetX <= 1 && spawnColumn.biome === BiomeType.Lake; offsetX++) {
+                for (let offsetZ = -1; offsetZ <= 1 && spawnColumn.biome === BiomeType.Lake; offsetZ++) {
+                    if (offsetX === 0 && offsetZ === 0) {
+                        continue;
+                    }
+
+                    const candidate = this.getColumn(
+                        originX + offsetX * searchRadius,
+                        originZ + offsetZ * searchRadius,
+                    );
+
+                    if (candidate.biome !== BiomeType.Lake) {
+                        spawnX = originX + offsetX * searchRadius;
+                        spawnZ = originZ + offsetZ * searchRadius;
+                        spawnColumn = candidate;
+                    }
+                }
+            }
+        }
+
+        return { x: spawnX, y: spawnColumn.surface + 20, z: spawnZ };
+    }
+
     getHeight(worldX: number, worldZ: number): number {
         return this.computeHeight(
             worldX,
