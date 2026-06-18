@@ -16,7 +16,7 @@ const ARM_WIDTH = 0.24;
 const ARM_HEIGHT = 1;
 const ARM_DEPTH = 0.24;
 
-const SWING_DURATION_SECONDS = 0.3;
+const SWING_DURATION_SECONDS = 0.2;
 // Peak swing displacement, in camera-basis units, and the shoulder pitch in
 // radians. Tune these to dial in the feel.
 const SWING_FORWARD = 0.18;
