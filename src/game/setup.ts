@@ -61,7 +61,7 @@ export function setupScene(save: SaveData | null): void {
     game.add(player);
 
     const chunkManager = new ChunkManager({
-        renderRadius: 5,
+        renderRadius: 6,
         worldHeightChunks: 3,
         chunkWidth: 16,
         chunkHeight: 32,
