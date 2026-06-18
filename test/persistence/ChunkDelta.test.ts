@@ -81,19 +81,16 @@ describe("ChunkComponent.applyDeltas", () => {
         }
     });
 
-    test("resets hitpoints so a restored solid block can be broken normally", () => {
+    test("a restored solid block can be destroyed normally", () => {
         const generator = makeGenerator();
         const chunk = new ChunkComponent(8, 8, 8, 0, 0, 0);
         chunk.generate(generator);
 
-        // Restore a Stone block (4 HP) into an air cell above the surface.
+        // Restore a Stone block into an air cell above the surface.
         chunk.applyDeltas([{ i: blockIndex(0, 7, 0, 8, 8), t: BlockType.Stone, m: 0 }]);
         expect(chunk.getBlock(0, 7, 0)).toBe(BlockType.Stone);
 
-        // Four damage=1 hits should break it (HP was reset by applyDeltas).
-        for (let hit = 0; hit < 4; hit++) {
-            chunk.hitBlock(0, 7, 0, 1);
-        }
+        expect(chunk.destroyBlock(0, 7, 0)).toBe(true);
         expect(chunk.getBlock(0, 7, 0)).toBe(BlockType.Air);
     });
 

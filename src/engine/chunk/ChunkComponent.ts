@@ -21,6 +21,10 @@ export enum BlockType {
     CraftingTable = 12,
 }
 
+export const INDESTRUCTIBLE_BLOCKS = new Set<BlockType>([BlockType.Air, BlockType.Bedrock, BlockType.Water]);
+
+export const INSTANT_BREAK_BLOCKS = new Set<BlockType>([BlockType.OakLeaves, BlockType.Torch]);
+
 // Blocks the player can walk through (non-solid).
 export function isPassableBlock(blockType: BlockType): boolean {
     return blockType === BlockType.Air || blockType === BlockType.Torch || blockType === BlockType.Water;
@@ -145,26 +149,6 @@ export function torchQuadIndexFromHitNormal(normalX: number, normalY: number, no
     return -1; // bottom face hit (ceiling) — no torch geometry for this case
 }
 
-const BLOCK_HITPOINTS: Record<BlockType, number> = {
-    [BlockType.Air]: 0,
-    [BlockType.Bedrock]: 0,
-    [BlockType.Grass]: 2,
-    [BlockType.Dirt]: 2,
-    [BlockType.Stone]: 4,
-    [BlockType.Cobblestone]: 3,
-    [BlockType.CoalOre]: 4,
-    [BlockType.OakLog]: 3,
-    [BlockType.OakLeaves]: 1,
-    [BlockType.Torch]: 1,
-    [BlockType.Water]: 0,
-    [BlockType.OakPlanks]: 2,
-    [BlockType.CraftingTable]: 3,
-};
-
-export function isInstantBreak(blockType: BlockType): boolean {
-    return BLOCK_HITPOINTS[blockType] === 1;
-}
-
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
 interface SubMesh {
     positions: number[];
@@ -189,7 +173,6 @@ export default class ChunkComponent extends Component {
     readonly worldOriginZ: number;
 
     private readonly blocks: Uint8Array;
-    private readonly blockHitPoints: Uint8Array;
     // Byte per voxel: high nibble = sky light, low nibble = block light (reserved for emissives).
     // Packing both channels into one byte keeps the per-chunk light memory at width*height*depth
     // bytes instead of doubling it when block-light gets implemented.
@@ -218,7 +201,6 @@ export default class ChunkComponent extends Component {
         this.worldOriginY = worldOriginY;
         this.worldOriginZ = worldOriginZ;
         this.blocks = new Uint8Array(width * height * depth);
-        this.blockHitPoints = new Uint8Array(width * height * depth);
         this.lightLevels = new Uint8Array(width * height * depth);
         this.blockMeta = new Uint8Array(width * height * depth);
         this.mesh = new THREE.Group();
@@ -597,7 +579,6 @@ export default class ChunkComponent extends Component {
     setBlock(x: number, y: number, z: number, type: BlockType): void {
         const index = this.getBlockIndex(x, y, z);
         this.blocks[index] = type;
-        this.blockHitPoints[index] = BLOCK_HITPOINTS[type];
     }
 
     getSkyLight(x: number, y: number, z: number): number {
@@ -648,30 +629,26 @@ export default class ChunkComponent extends Component {
     // Returns true if the block was destroyed. The caller (ChunkManager.relightAround via
     // PlayerBlockInteraction) is responsible for the relight + rebuild because relighting may
     // need to touch neighbor chunks, which ChunkComponent has no handle to.
-    hitBlock(x: number, y: number, z: number, damage: number): boolean {
+    destroyBlock(x: number, y: number, z: number): boolean {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height || z < 0 || z >= this.depth) {
             return false;
         }
-        const index = this.getBlockIndex(x, y, z);
-        const currentHitPoints = this.blockHitPoints[index];
 
-        if (currentHitPoints === 0) {
+        const index = this.getBlockIndex(x, y, z);
+
+        if (INDESTRUCTIBLE_BLOCKS.has(this.blocks[index] as BlockType)) {
             return false;
         }
 
-        if (damage >= currentHitPoints) {
-            this.setBlock(x, y, z, BlockType.Air);
-            this.blockMeta[index] = 0;
-            return true;
-        }
-        this.blockHitPoints[index] = currentHitPoints - damage;
-        return false;
+        this.setBlock(x, y, z, BlockType.Air);
+        this.blockMeta[index] = 0;
+        return true;
     }
 
     // Returns only the voxels whose block type or meta differs from freshly-generated terrain.
     // Builds a throwaway sibling chunk with identical dims/origin, regenerates it from the same
     // seed, and diffs. Because terrain generation is deterministic, this captures exactly the
-    // player's edits — the compact payload that needs persisting. lightLevels/blockHitPoints are
+    // player's edits — the compact payload that needs persisting. lightLevels are
     // derived/transient and intentionally excluded. No mesh is built for the pristine chunk.
     diffAgainstPristine(generator: TerrainGenerator): VoxelDelta[] {
         const pristine = new ChunkComponent(
@@ -694,13 +671,11 @@ export default class ChunkComponent extends Component {
         return deltas;
     }
 
-    // Writes saved deltas onto the raw arrays by linear index. Resets blockHitPoints to the
-    // restored type's full HP, mirroring setBlock's side effect so loaded blocks break correctly.
+    // Writes saved deltas onto the raw arrays by linear index.
     // Does NOT relight or rebuild — the caller (ChunkManager.getOrCreateChunk) handles that.
     applyDeltas(deltas: ReadonlyArray<VoxelDelta>): void {
         for (const { i, t, m } of deltas) {
             this.blocks[i] = t;
-            this.blockHitPoints[i] = BLOCK_HITPOINTS[t as BlockType];
             this.blockMeta[i] = m;
         }
     }

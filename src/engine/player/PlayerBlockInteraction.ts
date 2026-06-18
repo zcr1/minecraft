@@ -3,7 +3,7 @@ import game from "engine/Game";
 import { BLOCK_BREAK_STAGE_COUNT } from "engine/TextureManager";
 import ChunkComponent, {
     BlockType,
-    isInstantBreak,
+    INSTANT_BREAK_BLOCKS,
     isPassableBlock,
     isSolidBlock,
     torchQuadIndexFromHitNormal,
@@ -119,7 +119,7 @@ export default class PlayerBlockInteraction extends Component {
 
         this.damageProgress += deltaTime / this.breakTimeSeconds;
 
-        if (isInstantBreak(target.blockType)) {
+        if (INSTANT_BREAK_BLOCKS.has(target.blockType)) {
             this.damageProgress = 1;
         }
 
@@ -131,7 +131,7 @@ export default class PlayerBlockInteraction extends Component {
                 blockZ: target.blockZ,
                 blockType: target.blockType,
             };
-            const broke = target.chunk.hitBlock(target.blockX, target.blockY, target.blockZ, 255);
+            const broke = target.chunk.destroyBlock(target.blockX, target.blockY, target.blockZ);
             if (broke) {
                 // If there are any attached torches - break those also
                 const worldX = target.chunk.worldOriginX + target.blockX;
