@@ -4,6 +4,7 @@ import { BlockType } from "engine/chunk/ChunkComponent";
 export enum BiomeType {
     Forest = 0,
     Mountain = 1,
+    Lake = 2,
 }
 
 const BIOME_FREQUENCY = 1 / 128;
@@ -17,6 +18,10 @@ const MOUNTAIN_HEIGHT_AMPLITUDE = 20;
 // smoothly interpolate between Forest and Mountain height parameters.
 const BIOME_BLEND_LOW = 0.05;
 const BIOME_BLEND_RANGE = 0.4;
+const LAKE_THRESHOLD = -0.5;
+const LAKE_BASE_HEIGHT = 10;
+const LAKE_HEIGHT_AMPLITUDE = 4;
+const LAKE_BLEND_RANGE = 0.3;
 
 // Minimal interface for the voxel volume that ore placement needs to read and write.
 // Defined here (rather than importing ChunkComponent) to avoid a circular dependency:
@@ -260,7 +265,13 @@ export default class TerrainGenerator {
 
     getBiome(worldX: number, worldZ: number): BiomeType {
         const value = this.biomeNoise2D(worldX * BIOME_FREQUENCY, worldZ * BIOME_FREQUENCY);
-        return value > MOUNTAIN_THRESHOLD ? BiomeType.Mountain : BiomeType.Forest;
+        if (value > MOUNTAIN_THRESHOLD) {
+            return BiomeType.Mountain;
+        }
+        if (value < LAKE_THRESHOLD) {
+            return BiomeType.Lake;
+        }
+        return BiomeType.Forest;
     }
 
     // Fractal Brownian motion (fBm): sum several octaves of noise, each at a higher
@@ -272,14 +283,21 @@ export default class TerrainGenerator {
     private computeHeight(worldX: number, worldZ: number, biomeNoise: number): number {
         const { baseFrequency, octaves, persistence, lacunarity } = this.config;
 
-        // Blend height params smoothly between Forest and Mountain so biome borders
-        // produce a gradual slope rather than a sharp cliff. The raw biome noise value
-        // is used here (not the thresholded BiomeType) so the blend is continuous.
-        const blendRaw = Math.max(0, Math.min(1, (biomeNoise - BIOME_BLEND_LOW) / BIOME_BLEND_RANGE));
-        const blendWeight = blendRaw * blendRaw * (3 - 2 * blendRaw); // smoothstep
-        const baseHeight = this.config.baseHeight + blendWeight * (MOUNTAIN_BASE_HEIGHT - this.config.baseHeight);
+        // Blend height params smoothly between Forest and Mountain (high end) and Forest
+        // and Lake (low end). The raw biome noise value drives both blends so transitions
+        // are continuous. The two blend zones never overlap, so they can be summed safely.
+        const mountainBlendRaw = Math.max(0, Math.min(1, (biomeNoise - BIOME_BLEND_LOW) / BIOME_BLEND_RANGE));
+        const mountainBlend = mountainBlendRaw * mountainBlendRaw * (3 - 2 * mountainBlendRaw);
+        const lakeBlendRaw = Math.max(0, Math.min(1, (LAKE_THRESHOLD - biomeNoise) / LAKE_BLEND_RANGE));
+        const lakeBlend = lakeBlendRaw * lakeBlendRaw * (3 - 2 * lakeBlendRaw);
+        const baseHeight =
+            this.config.baseHeight +
+            mountainBlend * (MOUNTAIN_BASE_HEIGHT - this.config.baseHeight) +
+            lakeBlend * (LAKE_BASE_HEIGHT - this.config.baseHeight);
         const heightAmplitude =
-            this.config.heightAmplitude + blendWeight * (MOUNTAIN_HEIGHT_AMPLITUDE - this.config.heightAmplitude);
+            this.config.heightAmplitude +
+            mountainBlend * (MOUNTAIN_HEIGHT_AMPLITUDE - this.config.heightAmplitude) +
+            lakeBlend * (LAKE_HEIGHT_AMPLITUDE - this.config.heightAmplitude);
 
         let frequency = baseFrequency;
         let amplitude = 1;
@@ -313,7 +331,12 @@ export default class TerrainGenerator {
         const biomeNoise = this.biomeNoise2D(worldX * BIOME_FREQUENCY, worldZ * BIOME_FREQUENCY);
         return {
             surface: Math.floor(this.computeHeight(worldX, worldZ, biomeNoise)),
-            biome: biomeNoise > MOUNTAIN_THRESHOLD ? BiomeType.Mountain : BiomeType.Forest,
+            biome:
+                biomeNoise > MOUNTAIN_THRESHOLD
+                    ? BiomeType.Mountain
+                    : biomeNoise < LAKE_THRESHOLD
+                      ? BiomeType.Lake
+                      : BiomeType.Forest,
         };
     }
 
@@ -325,10 +348,16 @@ export default class TerrainGenerator {
             if (biome === BiomeType.Mountain) {
                 return surface >= SNOW_HEIGHT ? BlockType.Snow : BlockType.DirtSnow;
             }
+            if (biome === BiomeType.Lake) {
+                return BlockType.Dirt;
+            }
             return BlockType.Grass;
         }
 
         if (biome === BiomeType.Forest && worldY >= surface - 3) {
+            return BlockType.Dirt;
+        }
+        if (biome === BiomeType.Lake && worldY >= surface - 2) {
             return BlockType.Dirt;
         }
 
