@@ -22,7 +22,7 @@ const SWING_DURATION_SECONDS = 0.3;
 const SWING_FORWARD = 0.18;
 const SWING_DOWN = 0.22;
 const SWING_RIGHT = 0.06;
-const SWING_PITCH = Math.PI / 3;
+const SWING_PITCH = Math.PI / 6;
 
 interface ArmPose {
     readonly offsetForward: number;
