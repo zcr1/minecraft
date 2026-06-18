@@ -25,7 +25,7 @@ export enum BlockType {
 
 export const INDESTRUCTIBLE_BLOCKS = new Set<BlockType>([BlockType.Air, BlockType.Bedrock, BlockType.Water]);
 
-export const INSTANT_BREAK_BLOCKS = new Set<BlockType>([BlockType.OakLeaves, BlockType.Torch]);
+export const INSTANT_BREAK_BLOCKS = new Set<BlockType>([BlockType.OakLeaves, BlockType.Snow, BlockType.Torch]);
 
 // Blocks the player can walk through (non-solid).
 export function isPassableBlock(blockType: BlockType): boolean {
