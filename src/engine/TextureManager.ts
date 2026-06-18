@@ -1,11 +1,27 @@
 import bedrockUrl from "assets/textures/blocks/bedrock.png";
-import coalUrl from "assets/textures/items/coal.png";
 import coalOreUrl from "assets/textures/blocks/coal_ore.png";
 import cobbleUrl from "assets/textures/blocks/cobblestone.png";
 import craftingTableUrl from "assets/textures/blocks/crafting_table.png";
 import craftingTableBackUrl from "assets/textures/blocks/crafting_table_back.png";
 import craftingTableFrontUrl from "assets/textures/blocks/crafting_table_front.png";
 import craftingTableTopUrl from "assets/textures/blocks/crafting_table_top.png";
+import dirtUrl from "assets/textures/blocks/dirt.png";
+import dirtSnowBottomUrl from "assets/textures/blocks/dirt_snow_bottom.png";
+import dirtSnowSideUrl from "assets/textures/blocks/dirt_snow_side.png";
+import dirtSnowTopUrl from "assets/textures/blocks/dirt_snow_top.png";
+import grassSideUrl from "assets/textures/blocks/grass_side.png";
+import grassTopUrl from "assets/textures/blocks/grass_top.png";
+import oakLeaves1Url from "assets/textures/blocks/oak_leaves_1.png";
+import oakLeaves2Url from "assets/textures/blocks/oak_leaves_2.png";
+import oakLogUrl from "assets/textures/blocks/oak_log.png";
+import oakLogTopUrl from "assets/textures/blocks/oak_log_top.png";
+import oakPlankUrl from "assets/textures/blocks/oak_plank.png";
+import snowUrl from "assets/textures/blocks/snow.png";
+import stoneUrl from "assets/textures/blocks/stone.png";
+import waterUrl from "assets/textures/blocks/water.png";
+import coalUrl from "assets/textures/items/coal.png";
+import stickUrl from "assets/textures/items/stick.png";
+import torchUrl from "assets/textures/items/torch.png";
 import desetroy0Url from "assets/textures/misc/destroy_0.png";
 import desetroy1Url from "assets/textures/misc/destroy_1.png";
 import desetroy2Url from "assets/textures/misc/destroy_2.png";
@@ -16,18 +32,6 @@ import desetroy6Url from "assets/textures/misc/destroy_6.png";
 import desetroy7Url from "assets/textures/misc/destroy_7.png";
 import desetroy8Url from "assets/textures/misc/destroy_8.png";
 import desetroy9Url from "assets/textures/misc/destroy_9.png";
-import dirtUrl from "assets/textures/blocks/dirt.png";
-import grassSideUrl from "assets/textures/blocks/grass_side.png";
-import grassTopUrl from "assets/textures/blocks/grass_top.png";
-import oakLeaves1Url from "assets/textures/blocks/oak_leaves_1.png";
-import oakLeaves2Url from "assets/textures/blocks/oak_leaves_2.png";
-import oakLogUrl from "assets/textures/blocks/oak_log.png";
-import oakLogTopUrl from "assets/textures/blocks/oak_log_top.png";
-import oakPlankUrl from "assets/textures/blocks/oak_plank.png";
-import stickUrl from "assets/textures/items/stick.png";
-import stoneUrl from "assets/textures/blocks/stone.png";
-import torchUrl from "assets/textures/items/torch.png";
-import waterUrl from "assets/textures/blocks/water.png";
 import * as THREE from "three";
 import { BlockType } from "engine/chunk/ChunkComponent";
 import { ItemType } from "engine/items/ItemType";
@@ -63,6 +67,13 @@ class TextureManager {
     private craftingTableBackMat!: THREE.MeshStandardMaterial;
     private craftingTableSideMat!: THREE.MeshStandardMaterial;
 
+    private snowMat!: THREE.MeshStandardMaterial;
+
+    // DirtSnow has three face variants: top (snow), sides (dirt+snow), bottom (dirt).
+    private dirtSnowTopMat!: THREE.MeshStandardMaterial;
+    private dirtSnowSideMat!: THREE.MeshStandardMaterial;
+    private dirtSnowBottomMat!: THREE.MeshStandardMaterial;
+
     // Separate instance from the held-item flat material so the two can diverge independently.
     private torchCrossMat!: THREE.MeshStandardMaterial;
 
@@ -96,6 +107,12 @@ class TextureManager {
             this.loadTransparentMat(loader, oakLeaves1Url),
             this.loadTransparentMat(loader, oakLeaves2Url),
         ];
+
+        this.snowMat = this.loadMat(loader, snowUrl);
+
+        this.dirtSnowTopMat = this.loadMat(loader, dirtSnowTopUrl);
+        this.dirtSnowSideMat = this.loadMat(loader, dirtSnowSideUrl);
+        this.dirtSnowBottomMat = this.loadMat(loader, dirtSnowBottomUrl);
 
         this.blockMaterials = {
             [BlockType.Dirt]: this.loadMat(loader, dirtUrl),
@@ -170,6 +187,20 @@ class TextureManager {
     // stays deterministic across rebuilds.
     getLeavesMaterial(variant: 0 | 1): THREE.Material {
         return this.oakLeavesMats[variant];
+    }
+
+    getSnowMaterial(): THREE.Material {
+        return this.snowMat;
+    }
+
+    getDirtSnowMaterial(normalY: number): THREE.Material {
+        if (normalY === 1) {
+            return this.dirtSnowTopMat;
+        }
+        if (normalY === -1) {
+            return this.dirtSnowBottomMat;
+        }
+        return this.dirtSnowSideMat;
     }
 
     createBlockBreakMaterial(): THREE.MeshBasicMaterial {

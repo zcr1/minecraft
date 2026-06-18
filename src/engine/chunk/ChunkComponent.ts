@@ -19,6 +19,8 @@ export enum BlockType {
     Water = 10,
     OakPlanks = 11,
     CraftingTable = 12,
+    Snow = 13,
+    DirtSnow = 14,
 }
 
 export const INDESTRUCTIBLE_BLOCKS = new Set<BlockType>([BlockType.Air, BlockType.Bedrock, BlockType.Water]);
@@ -314,9 +316,10 @@ export default class ChunkComponent extends Component {
     generate(generator: TerrainGenerator) {
         for (let localX = 0; localX < this.width; localX++) {
             for (let localZ = 0; localZ < this.depth; localZ++) {
-                // Surface height only depends on (x, z), so compute it once per column
-                // rather than re-running the noise octaves for every voxel in the column.
-                const surface = Math.floor(generator.getHeight(this.worldOriginX + localX, this.worldOriginZ + localZ));
+                const worldX = this.worldOriginX + localX;
+                const worldZ = this.worldOriginZ + localZ;
+                // Surface height and biome only depend on (x, z), so compute once per column.
+                const { surface, biome } = generator.getColumn(worldX, worldZ);
                 for (let localY = 0; localY < this.height; localY++) {
                     const worldY = this.worldOriginY + localY;
                     if (worldY === 0) {
@@ -334,7 +337,7 @@ export default class ChunkComponent extends Component {
                     const blockType =
                         worldY === surface && surface < generator.seaLevel
                             ? BlockType.Dirt
-                            : generator.blockTypeForLayer(worldY, surface);
+                            : generator.blockTypeForLayer(worldY, surface, biome);
                     this.setBlock(localX, localY, localZ, blockType);
                 }
             }
@@ -387,6 +390,10 @@ export default class ChunkComponent extends Component {
                 subMesh: createSubMesh(),
                 material: () => textureManager.getCraftingTableMaterial(1, 0, 0),
             },
+            dirtSnowSide: { subMesh: createSubMesh(), material: () => textureManager.getDirtSnowMaterial(0) },
+            dirtSnowTop: { subMesh: createSubMesh(), material: () => textureManager.getDirtSnowMaterial(1) },
+            dirtSnowBottom: { subMesh: createSubMesh(), material: () => textureManager.getDirtSnowMaterial(-1) },
+            snow: { subMesh: createSubMesh(), material: () => textureManager.getSnowMaterial() },
             stone: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Stone, 0) },
             torch: { subMesh: createSubMesh(), material: () => textureManager.getTorchMaterial() },
             // Water renderOrder=1 is it is rendered after all opaque geometry and alpha blending sorts correctly.
@@ -542,6 +549,23 @@ export default class ChunkComponent extends Component {
                                 this.pushFace(face, x, y, z, craftingTableSubMesh, lightValue);
                                 break;
                             }
+                            case BlockType.DirtSnow:
+                                this.pushFace(
+                                    face,
+                                    x,
+                                    y,
+                                    z,
+                                    face.normal[1] === 1
+                                        ? meshes.dirtSnowTop.subMesh
+                                        : face.normal[1] === -1
+                                          ? meshes.dirtSnowBottom.subMesh
+                                          : meshes.dirtSnowSide.subMesh,
+                                    lightValue,
+                                );
+                                break;
+                            case BlockType.Snow:
+                                this.pushFace(face, x, y, z, meshes.snow.subMesh, lightValue);
+                                break;
                             case BlockType.Stone:
                                 this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);
                                 break;

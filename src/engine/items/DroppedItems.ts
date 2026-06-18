@@ -17,6 +17,7 @@ import GameObjectName from "engine/utils/gameObjectNames";
 // Defines drops that are not identical to themselves
 const BLOCK_DROPS: Partial<Record<BlockType, InventoryItemStack>> = {
     [BlockType.Grass]: { kind: "block", type: BlockType.Dirt },
+    [BlockType.DirtSnow]: { kind: "block", type: BlockType.Dirt },
     [BlockType.Stone]: { kind: "block", type: BlockType.Cobblestone },
     [BlockType.CoalOre]: { kind: "item", type: ItemType.Coal },
     // OakLog omitted — falls through to the default "drop itself" path.
@@ -107,6 +108,19 @@ export default class DroppedItems extends Component {
         const ctBack = TextureManager.getCraftingTableMaterial(0, 0, 1);
         const ctFront = TextureManager.getCraftingTableMaterial(0, 0, -1);
         this.blockMaterialsByType.set(BlockType.CraftingTable, [ctSide, ctSide, ctTop, ctSide, ctBack, ctFront]);
+
+        // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z.
+        const dirtSnowSide = TextureManager.getDirtSnowMaterial(0);
+        const dirtSnowTop = TextureManager.getDirtSnowMaterial(1);
+        const dirtSnowBottom = TextureManager.getDirtSnowMaterial(-1);
+        this.blockMaterialsByType.set(BlockType.DirtSnow, [
+            dirtSnowSide,
+            dirtSnowSide,
+            dirtSnowTop,
+            dirtSnowBottom,
+            dirtSnowSide,
+            dirtSnowSide,
+        ]);
 
         for (let i = 0; i < POOL_SIZE; i++) {
             // Each item needs its own geometry because the chunk shader reads a per-vertex `aLight`

@@ -1,6 +1,23 @@
 import { NoiseFunction2D, NoiseFunction3D, createNoise2D, createNoise3D } from "simplex-noise";
 import { BlockType } from "engine/chunk/ChunkComponent";
 
+export enum BiomeType {
+    Forest = 0,
+    Mountain = 1,
+}
+
+const BIOME_FREQUENCY = 1 / 128;
+const MOUNTAIN_THRESHOLD = 0.3;
+// Surface must reach this Y for the top block to be Snow; below this it is DirtSnow.
+const SNOW_HEIGHT = 60;
+// Base height and amplitude used for mountain biomes (blended from forest config values).
+const MOUNTAIN_BASE_HEIGHT = 62;
+const MOUNTAIN_HEIGHT_AMPLITUDE = 20;
+// Blend transition band: noise values in [BIOME_BLEND_LOW, BIOME_BLEND_LOW + BIOME_BLEND_RANGE]
+// smoothly interpolate between Forest and Mountain height parameters.
+const BIOME_BLEND_LOW = 0.05;
+const BIOME_BLEND_RANGE = 0.4;
+
 // Minimal interface for the voxel volume that ore placement needs to read and write.
 // Defined here (rather than importing ChunkComponent) to avoid a circular dependency:
 // ChunkComponent already imports TerrainGenerator, so the import can only go one way.
@@ -213,6 +230,8 @@ export default class TerrainGenerator {
     private readonly noise2D: NoiseFunction2D;
     // Separate 3D noise field for carving caves, seeded independently from the height field.
     private readonly noise3D: NoiseFunction3D;
+    // Low-frequency 2D noise for biome placement, seeded independently from terrain and cave noise.
+    private readonly biomeNoise2D: NoiseFunction2D;
     private readonly caveFrequency: number;
     private readonly caveThreshold: number;
     private readonly caveVerticalSquash: number;
@@ -232,17 +251,35 @@ export default class TerrainGenerator {
         // Offset the cave seed so the cave field is decorrelated from the height field but
         // still fully deterministic from the same world seed.
         this.noise3D = createNoise3D(mulberry32(seed + 1013));
+        // Offset the biome seed so biome regions are independent from both terrain and cave noise.
+        this.biomeNoise2D = createNoise2D(mulberry32(seed + 2019));
         this.caveFrequency = config.caveFrequency ?? 1 / 16;
         this.caveThreshold = config.caveThreshold ?? 0.55;
         this.caveVerticalSquash = config.caveVerticalSquash ?? 2.0;
+    }
+
+    getBiome(worldX: number, worldZ: number): BiomeType {
+        const value = this.biomeNoise2D(worldX * BIOME_FREQUENCY, worldZ * BIOME_FREQUENCY);
+        return value > MOUNTAIN_THRESHOLD ? BiomeType.Mountain : BiomeType.Forest;
     }
 
     // Fractal Brownian motion (fBm): sum several octaves of noise, each at a higher
     // frequency and lower amplitude than the last. This is what gives terrain both
     // broad shape (low-frequency octaves) and fine detail (high-frequency octaves)
     // from a single underlying noise function.
-    getHeight(worldX: number, worldZ: number): number {
-        const { baseFrequency, octaves, persistence, lacunarity, baseHeight, heightAmplitude } = this.config;
+    // biomeNoise is the raw biomeNoise2D sample at (worldX, worldZ) — pass it in when
+    // already available to avoid a redundant noise lookup.
+    private computeHeight(worldX: number, worldZ: number, biomeNoise: number): number {
+        const { baseFrequency, octaves, persistence, lacunarity } = this.config;
+
+        // Blend height params smoothly between Forest and Mountain so biome borders
+        // produce a gradual slope rather than a sharp cliff. The raw biome noise value
+        // is used here (not the thresholded BiomeType) so the blend is continuous.
+        const blendRaw = Math.max(0, Math.min(1, (biomeNoise - BIOME_BLEND_LOW) / BIOME_BLEND_RANGE));
+        const blendWeight = blendRaw * blendRaw * (3 - 2 * blendRaw); // smoothstep
+        const baseHeight = this.config.baseHeight + blendWeight * (MOUNTAIN_BASE_HEIGHT - this.config.baseHeight);
+        const heightAmplitude =
+            this.config.heightAmplitude + blendWeight * (MOUNTAIN_HEIGHT_AMPLITUDE - this.config.heightAmplitude);
 
         let frequency = baseFrequency;
         let amplitude = 1;
@@ -262,15 +299,36 @@ export default class TerrainGenerator {
         return baseHeight + normalized * heightAmplitude;
     }
 
+    getHeight(worldX: number, worldZ: number): number {
+        return this.computeHeight(
+            worldX,
+            worldZ,
+            this.biomeNoise2D(worldX * BIOME_FREQUENCY, worldZ * BIOME_FREQUENCY),
+        );
+    }
+
+    // Returns surface height and biome for a column with a single biomeNoise2D sample.
+    // Use this instead of calling getHeight + getBiome separately on the same (x, z).
+    getColumn(worldX: number, worldZ: number): { surface: number; biome: BiomeType } {
+        const biomeNoise = this.biomeNoise2D(worldX * BIOME_FREQUENCY, worldZ * BIOME_FREQUENCY);
+        return {
+            surface: Math.floor(this.computeHeight(worldX, worldZ, biomeNoise)),
+            biome: biomeNoise > MOUNTAIN_THRESHOLD ? BiomeType.Mountain : BiomeType.Forest,
+        };
+    }
+
     // Determines the block type for a voxel that is known to be at or below the surface.
     // Callers that have already computed the surface height (e.g. chunk generation) should
     // use this directly to avoid redundant getHeight() calls.
-    blockTypeForLayer(worldY: number, surface: number): BlockType {
+    blockTypeForLayer(worldY: number, surface: number, biome: BiomeType): BlockType {
         if (worldY === surface) {
+            if (biome === BiomeType.Mountain) {
+                return surface >= SNOW_HEIGHT ? BlockType.Snow : BlockType.DirtSnow;
+            }
             return BlockType.Grass;
         }
 
-        if (worldY >= surface - 3) {
+        if (biome === BiomeType.Forest && worldY >= surface - 3) {
             return BlockType.Dirt;
         }
 
@@ -278,13 +336,13 @@ export default class TerrainGenerator {
     }
 
     getBlock(worldX: number, worldY: number, worldZ: number): BlockType {
-        const surface = Math.floor(this.getHeight(worldX, worldZ));
+        const { surface, biome } = this.getColumn(worldX, worldZ);
 
         if (worldY > surface) {
             return BlockType.Air;
         }
 
-        return this.blockTypeForLayer(worldY, surface);
+        return this.blockTypeForLayer(worldY, surface, biome);
     }
 
     // Carves caves by sampling a world-space 3D noise field: any stone voxel whose noise value
@@ -380,8 +438,11 @@ export default class TerrainGenerator {
                 for (const tree of trees) {
                     const worldTreeX = neighborOriginX + tree.localX;
                     const worldTreeZ = neighborOriginZ + tree.localZ;
-                    const surface = Math.floor(this.getHeight(worldTreeX, worldTreeZ));
-                    // Trees don't grow underwater — skip any position whose surface is submerged.
+                    // Trees don't grow in mountain biomes or underwater.
+                    const { surface, biome } = this.getColumn(worldTreeX, worldTreeZ);
+                    if (biome === BiomeType.Mountain) {
+                        continue;
+                    }
                     if (surface <= this.seaLevel) {
                         continue;
                     }
