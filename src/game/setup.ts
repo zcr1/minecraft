@@ -44,11 +44,15 @@ export function setupScene(save: SaveData | null): void {
         caveVerticalSquash: 2.0,
     });
 
+    const spawnX = 12;
+    const spawnZ = 12;
+    const spawnY = terrainGenerator.getColumn(spawnX, spawnZ).surface + 20;
+
     const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);
     const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x4488ff });
     const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
     const player = new GameObject(GameObjectName.Player);
-    player.addComponent(new Transform(playerMesh, 12, 70, 12));
+    player.addComponent(new Transform(playerMesh, spawnX, spawnY, spawnZ));
     player.addComponent(new PlayerController());
     player.addComponent(new PlayerPhysics());
     player.addComponent(new PlayerCamera(game.camera, game.renderer.domElement));
