@@ -71,6 +71,7 @@ export default class DroppedItems extends Component {
             BlockType.Cobblestone,
             BlockType.OakLog,
             BlockType.OakPlanks,
+            BlockType.Snow,
         ]) {
             const sideMaterial = TextureManager.getMaterial(blockType, 0);
             const topMaterial = TextureManager.getMaterial(blockType, 1);

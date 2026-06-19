@@ -125,6 +125,7 @@ class TextureManager {
             [BlockType.Cobblestone]: this.loadMat(loader, cobbleUrl),
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
             [BlockType.OakPlanks]: this.loadMat(loader, oakPlankUrl),
+            [BlockType.Snow]: this.loadMat(loader, snowUrl),
         };
 
         this.flatItemMaterials = {
