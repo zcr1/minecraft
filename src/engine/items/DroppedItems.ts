@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import TextureManager from "engine/TextureManager";
+import { BLOCK_DROPS, BLOCK_DROP_CHANCES } from "engine/block/BlockDrops";
 import { BlockType } from "engine/block/BlockType";
 import ChunkManager from "engine/chunk/ChunkManager";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
@@ -8,28 +9,10 @@ import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import { type InventoryItemStack } from "engine/items/InventoryItem";
-import { ItemType } from "engine/items/ItemType";
 import { applyGravity, stepAxisX, stepAxisY, stepAxisZ } from "engine/physics/voxelPhysics";
 import Inventory, { type InventorySlot } from "engine/player/Inventory";
 import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
-
-// Defines drops that are not identical to themselves
-const BLOCK_DROPS: Partial<Record<BlockType, InventoryItemStack>> = {
-    [BlockType.Grass]: { kind: "block", type: BlockType.Dirt },
-    [BlockType.DirtSnow]: { kind: "block", type: BlockType.Dirt },
-    [BlockType.Stone]: { kind: "block", type: BlockType.Cobblestone },
-    [BlockType.CoalOre]: { kind: "item", type: ItemType.Coal },
-    // OakLog omitted — falls through to the default "drop itself" path.
-    [BlockType.OakLeaves]: { kind: "item", type: ItemType.Stick },
-    // Torch is stored as BlockType in the world but the player holds/places ItemType.Torch.
-    [BlockType.Torch]: { kind: "item", type: ItemType.Torch },
-};
-
-// Drop probability per block type (0–1). Absent means 1.0 — always drops.
-const BLOCK_DROP_CHANCES: Partial<Record<BlockType, number>> = {
-    [BlockType.OakLeaves]: 0.25,
-};
 
 const POOL_SIZE = 64;
 const ITEM_SIZE = 0.3;
