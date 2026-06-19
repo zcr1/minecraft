@@ -139,6 +139,8 @@ export default class ChunkComponent extends Component {
     readonly worldOriginZ: number;
 
     private readonly blocks: Uint8Array;
+    private pristineBlocks: Uint8Array | null = null;
+    private pristineMeta: Uint8Array | null = null;
     // Byte per voxel: high nibble = sky light, low nibble = block light (reserved for emissives).
     // Packing both channels into one byte keeps the per-chunk light memory at width*height*depth
     // bytes instead of doubling it when block-light gets implemented.
@@ -309,6 +311,8 @@ export default class ChunkComponent extends Component {
         generator.carveCaves(this);
         generator.placeCoalVeins(this);
         generator.placeTrees(this);
+        this.pristineBlocks = this.blocks.slice();
+        this.pristineMeta = this.blockMeta.slice();
     }
 
     rebuild(chunkManager: ChunkManager): void {
@@ -639,20 +643,27 @@ export default class ChunkComponent extends Component {
     // player's edits — the compact payload that needs persisting. lightLevels are
     // derived/transient and intentionally excluded. No mesh is built for the pristine chunk.
     diffAgainstPristine(generator: TerrainGenerator): VoxelDelta[] {
-        const pristine = new ChunkComponent(
-            this.width,
-            this.height,
-            this.depth,
-            this.worldOriginX,
-            this.worldOriginY,
-            this.worldOriginZ,
-        );
-        pristine.generate(generator);
+        let pristineBlocks = this.pristineBlocks;
+        let pristineMeta = this.pristineMeta;
+
+        if (!pristineBlocks || !pristineMeta) {
+            const pristine = new ChunkComponent(
+                this.width,
+                this.height,
+                this.depth,
+                this.worldOriginX,
+                this.worldOriginY,
+                this.worldOriginZ,
+            );
+            pristine.generate(generator);
+            pristineBlocks = pristine.pristineBlocks!;
+            pristineMeta = pristine.pristineMeta!;
+        }
 
         const deltas: VoxelDelta[] = [];
         const total = this.width * this.height * this.depth;
         for (let i = 0; i < total; i++) {
-            if (this.blocks[i] !== pristine.blocks[i] || this.blockMeta[i] !== pristine.blockMeta[i]) {
+            if (this.blocks[i] !== pristineBlocks[i] || this.blockMeta[i] !== pristineMeta[i]) {
                 deltas.push({ i, t: this.blocks[i], m: this.blockMeta[i] });
             }
         }
