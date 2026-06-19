@@ -21,7 +21,11 @@ import stoneUrl from "assets/textures/blocks/stone.png";
 import waterUrl from "assets/textures/blocks/water.png";
 import coalUrl from "assets/textures/items/coal.png";
 import stickUrl from "assets/textures/items/stick.png";
+import stonePickaxeUrl from "assets/textures/items/stone_pickaxe.png";
+import stoneSwordUrl from "assets/textures/items/stone_sword.png";
 import torchUrl from "assets/textures/items/torch.png";
+import woodenPickaxeUrl from "assets/textures/items/wooden_pickaxe.png";
+import woodenSwordUrl from "assets/textures/items/wooden_sword.png";
 import desetroy0Url from "assets/textures/misc/destroy_0.png";
 import desetroy1Url from "assets/textures/misc/destroy_1.png";
 import desetroy2Url from "assets/textures/misc/destroy_2.png";
@@ -127,6 +131,10 @@ class TextureManager {
             [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
             [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
             [ItemType.Torch]: this.loadFlatMat(loader, torchUrl),
+            [ItemType.WoodenPickaxe]: this.loadFlatMat(loader, woodenPickaxeUrl),
+            [ItemType.StonePickaxe]: this.loadFlatMat(loader, stonePickaxeUrl),
+            [ItemType.WoodenSword]: this.loadFlatMat(loader, woodenSwordUrl),
+            [ItemType.StoneSword]: this.loadFlatMat(loader, stoneSwordUrl),
         };
 
         this.torchCrossMat = this.loadFlatMat(loader, torchUrl);
