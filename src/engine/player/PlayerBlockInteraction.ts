@@ -1,19 +1,16 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import { BLOCK_BREAK_STAGE_COUNT } from "engine/TextureManager";
-import ChunkComponent, {
-    BlockType,
-    INSTANT_BREAK_BLOCKS,
-    isPassableBlock,
-    isSolidBlock,
-    torchQuadIndexFromHitNormal,
-} from "engine/chunk/ChunkComponent";
+import { BASE_BREAK_TIME_SECONDS, BlockMaterial } from "engine/block/BlockMaterial";
+import { BlockType, INSTANT_BREAK_BLOCKS, isPassableBlock, isSolidBlock } from "engine/block/BlockType";
+import ChunkComponent, { torchQuadIndexFromHitNormal } from "engine/chunk/ChunkComponent";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import input from "engine/input/Input";
 import { ItemType } from "engine/items/ItemType";
+import { computeBreakTime } from "engine/items/ToolSpeeds";
 import Inventory from "engine/player/Inventory";
 import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
@@ -24,7 +21,7 @@ const ITEM_TO_BLOCK: Partial<Record<ItemType, BlockType>> = {
 };
 
 const RAY_DISTANCE = 3;
-export const BREAK_TIME_SECONDS = 1.2;
+const BREAK_TIME_SECONDS = BASE_BREAK_TIME_SECONDS[BlockMaterial.Default];
 
 export interface TargetedBlock {
     chunk: ChunkComponent;
@@ -60,6 +57,7 @@ export default class PlayerBlockInteraction extends Component {
     targetedBlock: TargetedBlock | null = null;
     damageProgress = 0;
     breakTimeSeconds = BREAK_TIME_SECONDS;
+    private lastHotbarSlot = 0;
 
     private readonly hitPoint = new THREE.Vector3();
     // Exposed for sibling effects (e.g. BlockPlacementPreview). Only valid when targetedBlock is non-null.
@@ -89,9 +87,17 @@ export default class PlayerBlockInteraction extends Component {
     update(deltaTime: number) {
         const target = this.raycastTarget();
 
+        const currentSlot = this.inventory.selectedHotbarSlot;
+        const slotChanged = currentSlot !== this.lastHotbarSlot;
+        this.lastHotbarSlot = currentSlot;
+
         if (!this.sameTarget(target, this.targetedBlock)) {
             this.resetProgress();
+            this.updateBreakTime(target);
             eventManager.emit("targetedBlockChanged", target);
+        } else if (slotChanged) {
+            this.resetProgress();
+            this.updateBreakTime(target);
         }
         this.targetedBlock = target;
 
@@ -246,6 +252,17 @@ export default class PlayerBlockInteraction extends Component {
         this.lastEmittedStage = -1;
     }
 
+    private updateBreakTime(target: TargetedBlock | null): void {
+        if (!target) {
+            this.breakTimeSeconds = BREAK_TIME_SECONDS;
+            return;
+        }
+        this.breakTimeSeconds = computeBreakTime(
+            target.blockType,
+            this.inventory.getSlot(this.inventory.selectedHotbarSlot),
+        );
+    }
+
     private sameTarget(a: TargetedBlock | null, b: TargetedBlock | null): boolean {
         if (a === null && b === null) {
             return true;
@@ -301,5 +318,9 @@ export default class PlayerBlockInteraction extends Component {
             blockZ,
             blockType,
         };
+    }
+
+    setInstantBreakTime(flag: boolean) {
+        this.breakTimeSeconds = flag ? 0.01 : 1;
     }
 }

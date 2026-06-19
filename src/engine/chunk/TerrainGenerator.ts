@@ -1,5 +1,5 @@
 import { NoiseFunction2D, NoiseFunction3D, createNoise2D, createNoise3D } from "simplex-noise";
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 
 export enum BiomeType {
     Forest = 0,

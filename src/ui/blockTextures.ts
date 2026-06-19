@@ -16,7 +16,7 @@ import stoneSwordUrl from "assets/textures/items/stone_sword.png";
 import torchUrl from "assets/textures/items/torch.png";
 import woodenPickaxeUrl from "assets/textures/items/wooden_pickaxe.png";
 import woodenSwordUrl from "assets/textures/items/wooden_sword.png";
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 import { ItemType } from "engine/items/ItemType";
 
 // Maps each block type to an image URL suitable for use in <img src>.

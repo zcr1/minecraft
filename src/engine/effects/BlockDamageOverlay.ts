@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import textureManager from "engine/TextureManager";
-import { INSTANT_BREAK_BLOCKS } from "engine/chunk/ChunkComponent";
+import { INSTANT_BREAK_BLOCKS } from "engine/block/BlockType";
 import Component from "engine/core/Component";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";

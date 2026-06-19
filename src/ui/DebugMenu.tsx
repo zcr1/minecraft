@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Transform from "engine/components/Transform";
 import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
 import DayNightCycle from "engine/environment/DayNightCycle";
-import PlayerBlockInteraction, { BREAK_TIME_SECONDS } from "engine/player/PlayerBlockInteraction";
+import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerPhysics from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
 import { useGame } from "./GameContext";
@@ -46,7 +46,7 @@ export default function DebugMenu() {
         });
 
         pane.addBinding(params, "instantBreak", { label: "Instant Break" }).on("change", ({ value }) => {
-            playerBlockInteraction.breakTimeSeconds = value ? 0.01 : BREAK_TIME_SECONDS;
+            playerBlockInteraction.setInstantBreakTime(value);
         });
 
         pane.addBinding(params, "showChunkBoundaries", { label: "Show Chunk Boundaries" }).on("change", ({ value }) => {

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { isPassableBlock } from "engine/chunk/ChunkComponent";
+import { isPassableBlock } from "engine/block/BlockType";
 import ChunkManager from "engine/chunk/ChunkManager";
 
 export const SKIN_WIDTH = 1e-4;

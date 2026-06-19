@@ -33,7 +33,7 @@ import desetroy7Url from "assets/textures/misc/destroy_7.png";
 import desetroy8Url from "assets/textures/misc/destroy_8.png";
 import desetroy9Url from "assets/textures/misc/destroy_9.png";
 import * as THREE from "three";
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 import { ItemType } from "engine/items/ItemType";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 

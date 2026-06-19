@@ -1,4 +1,5 @@
-import ChunkComponent, { BlockType } from "../src/engine/chunk/ChunkComponent";
+import { BlockType } from "../src/engine/block/BlockType";
+import ChunkComponent from "../src/engine/chunk/ChunkComponent";
 
 describe("ChunkComponent.destroyBlock", () => {
     let chunk: ChunkComponent;

@@ -1,4 +1,4 @@
-import { BlockType } from "../../src/engine/chunk/ChunkComponent";
+import { BlockType } from "../../src/engine/block/BlockType";
 import ChunkManager from "../../src/engine/chunk/ChunkManager";
 import TerrainGenerator from "../../src/engine/chunk/TerrainGenerator";
 

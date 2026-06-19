@@ -1,4 +1,4 @@
-import { BlockType } from "./ChunkComponent";
+import { BlockType } from "../block/BlockType";
 import type ChunkComponent from "./ChunkComponent";
 import type ChunkManager from "./ChunkManager";
 

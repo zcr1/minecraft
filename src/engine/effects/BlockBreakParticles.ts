@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import game from "engine/Game";
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import { type BlockBreakEvent, type StageAdvancedEvent } from "engine/player/PlayerBlockInteraction";

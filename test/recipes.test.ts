@@ -1,4 +1,4 @@
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 import { type CraftingGrid, matchRecipe } from "engine/crafting/recipes";
 import type { InventoryItemStack } from "engine/items/InventoryItem";
 import { ItemType } from "engine/items/ItemType";

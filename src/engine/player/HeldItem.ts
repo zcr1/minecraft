@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import game from "engine/Game";
 import TextureManager from "engine/TextureManager";
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";

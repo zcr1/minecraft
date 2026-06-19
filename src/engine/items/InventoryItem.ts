@@ -1,4 +1,4 @@
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 import { ItemType } from "engine/items/ItemType";
 
 // Represents any stack-able thing that can occupy an inventory slot.

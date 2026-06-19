@@ -1,4 +1,5 @@
-import ChunkComponent, { BlockType } from "../../src/engine/chunk/ChunkComponent";
+import { BlockType } from "../../src/engine/block/BlockType";
+import ChunkComponent from "../../src/engine/chunk/ChunkComponent";
 import TerrainGenerator from "../../src/engine/chunk/TerrainGenerator";
 
 // Flat, deterministic terrain so diffs reflect only the edits we make.

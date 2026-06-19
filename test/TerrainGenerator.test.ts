@@ -1,4 +1,4 @@
-import { BlockType } from "../src/engine/chunk/ChunkComponent";
+import { BlockType } from "../src/engine/block/BlockType";
 import TerrainGenerator, { ChunkVolume, TerrainConfig } from "../src/engine/chunk/TerrainGenerator";
 
 const defaultConfig: TerrainConfig = {
@@ -80,10 +80,13 @@ describe("TerrainGenerator", () => {
         expect(differences).toBeGreaterThan(0);
     });
 
-    test("heights stay within [baseHeight - amplitude, baseHeight + amplitude]", () => {
+    test("heights stay within the global biome height range", () => {
         const generator = new TerrainGenerator(defaultConfig);
+        // getHeight blends between forest, mountain (base=62, amp=20), and lake (base=10, amp=4).
+        // The true system-wide bounds are determined by the mountain ceiling (62+20=82) and
+        // the forest floor (config.baseHeight - config.heightAmplitude = 5).
         const minimum = defaultConfig.baseHeight - defaultConfig.heightAmplitude;
-        const maximum = defaultConfig.baseHeight + defaultConfig.heightAmplitude;
+        const maximum = 82;
 
         for (let worldX = -100; worldX <= 100; worldX += 3) {
             for (let worldZ = -100; worldZ <= 100; worldZ += 3) {

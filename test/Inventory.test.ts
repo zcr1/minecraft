@@ -1,4 +1,4 @@
-import { BlockType } from "engine/chunk/ChunkComponent";
+import { BlockType } from "engine/block/BlockType";
 import type { InventoryItemStack } from "engine/items/InventoryItem";
 import { ItemType } from "engine/items/ItemType";
 import Inventory, { MAX_STACK_SIZE } from "engine/player/Inventory";

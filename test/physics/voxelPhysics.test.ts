@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BlockType } from "../../src/engine/chunk/ChunkComponent";
+import { BlockType } from "../../src/engine/block/BlockType";
 import type ChunkManager from "../../src/engine/chunk/ChunkManager";
 import {
     PhysicsBody,

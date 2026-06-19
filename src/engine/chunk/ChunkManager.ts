@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import game from "../Game";
+import { BlockType } from "../block/BlockType";
 import Transform from "../components/Transform";
 import Component from "../core/Component";
 import type { ChunkDelta, VoxelDelta } from "../persistence/SaveData";
 import GameObjectName from "../utils/gameObjectNames";
-import ChunkComponent, { BlockType, TORCH_ATTACHMENT_OFFSETS } from "./ChunkComponent";
+import ChunkComponent, { TORCH_ATTACHMENT_OFFSETS } from "./ChunkComponent";
 import lightingSystem, { MAX_LIGHT } from "./LightingSystem";
 import TerrainGenerator from "./TerrainGenerator";
 
