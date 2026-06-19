@@ -52,6 +52,7 @@ export default class PlayerBlockInteraction extends Component {
     targetedBlock: TargetedBlock | null = null;
     damageProgress = 0;
     breakTimeSeconds = BREAK_TIME_SECONDS;
+    private instantBreakEnabled = false;
     private lastHotbarSlot = 0;
 
     private readonly hitPoint = new THREE.Vector3();
@@ -248,10 +249,16 @@ export default class PlayerBlockInteraction extends Component {
     }
 
     private updateBreakTime(target: TargetedBlock | null): void {
+        if (this.instantBreakEnabled) {
+            this.breakTimeSeconds = 0.01;
+            return;
+        }
+
         if (!target) {
             this.breakTimeSeconds = BREAK_TIME_SECONDS;
             return;
         }
+
         this.breakTimeSeconds = computeBreakTime(
             target.blockType,
             this.inventory.getSlot(this.inventory.selectedHotbarSlot),
@@ -315,7 +322,8 @@ export default class PlayerBlockInteraction extends Component {
         };
     }
 
-    setInstantBreakTime(flag: boolean) {
-        this.breakTimeSeconds = flag ? 0.01 : 1;
+    setInstantBreak(flag: boolean) {
+        this.instantBreakEnabled = flag;
+        this.updateBreakTime(this.targetedBlock);
     }
 }

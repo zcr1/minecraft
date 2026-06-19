@@ -46,7 +46,7 @@ export default function DebugMenu() {
         });
 
         pane.addBinding(params, "instantBreak", { label: "Instant Break" }).on("change", ({ value }) => {
-            playerBlockInteraction.setInstantBreakTime(value);
+            playerBlockInteraction.setInstantBreak(value);
         });
 
         pane.addBinding(params, "showChunkBoundaries", { label: "Show Chunk Boundaries" }).on("change", ({ value }) => {
