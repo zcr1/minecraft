@@ -92,7 +92,7 @@ export function useDragSystem(
                 }
                 eventManager.emit("itemDropped", dragState.item);
             } else if (targetSlot !== sourceSlot) {
-                resolveDrop({
+                const remainingCount = resolveDrop({
                     sourceSlot,
                     targetSlot,
                     draggedItem: dragState.item,
@@ -101,6 +101,13 @@ export function useDragSystem(
                     setCraftingGrid,
                     craftingOutputSlot,
                 });
+
+                // Stack still has items - keep dragging so the user can place more.
+                if (remainingCount > 0) {
+                    setDragState({ sourceSlot, item: { ...dragState.item, count: remainingCount } });
+                    hoveredSlotRef.current = null;
+                    return;
+                }
             }
 
             setDragState(null);
@@ -142,6 +149,7 @@ export function useDragSystem(
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+/** Returns the remaining dragged count if the drag should continue, or 0 if it should end. */
 function resolveDrop({
     craftingGrid,
     craftingOutputSlot,
@@ -158,7 +166,7 @@ function resolveDrop({
     setCraftingGrid: Dispatch<SetStateAction<(InventorySlot | null)[]>>;
     sourceSlot: number;
     targetSlot: number;
-}): void {
+}): number {
     const sourceIsInventory = sourceSlot < CRAFTING_SLOT_OFFSET;
     const targetIsInventory = targetSlot < CRAFTING_SLOT_OFFSET;
     const targetIsCraftingGrid = targetSlot >= CRAFTING_SLOT_OFFSET && targetSlot < craftingOutputSlot;
@@ -166,22 +174,21 @@ function resolveDrop({
 
     if (targetIsOutput) {
         // Cannot drop onto the output slot.
-        return;
+        return 0;
     }
 
     if (sourceIsInventory && targetIsInventory) {
         inventory.moveSlot(sourceSlot, targetSlot);
-        return;
+        return 0;
     }
 
     if (sourceIsInventory && targetIsCraftingGrid) {
-        moveToCraftingGrid(sourceSlot, targetSlot, draggedItem, inventory, craftingGrid, setCraftingGrid);
-        return;
+        return moveToCraftingGrid(sourceSlot, targetSlot, draggedItem, inventory, craftingGrid, setCraftingGrid);
     }
 
     if (!sourceIsInventory && targetIsInventory) {
         moveFromCraftingGrid(sourceSlot, targetSlot, draggedItem, inventory, setCraftingGrid);
-        return;
+        return 0;
     }
 
     // Both slots are in the crafting grid — swap them.
@@ -192,9 +199,11 @@ function resolveDrop({
         [next[sourceCraftingIndex], next[targetCraftingIndex]] = [next[targetCraftingIndex], next[sourceCraftingIndex]];
         return next;
     });
+    return 0;
 }
 
-/** Move one item from an inventory slot into a crafting grid cell. Displaces the existing cell item back to inventory. */
+/** Move one item from an inventory slot into a crafting grid cell. Displaces the existing cell item back to inventory.
+ *  Returns the remaining count in the dragged stack (> 0 means the drag should continue). */
 function moveToCraftingGrid(
     sourceSlot: number,
     targetSlot: number,
@@ -202,17 +211,18 @@ function moveToCraftingGrid(
     inventory: Inventory,
     craftingGrid: (InventorySlot | null)[],
     setCraftingGrid: Dispatch<SetStateAction<(InventorySlot | null)[]>>,
-): void {
+): number {
     const craftingIndex = targetSlot - CRAFTING_SLOT_OFFSET;
     const displaced = craftingGrid[craftingIndex];
 
     // Skip if the displaced crafting item has nowhere to go.
     if (displaced && !inventory.canAdd(displaced.item)) {
-        return;
+        return 0;
     }
 
-    if (draggedItem.count > 1) {
-        inventory.setSlot(sourceSlot, { ...draggedItem, count: draggedItem.count - 1 });
+    const remaining = draggedItem.count - 1;
+    if (remaining > 0) {
+        inventory.setSlot(sourceSlot, { ...draggedItem, count: remaining });
     } else {
         inventory.removeSlot(sourceSlot);
     }
@@ -226,6 +236,8 @@ function moveToCraftingGrid(
     if (displaced) {
         inventory.add(displaced.item, displaced.count);
     }
+
+    return remaining;
 }
 
 /** Swap a crafting grid slot with an inventory slot. */

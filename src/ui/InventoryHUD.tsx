@@ -69,9 +69,8 @@ function SlotCell({
 export default function InventoryHUD() {
     const game = useGame();
     const inventory = useMemo(() => game.getGameObject(GameObjectName.Player).getComponent(Inventory), [game]);
-
-    useInventorySync();
     const selectedSlot = useHotbarSelection();
+    useInventorySync();
 
     const [craftingMode, setCraftingMode] = useState<"inventory" | "craftingTable">("inventory");
 
