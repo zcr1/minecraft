@@ -8,9 +8,4 @@ export default class MeshComponent extends Component {
         super();
         this.mesh = mesh;
     }
-
-    update() {
-        // this.mesh.rotation.x += 0.01;
-        // this.mesh.rotation.y += 0.01;
-    }
 }
