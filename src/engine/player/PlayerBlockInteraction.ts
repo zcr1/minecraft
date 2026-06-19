@@ -9,16 +9,11 @@ import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import input from "engine/input/Input";
-import { ItemType } from "engine/items/ItemType";
+import { ITEM_TO_BLOCK } from "engine/items/ItemType";
 import { computeBreakTime } from "engine/items/ToolSpeeds";
 import Inventory from "engine/player/Inventory";
 import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
-
-// Maps placeable item types to the block they place in the world.
-const ITEM_TO_BLOCK: Partial<Record<ItemType, BlockType>> = {
-    [ItemType.Torch]: BlockType.Torch,
-};
 
 const RAY_DISTANCE = 3;
 const BREAK_TIME_SECONDS = BASE_BREAK_TIME_SECONDS[BlockMaterial.Default];
