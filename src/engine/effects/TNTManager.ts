@@ -12,16 +12,21 @@ const CHAIN_FUSE_SECONDS = 0.3;
 const BLAST_RADIUS = 4;
 const BLAST_RADIUS_SQ = BLAST_RADIUS * BLAST_RADIUS;
 
-interface PendingExplosion {
+export interface PendingExplosion {
     worldX: number;
     worldY: number;
     worldZ: number;
     fuseRemaining: number;
+    totalFuse: number;
 }
 
 export default class TNTManager extends Component {
     private chunkManager!: ChunkManager;
     private pendingExplosions: PendingExplosion[] = [];
+
+    get activeFuses(): readonly PendingExplosion[] {
+        return this.pendingExplosions;
+    }
 
     start(): void {
         this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
@@ -48,7 +53,7 @@ export default class TNTManager extends Component {
         }
 
         const { worldX, worldY, worldZ } = event;
-        this.pendingExplosions.push({ worldX, worldY, worldZ, fuseRemaining: FUSE_SECONDS });
+        this.pendingExplosions.push({ worldX, worldY, worldZ, fuseRemaining: FUSE_SECONDS, totalFuse: FUSE_SECONDS });
     };
 
     // Cancel a primed TNT's fuse when its block is removed (mined, or otherwise broken) so it no
@@ -68,6 +73,10 @@ export default class TNTManager extends Component {
     }
 
     private explode(worldX: number, worldY: number, worldZ: number): void {
+        // Fire the visual burst at the detonation center before any blocks clear, so ExplosionParticles
+        // has a stable origin regardless of what the blast removes this frame.
+        eventManager.emit("tntExploded", { worldX, worldY, worldZ });
+
         const clearPositions: Array<{ worldX: number; worldY: number; worldZ: number }> = [];
         const drops: BlockBreakEvent[] = [];
 
@@ -102,6 +111,7 @@ export default class TNTManager extends Component {
                             worldY: blockWorldY,
                             worldZ: blockWorldZ,
                             fuseRemaining: CHAIN_FUSE_SECONDS,
+                            totalFuse: CHAIN_FUSE_SECONDS,
                         });
                         continue;
                     }

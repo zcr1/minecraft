@@ -9,15 +9,22 @@ export interface BlockPlacedEvent {
     worldZ: number;
 }
 
+export interface TntExplodedEvent {
+    worldX: number;
+    worldY: number;
+    worldZ: number;
+}
+
 export interface GameEventMap {
     blockBroken: BlockBreakEvent;
     blockDamageStageAdvanced: StageAdvancedEvent;
     blockPlaced: BlockPlacedEvent;
-    inventoryChanged: void;
+    craftingTableOpened: void;
     hotbarSelectionChanged: number;
+    inventoryChanged: void;
     itemDropped: InventorySlot;
     targetedBlockChanged: TargetedBlock | null;
-    craftingTableOpened: void;
+    tntExploded: TntExplodedEvent;
 }
 
 type Listener<K extends keyof GameEventMap> = (event: GameEventMap[K]) => void;

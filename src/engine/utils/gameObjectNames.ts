@@ -5,8 +5,10 @@ enum GameObjectName {
     ChunkBoundaryOverlay = "ChunkBoundaryOverlay",
     ChunkManager = "ChunkManager",
     DroppedItems = "DroppedItems",
+    ExplosionParticles = "ExplosionParticles",
     Player = "Player",
     Sky = "Sky",
+    TNTFuseAnimation = "TNTFuseAnimation",
     TNTManager = "TNTManager",
 }
 
