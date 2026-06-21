@@ -124,6 +124,13 @@ export default class TNTManager extends Component {
         // setBlocksBatch relights each affected chunk once; emitting blockBroken afterward only drives
         // item/particle spawns (drop logic reads the event coords, not live block state).
         this.chunkManager.setBlocksBatch(clearPositions, BlockType.Air);
+
+        // Wake any water bordering the newly-cleared blocks so it flows into the crater, matching the
+        // player-mining path (PlayerBlockInteraction calls scheduleNeighborWaterUpdates after a break).
+        for (const position of clearPositions) {
+            this.chunkManager.scheduleNeighborWaterUpdates(position.worldX, position.worldY, position.worldZ);
+        }
+
         for (const drop of drops) {
             eventManager.emit("blockBroken", drop);
         }
