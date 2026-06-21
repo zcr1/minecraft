@@ -31,6 +31,17 @@ export default class DayNightCycle extends Component {
     start() {
         this.sky = new Sky();
         this.sky.scale.setScalar(SKY_SCALE);
+        // Bias the direction vector upward in the fragment shader so the horizon gradient
+        // appears lower in the viewport — without this the white band sits at eye level.
+        this.sky.material.onBeforeCompile = shader => {
+            shader.fragmentShader =
+                "uniform float horizonBias;\n" +
+                shader.fragmentShader.replace(
+                    "vec3 direction = normalize( vWorldPosition - cameraPosition );",
+                    "vec3 direction = normalize( vWorldPosition - cameraPosition + vec3( 0.0, horizonBias, 0.0 ) );",
+                );
+            shader.uniforms.horizonBias = { value: SKY_SCALE * 0.15 };
+        };
         game.threeScene.add(this.sky);
         game.threeScene.background = null;
 
