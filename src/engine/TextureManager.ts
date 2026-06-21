@@ -18,12 +18,14 @@ import oakLogTopUrl from "assets/textures/blocks/oak_log_top.png";
 import oakPlankUrl from "assets/textures/blocks/oak_plank.png";
 import snowUrl from "assets/textures/blocks/snow.png";
 import stoneUrl from "assets/textures/blocks/stone.png";
+import tntBottomUrl from "assets/textures/blocks/tnt_bottom.png";
+import tntSideUrl from "assets/textures/blocks/tnt_side.png";
+import tntTopUrl from "assets/textures/blocks/tnt_top.png";
 import waterUrl from "assets/textures/blocks/water.png";
 import coalUrl from "assets/textures/items/coal.png";
 import stickUrl from "assets/textures/items/stick.png";
 import stonePickaxeUrl from "assets/textures/items/stone_pickaxe.png";
 import stoneSwordUrl from "assets/textures/items/stone_sword.png";
-import tntUrl from "assets/textures/items/tnt.png";
 import torchUrl from "assets/textures/items/torch.png";
 import woodenPickaxeUrl from "assets/textures/items/wooden_pickaxe.png";
 import woodenSwordUrl from "assets/textures/items/wooden_sword.png";
@@ -74,6 +76,11 @@ class TextureManager {
 
     private snowMat!: THREE.MeshStandardMaterial;
 
+    // TNT has three face variants: top (fuse), sides (sticks), bottom.
+    private tntTopMat!: THREE.MeshStandardMaterial;
+    private tntSideMat!: THREE.MeshStandardMaterial;
+    private tntBottomMat!: THREE.MeshStandardMaterial;
+
     // DirtSnow has three face variants: top (snow), sides (dirt+snow), bottom (dirt).
     private dirtSnowTopMat!: THREE.MeshStandardMaterial;
     private dirtSnowSideMat!: THREE.MeshStandardMaterial;
@@ -119,6 +126,10 @@ class TextureManager {
         this.dirtSnowSideMat = this.loadMat(loader, dirtSnowSideUrl);
         this.dirtSnowBottomMat = this.loadMat(loader, dirtSnowBottomUrl);
 
+        this.tntTopMat = this.loadMat(loader, tntTopUrl);
+        this.tntSideMat = this.loadMat(loader, tntSideUrl);
+        this.tntBottomMat = this.loadMat(loader, tntBottomUrl);
+
         this.blockMaterials = {
             [BlockType.Dirt]: this.loadMat(loader, dirtUrl),
             [BlockType.Bedrock]: this.loadMat(loader, bedrockUrl),
@@ -127,13 +138,11 @@ class TextureManager {
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
             [BlockType.OakPlanks]: this.loadMat(loader, oakPlankUrl),
             [BlockType.Snow]: this.loadMat(loader, snowUrl),
-            [BlockType.TNT]: this.loadMat(loader, tntUrl),
         };
 
         this.flatItemMaterials = {
             [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
             [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
-            [ItemType.TNT]: this.loadFlatMat(loader, tntUrl),
             [ItemType.Torch]: this.loadFlatMat(loader, torchUrl),
             [ItemType.WoodenPickaxe]: this.loadFlatMat(loader, woodenPickaxeUrl),
             [ItemType.StonePickaxe]: this.loadFlatMat(loader, stonePickaxeUrl),
@@ -171,6 +180,15 @@ class TextureManager {
         if (blockType === BlockType.OakLog) {
             // normalY !== 0 covers both +Y (top) and -Y (bottom) — both show end-grain texture.
             return normalY !== 0 ? this.oakLogTopMat : this.oakLogSideMat;
+        }
+        if (blockType === BlockType.TNT) {
+            if (normalY === 1) {
+                return this.tntTopMat;
+            }
+            if (normalY === -1) {
+                return this.tntBottomMat;
+            }
+            return this.tntSideMat;
         }
         const material = this.blockMaterials[blockType];
         if (!material) {

@@ -363,7 +363,9 @@ export default class ChunkComponent extends Component {
             dirtSnowBottom: { subMesh: createSubMesh(), material: () => textureManager.getDirtSnowMaterial(-1) },
             snow: { subMesh: createSubMesh(), material: () => textureManager.getSnowMaterial() },
             stone: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Stone, 0) },
-            tnt: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, 0) },
+            tntSide: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, 0) },
+            tntTop: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, 1) },
+            tntBottom: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, -1) },
             torch: { subMesh: createSubMesh(), material: () => textureManager.getTorchMaterial() },
             // Water renderOrder=1 is it is rendered after all opaque geometry and alpha blending sorts correctly.
             water: { subMesh: createSubMesh(), material: () => textureManager.getWaterMaterial(), renderOrder: 1 },
@@ -539,7 +541,18 @@ export default class ChunkComponent extends Component {
                                 this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);
                                 break;
                             case BlockType.TNT:
-                                this.pushFace(face, x, y, z, meshes.tnt.subMesh, lightValue);
+                                this.pushFace(
+                                    face,
+                                    x,
+                                    y,
+                                    z,
+                                    face.normal[1] === 1
+                                        ? meshes.tntTop.subMesh
+                                        : face.normal[1] === -1
+                                          ? meshes.tntBottom.subMesh
+                                          : meshes.tntSide.subMesh,
+                                    lightValue,
+                                );
                                 break;
 
                             default: {

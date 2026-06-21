@@ -1,9 +1,9 @@
 import { Pane } from "tweakpane";
 import { useEffect, useRef, useState } from "react";
+import { BlockType } from "engine/block/BlockType";
 import Transform from "engine/components/Transform";
 import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
 import DayNightCycle from "engine/environment/DayNightCycle";
-import { ItemType } from "engine/items/ItemType";
 import Inventory from "engine/player/Inventory";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerPhysics from "engine/player/PlayerPhysics";
@@ -57,7 +57,7 @@ export default function DebugMenu() {
         });
 
         pane.addButton({ title: "Spawn TNT" }).on("click", () => {
-            inventory.add({ kind: "item", type: ItemType.TNT }, 64);
+            inventory.add({ kind: "block", type: BlockType.TNT }, 64);
         });
 
         pane.addBinding(dayNightCycle, "timeOfDay", {

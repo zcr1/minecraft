@@ -9,11 +9,11 @@ import oakLogTopUrl from "assets/textures/blocks/oak_log_top.png";
 import oakPlankUrl from "assets/textures/blocks/oak_plank.png";
 import snowUrl from "assets/textures/blocks/snow.png";
 import stoneUrl from "assets/textures/blocks/stone.png";
+import tntSideUrl from "assets/textures/blocks/tnt_side.png";
 import coalUrl from "assets/textures/items/coal.png";
 import stickUrl from "assets/textures/items/stick.png";
 import stonePickaxeUrl from "assets/textures/items/stone_pickaxe.png";
 import stoneSwordUrl from "assets/textures/items/stone_sword.png";
-import tntUrl from "assets/textures/items/tnt.png";
 import torchUrl from "assets/textures/items/torch.png";
 import woodenPickaxeUrl from "assets/textures/items/wooden_pickaxe.png";
 import woodenSwordUrl from "assets/textures/items/wooden_sword.png";
@@ -35,13 +35,13 @@ export const BLOCK_TEXTURE_URLS: Partial<Record<BlockType, string>> = {
     [BlockType.CraftingTable]: craftingTableTopUrl,
     [BlockType.Snow]: snowUrl,
     [BlockType.DirtSnow]: dirtSnowTopUrl,
+    [BlockType.TNT]: tntSideUrl,
 };
 
 // Maps each item type to an image URL suitable for use in <img src>.
 export const ITEM_TEXTURE_URLS: Partial<Record<ItemType, string>> = {
     [ItemType.Coal]: coalUrl,
     [ItemType.Stick]: stickUrl,
-    [ItemType.TNT]: tntUrl,
     [ItemType.Torch]: torchUrl,
     [ItemType.WoodenPickaxe]: woodenPickaxeUrl,
     [ItemType.StonePickaxe]: stonePickaxeUrl,
