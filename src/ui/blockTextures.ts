@@ -13,6 +13,7 @@ import coalUrl from "assets/textures/items/coal.png";
 import stickUrl from "assets/textures/items/stick.png";
 import stonePickaxeUrl from "assets/textures/items/stone_pickaxe.png";
 import stoneSwordUrl from "assets/textures/items/stone_sword.png";
+import tntUrl from "assets/textures/items/tnt.png";
 import torchUrl from "assets/textures/items/torch.png";
 import woodenPickaxeUrl from "assets/textures/items/wooden_pickaxe.png";
 import woodenSwordUrl from "assets/textures/items/wooden_sword.png";
@@ -40,6 +41,7 @@ export const BLOCK_TEXTURE_URLS: Partial<Record<BlockType, string>> = {
 export const ITEM_TEXTURE_URLS: Partial<Record<ItemType, string>> = {
     [ItemType.Coal]: coalUrl,
     [ItemType.Stick]: stickUrl,
+    [ItemType.TNT]: tntUrl,
     [ItemType.Torch]: torchUrl,
     [ItemType.WoodenPickaxe]: woodenPickaxeUrl,
     [ItemType.StonePickaxe]: stonePickaxeUrl,

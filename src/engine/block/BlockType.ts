@@ -14,6 +14,7 @@ export enum BlockType {
     CraftingTable = 12,
     Snow = 13,
     DirtSnow = 14,
+    TNT = 15,
 }
 
 export const INDESTRUCTIBLE_BLOCKS = new Set<BlockType>([BlockType.Air, BlockType.Bedrock, BlockType.Water]);

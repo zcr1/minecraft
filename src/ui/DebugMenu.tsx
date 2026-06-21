@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import Transform from "engine/components/Transform";
 import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
 import DayNightCycle from "engine/environment/DayNightCycle";
+import { ItemType } from "engine/items/ItemType";
+import Inventory from "engine/player/Inventory";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import PlayerPhysics from "engine/player/PlayerPhysics";
 import GameObjectName from "engine/utils/gameObjectNames";
@@ -27,6 +29,7 @@ export default function DebugMenu() {
 
         const dayNightCycle = game.getGameObject(GameObjectName.Sky).getComponent(DayNightCycle);
         const player = game.getGameObject(GameObjectName.Player);
+        const inventory = player.getComponent(Inventory);
         const playerPhysics = player.getComponent(PlayerPhysics);
         const playerBlockInteraction = player.getComponent(PlayerBlockInteraction);
         const chunkBoundaryOverlay = game
@@ -51,6 +54,10 @@ export default function DebugMenu() {
 
         pane.addBinding(params, "showChunkBoundaries", { label: "Show Chunk Boundaries" }).on("change", ({ value }) => {
             chunkBoundaryOverlay.showBoundaries = value;
+        });
+
+        pane.addButton({ title: "Spawn TNT" }).on("click", () => {
+            inventory.add({ kind: "item", type: ItemType.TNT }, 64);
         });
 
         pane.addBinding(dayNightCycle, "timeOfDay", {

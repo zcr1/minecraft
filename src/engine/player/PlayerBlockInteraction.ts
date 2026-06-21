@@ -240,6 +240,12 @@ export default class PlayerBlockInteraction extends Component {
         );
         if (placed) {
             this.inventory.consumeSelectedSlot();
+            eventManager.emit("blockPlaced", {
+                blockType: blockTypeToPlace,
+                worldX: worldPlaceX,
+                worldY: worldPlaceY,
+                worldZ: worldPlaceZ,
+            });
         }
     }
 

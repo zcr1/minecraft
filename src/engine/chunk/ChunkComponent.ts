@@ -363,6 +363,7 @@ export default class ChunkComponent extends Component {
             dirtSnowBottom: { subMesh: createSubMesh(), material: () => textureManager.getDirtSnowMaterial(-1) },
             snow: { subMesh: createSubMesh(), material: () => textureManager.getSnowMaterial() },
             stone: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.Stone, 0) },
+            tnt: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, 0) },
             torch: { subMesh: createSubMesh(), material: () => textureManager.getTorchMaterial() },
             // Water renderOrder=1 is it is rendered after all opaque geometry and alpha blending sorts correctly.
             water: { subMesh: createSubMesh(), material: () => textureManager.getWaterMaterial(), renderOrder: 1 },
@@ -536,6 +537,9 @@ export default class ChunkComponent extends Component {
                                 break;
                             case BlockType.Stone:
                                 this.pushFace(face, x, y, z, meshes.stone.subMesh, lightValue);
+                                break;
+                            case BlockType.TNT:
+                                this.pushFace(face, x, y, z, meshes.tnt.subMesh, lightValue);
                                 break;
 
                             default: {

@@ -7,6 +7,7 @@ enum GameObjectName {
     DroppedItems = "DroppedItems",
     Player = "Player",
     Sky = "Sky",
+    TNTManager = "TNTManager",
 }
 
 export default GameObjectName;

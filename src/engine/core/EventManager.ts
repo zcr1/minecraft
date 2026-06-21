@@ -1,9 +1,18 @@
+import type { BlockType } from "engine/block/BlockType";
 import type { InventorySlot } from "engine/player/Inventory";
 import type { BlockBreakEvent, StageAdvancedEvent, TargetedBlock } from "engine/player/PlayerBlockInteraction";
+
+export interface BlockPlacedEvent {
+    blockType: BlockType;
+    worldX: number;
+    worldY: number;
+    worldZ: number;
+}
 
 export interface GameEventMap {
     blockBroken: BlockBreakEvent;
     blockDamageStageAdvanced: StageAdvancedEvent;
+    blockPlaced: BlockPlacedEvent;
     inventoryChanged: void;
     hotbarSelectionChanged: number;
     itemDropped: InventorySlot;

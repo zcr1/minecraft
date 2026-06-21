@@ -12,6 +12,8 @@ export const BLOCK_DROPS: Partial<Record<BlockType, InventoryItemStack>> = {
     [BlockType.OakLeaves]: { kind: "item", type: ItemType.Stick },
     // Torch is stored as BlockType in the world but the player holds/places ItemType.Torch.
     [BlockType.Torch]: { kind: "item", type: ItemType.Torch },
+    // TNT is stored as BlockType in the world but the player holds/places ItemType.TNT.
+    [BlockType.TNT]: { kind: "item", type: ItemType.TNT },
 };
 
 // Drop probability per block type (0–1). Absent means 1.0 — always drops.

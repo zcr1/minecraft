@@ -464,6 +464,29 @@ export default class ChunkManager extends Component {
         return true;
     }
 
+    // Sets many blocks to the same BlockType in one pass, then relights each affected chunk once.
+    // Use this instead of repeated setBlockAtWorld calls when updating many blocks at once —
+    // avoids the per-block relight+rebuild that makes bulk operations O(n * neighbors) rebuilds.
+    setBlocksBatch(
+        positions: ReadonlyArray<{ worldX: number; worldY: number; worldZ: number }>,
+        blockType: BlockType,
+    ): void {
+        const affected = new Set<ChunkComponent>();
+        for (const pos of positions) {
+            const resolved = this.resolveWorldBlock(pos.worldX, pos.worldY, pos.worldZ);
+            if (!resolved) {
+                continue;
+            }
+
+            resolved.chunk.setBlock(resolved.localX, resolved.localY, resolved.localZ, blockType);
+            affected.add(resolved.chunk);
+        }
+
+        for (const chunk of affected) {
+            this.relightAround(chunk);
+        }
+    }
+
     // Called immediately after a block at (worldX, worldY, worldZ) has been set to Air.
     // Walks the 5 possible torch-attachment directions: if a torch sits at the mirror position
     // and its stored meta index points back to the destroyed block, that torch is detached and

@@ -5,6 +5,7 @@ import { BlockType } from "engine/block/BlockType";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
+import { ITEM_TO_BLOCK } from "engine/items/ItemType";
 import Inventory from "engine/player/Inventory";
 import PlayerBlockInteraction from "engine/player/PlayerBlockInteraction";
 import { playerOverlapsBlock } from "engine/player/PlayerPhysics";
@@ -55,9 +56,16 @@ export default class BlockPlacementPreview extends Component {
         const target = this.playerInteraction.targetedBlock;
         const slot = this.inventory.getSlot(this.inventory.selectedHotbarSlot);
 
-        // Only show the cube preview for block items. Non-block items like torches render as
-        // cross-quad sprites in the world, so a cube ghost would be misleading; hide it instead.
-        const canPlace = slot && slot.item.kind === "block";
+        // Resolve which BlockType would be placed (if any) for the current slot.
+        // Items that map to BlockType.Torch are excluded — torches render as cross-quad sprites,
+        // so a cube ghost would be misleading.
+        const placedBlockType = slot
+            ? slot.item.kind === "block"
+                ? slot.item.type
+                : ITEM_TO_BLOCK[slot.item.type]
+            : undefined;
+
+        const canPlace = placedBlockType !== undefined && placedBlockType !== BlockType.Torch;
         if (!target || !canPlace) {
             this.mesh.visible = false;
             return;

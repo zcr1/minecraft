@@ -9,6 +9,7 @@ import BlockBreakParticles from "engine/effects/BlockBreakParticles";
 import BlockDamageOverlay from "engine/effects/BlockDamageOverlay";
 import BlockPlacementPreview from "engine/effects/BlockPlacementPreview";
 import ChunkBoundaryOverlay from "engine/effects/ChunkBoundaryOverlay";
+import TNTManager from "engine/effects/TNTManager";
 import DayNightCycle from "engine/environment/DayNightCycle";
 import DroppedItems from "engine/items/DroppedItems";
 import type { SaveData } from "engine/persistence/SaveData";
@@ -97,4 +98,8 @@ export function setupScene(save: SaveData | null): void {
     const chunkBoundaryOverlay = new GameObject(GameObjectName.ChunkBoundaryOverlay);
     chunkBoundaryOverlay.addComponent(new ChunkBoundaryOverlay());
     game.add(chunkBoundaryOverlay);
+
+    const tntManager = new GameObject(GameObjectName.TNTManager);
+    tntManager.addComponent(new TNTManager());
+    game.add(tntManager);
 }

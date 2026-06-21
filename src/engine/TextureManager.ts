@@ -23,6 +23,7 @@ import coalUrl from "assets/textures/items/coal.png";
 import stickUrl from "assets/textures/items/stick.png";
 import stonePickaxeUrl from "assets/textures/items/stone_pickaxe.png";
 import stoneSwordUrl from "assets/textures/items/stone_sword.png";
+import tntUrl from "assets/textures/items/tnt.png";
 import torchUrl from "assets/textures/items/torch.png";
 import woodenPickaxeUrl from "assets/textures/items/wooden_pickaxe.png";
 import woodenSwordUrl from "assets/textures/items/wooden_sword.png";
@@ -126,11 +127,13 @@ class TextureManager {
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
             [BlockType.OakPlanks]: this.loadMat(loader, oakPlankUrl),
             [BlockType.Snow]: this.loadMat(loader, snowUrl),
+            [BlockType.TNT]: this.loadMat(loader, tntUrl),
         };
 
         this.flatItemMaterials = {
             [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
             [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
+            [ItemType.TNT]: this.loadFlatMat(loader, tntUrl),
             [ItemType.Torch]: this.loadFlatMat(loader, torchUrl),
             [ItemType.WoodenPickaxe]: this.loadFlatMat(loader, woodenPickaxeUrl),
             [ItemType.StonePickaxe]: this.loadFlatMat(loader, stonePickaxeUrl),
