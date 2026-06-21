@@ -5,6 +5,15 @@ import Component from "engine/core/Component";
 
 const DAY_DURATION_SECONDS = 2 * 24 * 60; // 2min -> 1hr in game
 const UPDATE_FREQUENCY = 1; // 1s
+// Sun height (0 = horizon, 1 = zenith) below which light/fog blend toward the orange sunset colour.
+// Higher = the sun reads orange while still well above the horizon, so the warm phase starts earlier
+// and lasts longer.
+const SUNSET_BLEND_HEIGHT = 0.55;
+// The three.js Sky shader only renders sunset hues when the sun disc is near the horizon. We feed it
+// a compressed sun elevation (|sunY| ^ exponent) so the disc sits low — and the sky turns orange —
+// while the real sun, which still drives lighting and day length, is higher. >1 pulls the apparent
+// sun toward the horizon for most of the arc; noon (1) and the horizon (0) are unchanged.
+const SKY_SUN_ELEVATION_EXPONENT = 2.5;
 const STAR_COUNT = 2000;
 const STAR_RADIUS = 900;
 const SKY_SCALE = 450000;
@@ -107,9 +116,14 @@ export default class DayNightCycle extends Component {
         const sunX = Math.sin(sunAngle);
         const sunDirection = new THREE.Vector3(sunX, sunY, 0.5).normalize();
 
+        // Apparent sun for the sky shader/atmosphere: same azimuth, but pulled toward the horizon so
+        // sunset colours appear while the real sun is still up. Lighting/day length use sunY untouched.
+        const skySunY = Math.sign(sunY) * Math.pow(Math.abs(sunY), SKY_SUN_ELEVATION_EXPONENT);
+        const skySunDirection = new THREE.Vector3(sunX, skySunY, 0.5).normalize();
+
         const sunHeight = Math.max(0, sunY);
-        const horizonProximity = Math.max(0, 1 - Math.abs(sunY) / 0.4);
-        const nightFactor = Math.max(0, -sunY);
+        const horizonProximity = Math.max(0, 1 - Math.abs(skySunY) / 0.6);
+        const nightFactor = Math.max(0, -skySunY);
 
         // Rayleigh fades toward 0 at night, which darkens the sky shader significantly
         const rayleigh = (0.3 + horizonProximity * 2.7) * (1 - nightFactor * 0.95);
@@ -125,7 +139,7 @@ export default class DayNightCycle extends Component {
         uniforms["rayleigh"].value = rayleigh;
         uniforms["mieCoefficient"].value = mieCoefficient;
         uniforms["mieDirectionalG"].value = mieDirectionalG;
-        uniforms["sunPosition"].value.copy(sunDirection);
+        uniforms["sunPosition"].value.copy(skySunDirection);
 
         // The Sky shader can't produce a blue night sky — it just renders grey/black
         // once the sun is below the horizon. Switch to a solid background color at night.
@@ -140,7 +154,7 @@ export default class DayNightCycle extends Component {
         const lightIntensity = sunHeight * 1.2;
         const dayColor = new THREE.Color(0xfff5e0);
         const horizonColor = new THREE.Color(0xff8840);
-        const lightColor = horizonColor.clone().lerp(dayColor, Math.min(1, sunHeight / 0.3));
+        const lightColor = horizonColor.clone().lerp(dayColor, Math.min(1, sunHeight / SUNSET_BLEND_HEIGHT));
         this.dirLight.color.copy(lightColor);
         this.dirLight.intensity = lightIntensity;
         this.dirLight.position.copy(sunDirection);
@@ -149,7 +163,9 @@ export default class DayNightCycle extends Component {
         const sunsetFogColor = new THREE.Color(0xf4905a);
         const nightFogColor = new THREE.Color(0x0d1f38);
         const fogColor =
-            sunY < 0 ? nightFogColor : sunsetFogColor.clone().lerp(dayFogColor, Math.min(1, sunHeight / 0.3));
+            sunY < 0
+                ? nightFogColor
+                : sunsetFogColor.clone().lerp(dayFogColor, Math.min(1, sunHeight / SUNSET_BLEND_HEIGHT));
         game.threeScene.fog = new THREE.FogExp2(fogColor.getHex(), 0.0008);
 
         const nightAmbient = new THREE.Color(0x2a4a7a);
