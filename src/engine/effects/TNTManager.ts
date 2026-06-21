@@ -125,8 +125,7 @@ export default class TNTManager extends Component {
         // item/particle spawns (drop logic reads the event coords, not live block state).
         this.chunkManager.setBlocksBatch(clearPositions, BlockType.Air);
 
-        // Wake any water bordering the newly-cleared blocks so it flows into the crater, matching the
-        // player-mining path (PlayerBlockInteraction calls scheduleNeighborWaterUpdates after a break).
+        // Wake any water bordering the newly-cleared blocks so it flows into the crater
         for (const position of clearPositions) {
             this.chunkManager.scheduleNeighborWaterUpdates(position.worldX, position.worldY, position.worldZ);
         }
