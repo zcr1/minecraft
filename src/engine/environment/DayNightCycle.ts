@@ -60,8 +60,10 @@ export default class DayNightCycle extends Component {
     update(deltaTime: number) {
         this._timeOfDay = (this._timeOfDay + deltaTime / DAY_DURATION_SECONDS) % 1;
 
-        // Stars must follow the camera so they appear fixed in the sky
-        this.starField.position.copy(game.camera.threeCamera.position);
+        // Stars must follow the camera so they appear fixed in the sky,
+        // offset downward to match the sky shader's horizon bias
+        const cameraPosition = game.camera.threeCamera.position;
+        this.starField.position.set(cameraPosition.x, cameraPosition.y - STAR_RADIUS * 0.3, cameraPosition.z);
 
         this.accumulator += deltaTime;
         if (this.accumulator >= UPDATE_FREQUENCY) {
