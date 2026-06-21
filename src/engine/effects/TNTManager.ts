@@ -1,11 +1,14 @@
 import game from "engine/Game";
-import { BlockType } from "engine/block/BlockType";
+import { BlockType, INDESTRUCTIBLE_BLOCKS } from "engine/block/BlockType";
 import ChunkManager from "engine/chunk/ChunkManager";
 import Component from "engine/core/Component";
 import eventManager, { type BlockPlacedEvent } from "engine/core/EventManager";
+import type { BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
 import GameObjectName from "engine/utils/gameObjectNames";
 
 const FUSE_SECONDS = 4;
+// Short fuse for TNT primed by another blast, so chains cascade visibly instead of all at once.
+const CHAIN_FUSE_SECONDS = 0.3;
 const BLAST_RADIUS = 4;
 const BLAST_RADIUS_SQ = BLAST_RADIUS * BLAST_RADIUS;
 
@@ -23,6 +26,7 @@ export default class TNTManager extends Component {
     start(): void {
         this.chunkManager = game.getGameObject(GameObjectName.ChunkManager).getComponent(ChunkManager);
         eventManager.subscribe("blockPlaced", this.handleBlockPlaced);
+        eventManager.subscribe("blockBroken", this.handleBlockBroken);
     }
 
     update(deltaTime: number): void {
@@ -47,27 +51,87 @@ export default class TNTManager extends Component {
         this.pendingExplosions.push({ worldX, worldY, worldZ, fuseRemaining: FUSE_SECONDS });
     };
 
+    // Cancel a primed TNT's fuse when its block is removed (mined, or otherwise broken) so it no
+    // longer detonates. A no-op for the non-TNT blocks the explosion itself breaks, since those never
+    // have a pending entry — keeps the listener safe against explode()'s synchronous blockBroken emits.
+    private readonly handleBlockBroken = (event: BlockBreakEvent): void => {
+        const worldX = event.chunk.worldOriginX + event.blockX;
+        const worldY = event.chunk.worldOriginY + event.blockY;
+        const worldZ = event.chunk.worldOriginZ + event.blockZ;
+        this.cancelPendingAt(worldX, worldY, worldZ);
+    };
+
+    private cancelPendingAt(worldX: number, worldY: number, worldZ: number): void {
+        this.pendingExplosions = this.pendingExplosions.filter(
+            pending => pending.worldX !== worldX || pending.worldY !== worldY || pending.worldZ !== worldZ,
+        );
+    }
+
     private explode(worldX: number, worldY: number, worldZ: number): void {
-        const positions: Array<{ worldX: number; worldY: number; worldZ: number }> = [];
+        const clearPositions: Array<{ worldX: number; worldY: number; worldZ: number }> = [];
+        const drops: BlockBreakEvent[] = [];
+
         for (let deltaX = -BLAST_RADIUS; deltaX <= BLAST_RADIUS; deltaX++) {
             for (let deltaY = -BLAST_RADIUS; deltaY <= BLAST_RADIUS; deltaY++) {
                 for (let deltaZ = -BLAST_RADIUS; deltaZ <= BLAST_RADIUS; deltaZ++) {
-                    if (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ <= BLAST_RADIUS_SQ) {
-                        positions.push({
-                            worldX: worldX + deltaX,
-                            worldY: worldY + deltaY,
-                            worldZ: worldZ + deltaZ,
+                    if (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > BLAST_RADIUS_SQ) {
+                        continue;
+                    }
+
+                    const blockWorldX = worldX + deltaX;
+                    const blockWorldY = worldY + deltaY;
+                    const blockWorldZ = worldZ + deltaZ;
+                    const resolved = this.chunkManager.resolveWorldBlock(blockWorldX, blockWorldY, blockWorldZ);
+                    if (!resolved) {
+                        continue;
+                    }
+
+                    const blockType = resolved.chunk.getBlock(resolved.localX, resolved.localY, resolved.localZ);
+                    // Bedrock and water (and air) survive blasts, matching ChunkComponent.destroyBlock.
+                    if (INDESTRUCTIBLE_BLOCKS.has(blockType)) {
+                        continue;
+                    }
+
+                    const isCenter = deltaX === 0 && deltaY === 0 && deltaZ === 0;
+                    if (blockType === BlockType.TNT && !isCenter) {
+                        // Chain: re-prime with a short fuse and leave the block intact so it stays
+                        // visible until its own explosion clears it. Drop any longer existing fuse first.
+                        this.cancelPendingAt(blockWorldX, blockWorldY, blockWorldZ);
+                        this.pendingExplosions.push({
+                            worldX: blockWorldX,
+                            worldY: blockWorldY,
+                            worldZ: blockWorldZ,
+                            fuseRemaining: CHAIN_FUSE_SECONDS,
+                        });
+                        continue;
+                    }
+
+                    clearPositions.push({ worldX: blockWorldX, worldY: blockWorldY, worldZ: blockWorldZ });
+                    // The detonating TNT itself is consumed — it neither drops nor chains.
+                    if (!isCenter) {
+                        drops.push({
+                            chunk: resolved.chunk,
+                            blockX: resolved.localX,
+                            blockY: resolved.localY,
+                            blockZ: resolved.localZ,
+                            blockType,
                         });
                     }
                 }
             }
         }
 
-        this.chunkManager.setBlocksBatch(positions, BlockType.Air);
+        // setBlocksBatch relights each affected chunk once; emitting blockBroken afterward only drives
+        // item/particle spawns (drop logic reads the event coords, not live block state).
+        this.chunkManager.setBlocksBatch(clearPositions, BlockType.Air);
+        for (const drop of drops) {
+            eventManager.emit("blockBroken", drop);
+        }
     }
 
     dispose(): void {
         eventManager.unsubscribe("blockPlaced", this.handleBlockPlaced);
+        eventManager.unsubscribe("blockBroken", this.handleBlockBroken);
         this.pendingExplosions = [];
     }
 }

@@ -83,7 +83,7 @@ export default class ChunkManager extends Component {
     // Converts a floating-point world position to the chunk that owns it plus the block-local
     // coordinates within that chunk. Returns null if the position is vertically out of range or
     // the owning chunk hasn't been loaded yet
-    private resolveWorldBlock(
+    resolveWorldBlock(
         worldX: number,
         worldY: number,
         worldZ: number,
@@ -94,13 +94,16 @@ export default class ChunkManager extends Component {
         const chunkX = Math.floor(blockX / this.chunkWidth);
         const chunkY = Math.floor(blockY / this.chunkHeight);
         const chunkZ = Math.floor(blockZ / this.chunkDepth);
+
         if (chunkY < 0 || chunkY >= this.worldHeightChunks) {
             return null;
         }
+
         const chunk = this.chunks.get(this.getChunkKey(chunkX, chunkY, chunkZ));
         if (!chunk) {
             return null;
         }
+
         return {
             chunk,
             localX: blockX - chunkX * this.chunkWidth,
