@@ -1,6 +1,7 @@
 // @refresh reset
 import { useEffect, useRef, useState } from "react";
 import game from "engine/Game";
+import VoxelItemMeshes from "engine/items/VoxelItemMeshes";
 import * as SaveManager from "engine/persistence/SaveManager";
 import { idbDelete } from "engine/persistence/idb";
 import { setupScene } from "../game/setup";
@@ -102,9 +103,17 @@ export default function GameCanvas() {
             game.init(mount);
             initialized = true;
             setupScene(save);
+
             if (save) {
                 SaveManager.applyNonChunkSave(save);
             }
+            // Decode item textures into voxel geometries before the loop starts, so component
+            // start() methods can build item meshes synchronously.
+            await VoxelItemMeshes.load();
+            if (disposed) {
+                return;
+            }
+
             game.start();
             setReady(true);
 

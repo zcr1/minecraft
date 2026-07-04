@@ -9,6 +9,7 @@ import Transform from "engine/components/Transform";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import { type InventoryItemStack } from "engine/items/InventoryItem";
+import VoxelItemMeshes from "engine/items/VoxelItemMeshes";
 import { applyGravity, stepAxisX, stepAxisY, stepAxisZ } from "engine/physics/voxelPhysics";
 import Inventory, { type InventorySlot } from "engine/player/Inventory";
 import { type BlockBreakEvent } from "engine/player/PlayerBlockInteraction";
@@ -16,7 +17,6 @@ import GameObjectName from "engine/utils/gameObjectNames";
 
 const POOL_SIZE = 64;
 const ITEM_SIZE = 0.3;
-const FLAT_ITEM_SIZE = 0.4;
 const GRAVITY = -20;
 const TERMINAL_VELOCITY = -25;
 const LIFETIME_SECONDS = 30;
@@ -34,7 +34,6 @@ interface DroppedItem {
     age: number;
     boxGeometry: THREE.BufferGeometry;
     count: number;
-    flatGeometry: THREE.BufferGeometry;
     index: number;
     item: InventoryItemStack;
     mesh: THREE.Mesh;
@@ -107,18 +106,17 @@ export default class DroppedItems extends Component {
         ]);
 
         for (let i = 0; i < POOL_SIZE; i++) {
-            // Each item needs its own geometry because the chunk shader reads a per-vertex `aLight`
-            // attribute and we sample that per-item from the item's world position each frame.
-            // A shared geometry would force every item to the same light value.
+            // Each block item needs its own box geometry because the chunk shader reads a per-vertex
+            // `aLight` attribute and we sample that per-item from the item's world position each
+            // frame. A shared geometry would force every item to the same light value. Voxel items
+            // (item.kind === "item") use the shared VoxelItemMeshes geometry and render full-bright.
             const boxGeometry = this.createBoxGeometry();
-            const flatGeometry = this.createFlatGeometry();
             const mesh = new THREE.Mesh(boxGeometry, this.blockMaterialsByType.get(BlockType.Dirt)!);
             mesh.visible = false;
             game.threeScene.add(mesh);
             this.items.push({
                 mesh,
                 boxGeometry,
-                flatGeometry,
                 velocity: new THREE.Vector3(),
                 age: 0,
                 count: 1,
@@ -188,7 +186,12 @@ export default class DroppedItems extends Component {
 
             droppedItem.mesh.rotation.y += SPIN_SPEED * deltaTime;
 
-            this.updateItemLight(droppedItem);
+            // Voxel item meshes ("item" kind) share one geometry across the pool, so their aLight
+            // can't be written per-item; they render full-bright (baked MAX_LIGHT). Block items
+            // own their box geometry and get per-item skylight.
+            if (droppedItem.item.kind === "block") {
+                this.updateItemLight(droppedItem);
+            }
         }
 
         for (const index of this.expired) {
@@ -198,19 +201,6 @@ export default class DroppedItems extends Component {
 
     private createBoxGeometry(): THREE.BoxGeometry {
         const geometry = new THREE.BoxGeometry(ITEM_SIZE, ITEM_SIZE, ITEM_SIZE);
-        const vertexCount = geometry.attributes.position.count;
-        const lightArray = new Float32Array(vertexCount);
-        lightArray.fill(MAX_LIGHT);
-        geometry.setAttribute("aLight", new THREE.BufferAttribute(lightArray, 1));
-        return geometry;
-    }
-
-    // Flat quad used for pure items (coal, stick, etc.) — rendered as a spinning 2-D sprite.
-    // PlaneGeometry sits in the XY plane by default (facing +Z); spinning around Y shows the
-    // texture face-on throughout most of the rotation cycle. DoubleSide material handles the
-    // back face so it's visible from either direction.
-    private createFlatGeometry(): THREE.PlaneGeometry {
-        const geometry = new THREE.PlaneGeometry(FLAT_ITEM_SIZE, FLAT_ITEM_SIZE);
         const vertexCount = geometry.attributes.position.count;
         const lightArray = new Float32Array(vertexCount);
         lightArray.fill(MAX_LIGHT);
@@ -239,7 +229,6 @@ export default class DroppedItems extends Component {
         for (const droppedItem of this.items) {
             game.threeScene.remove(droppedItem.mesh);
             droppedItem.boxGeometry.dispose();
-            droppedItem.flatGeometry.dispose();
         }
         this.items.length = 0;
         this.freeIndices.length = 0;
@@ -327,9 +316,9 @@ export default class DroppedItems extends Component {
         this.activeIndices.add(index);
 
         if (item.kind === "item") {
-            // Pure items (coal, stick, etc.) render as a spinning flat sprite.
-            droppedItem.mesh.geometry = droppedItem.flatGeometry;
-            droppedItem.mesh.material = TextureManager.getFlatItemMaterial(item.type);
+            // Pure items (coal, stick, etc.) render as a voxelized 3D mesh (built at boot).
+            droppedItem.mesh.geometry = VoxelItemMeshes.getGeometry(item.type);
+            droppedItem.mesh.material = VoxelItemMeshes.getMaterial();
         } else {
             droppedItem.mesh.geometry = droppedItem.boxGeometry;
             droppedItem.mesh.material = this.getBlockMaterials(item);
@@ -338,10 +327,8 @@ export default class DroppedItems extends Component {
         droppedItem.item = item;
         droppedItem.count = count;
         droppedItem.mesh.position.copy(position);
-        // Flat sprites get a slight forward tilt so they read well at low viewing angles
-        // instead of appearing as a perfectly vertical card.
-        const tiltX = item.kind === "item" ? Math.PI / 12 : 0;
-        droppedItem.mesh.rotation.set(tiltX, Math.random() * Math.PI * 2, 0);
+        // Voxel item meshes are true 3D objects, so they spin upright around Y with no tilt.
+        droppedItem.mesh.rotation.set(0, Math.random() * Math.PI * 2, 0);
         droppedItem.velocity.copy(velocity);
         droppedItem.age = 0;
         droppedItem.pickupCooldown = pickupCooldown;

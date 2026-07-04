@@ -22,13 +22,7 @@ import tntBottomUrl from "assets/textures/blocks/tnt_bottom.png";
 import tntSideUrl from "assets/textures/blocks/tnt_side.png";
 import tntTopUrl from "assets/textures/blocks/tnt_top.png";
 import waterUrl from "assets/textures/blocks/water.png";
-import coalUrl from "assets/textures/items/coal.png";
-import stickUrl from "assets/textures/items/stick.png";
-import stonePickaxeUrl from "assets/textures/items/stone_pickaxe.png";
-import stoneSwordUrl from "assets/textures/items/stone_sword.png";
 import torchUrl from "assets/textures/items/torch.png";
-import woodenPickaxeUrl from "assets/textures/items/wooden_pickaxe.png";
-import woodenSwordUrl from "assets/textures/items/wooden_sword.png";
 import desetroy0Url from "assets/textures/misc/destroy_0.png";
 import desetroy1Url from "assets/textures/misc/destroy_1.png";
 import desetroy2Url from "assets/textures/misc/destroy_2.png";
@@ -41,7 +35,6 @@ import desetroy8Url from "assets/textures/misc/destroy_8.png";
 import desetroy9Url from "assets/textures/misc/destroy_9.png";
 import * as THREE from "three";
 import { BlockType } from "engine/block/BlockType";
-import { ItemType } from "engine/items/ItemType";
 import { applyVertexLighting } from "engine/renderer/applyVertexLighting";
 
 const DESTROY_STAGE_URLS = [
@@ -95,9 +88,6 @@ class TextureManager {
     private oakLeavesMats!: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial];
 
     private blockMaterials!: Partial<Record<BlockType, THREE.Material>>;
-    // Flat-sprite materials for items rendered as planes (held item). Transparent + double-sided
-    // so the alpha channel is respected and the face is visible from either direction.
-    private flatItemMaterials!: Partial<Record<ItemType, THREE.Material>>;
 
     private desetroyTextures: THREE.Texture[] = [];
 
@@ -138,16 +128,6 @@ class TextureManager {
             [BlockType.CoalOre]: this.loadMat(loader, coalOreUrl),
             [BlockType.OakPlanks]: this.loadMat(loader, oakPlankUrl),
             [BlockType.Snow]: this.loadMat(loader, snowUrl),
-        };
-
-        this.flatItemMaterials = {
-            [ItemType.Coal]: this.loadFlatMat(loader, coalUrl),
-            [ItemType.Stick]: this.loadFlatMat(loader, stickUrl),
-            [ItemType.Torch]: this.loadFlatMat(loader, torchUrl),
-            [ItemType.WoodenPickaxe]: this.loadFlatMat(loader, woodenPickaxeUrl),
-            [ItemType.StonePickaxe]: this.loadFlatMat(loader, stonePickaxeUrl),
-            [ItemType.WoodenSword]: this.loadFlatMat(loader, woodenSwordUrl),
-            [ItemType.StoneSword]: this.loadFlatMat(loader, stoneSwordUrl),
         };
 
         this.torchCrossMat = this.loadFlatMat(loader, torchUrl);
@@ -258,17 +238,6 @@ class TextureManager {
     // Returns the DoubleSide transparent material used for torch cross-quad geometry in chunks.
     getTorchMaterial(): THREE.MeshStandardMaterial {
         return this.torchCrossMat;
-    }
-
-    // Returns the flat-sprite material for an item rendered as a plane (e.g. the held-item view).
-    // Transparent + double-sided so the texture's alpha channel is honoured and the face is
-    // visible regardless of which side the camera sees.
-    getFlatItemMaterial(itemType: ItemType): THREE.Material {
-        const material = this.flatItemMaterials[itemType] as THREE.Material | undefined;
-        if (!material) {
-            throw new Error(`TextureManager: no flat material registered for ItemType ${itemType}`);
-        }
-        return material;
     }
 
     private loadMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {

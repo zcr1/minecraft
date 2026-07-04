@@ -6,11 +6,11 @@ import { MAX_LIGHT } from "engine/chunk/LightingSystem";
 import Component from "engine/core/Component";
 import eventManager from "engine/core/EventManager";
 import { type InventoryItemStack, itemStacksEqual } from "engine/items/InventoryItem";
+import VoxelItemMeshes from "engine/items/VoxelItemMeshes";
 import Inventory from "engine/player/Inventory";
 import PlayerArm from "engine/player/PlayerArm";
 
 const HELD_SIZE = 0.45;
-const HELD_FLAT_SIZE = 0.42;
 // Offset from the arm's hand to where the item is gripped, applied along the
 // camera basis so the item sits in the hand rather than at the very tip.
 const GRIP_OFFSET_FORWARD = 0.05;
@@ -22,17 +22,19 @@ export default class HeldItem extends Component {
     private inventory!: Inventory;
     private playerArm!: PlayerArm;
     private boxGeometry!: THREE.BoxGeometry;
-    private flatGeometry!: THREE.PlaneGeometry;
     private currentItem: InventoryItemStack | null = null;
-    private isFlatMesh = false;
+    // True for non-block (voxel) items, which get the held-tool tilt in update(). Blocks render
+    // as upright cubes and don't tilt.
+    private applyItemTilt = false;
 
     // Pre-allocated scratch vectors to avoid per-frame allocation.
     private readonly scratchForward = new THREE.Vector3();
     private readonly worldUp = new THREE.Vector3(0, 1, 0);
 
-    // Quaternion tilt applied on top of camera rotation for flat (item) sprites.
-    // Precomputed once so update() doesn't allocate or chain quaternion ops each frame.
-    private readonly flatTiltQuaternion = new THREE.Quaternion().setFromEuler(
+    // Quaternion tilt applied on top of camera rotation for held items so they read as an
+    // angled tool rather than a slab facing the camera. Precomputed once so update() doesn't
+    // allocate or chain quaternion ops each frame.
+    private readonly heldTiltQuaternion = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(-Math.PI / 10, 0, -Math.PI / 8),
     );
 
@@ -49,11 +51,6 @@ export default class HeldItem extends Component {
         const boxVertexCount = this.boxGeometry.attributes.position.count;
         const boxLightArray = new Float32Array(boxVertexCount).fill(MAX_LIGHT);
         this.boxGeometry.setAttribute("aLight", new THREE.BufferAttribute(boxLightArray, 1));
-
-        this.flatGeometry = new THREE.PlaneGeometry(HELD_FLAT_SIZE, HELD_FLAT_SIZE);
-        const flatVertexCount = this.flatGeometry.attributes.position.count;
-        const flatLightArray = new Float32Array(flatVertexCount).fill(MAX_LIGHT);
-        this.flatGeometry.setAttribute("aLight", new THREE.BufferAttribute(flatLightArray, 1));
 
         eventManager.subscribe("inventoryChanged", this.onInventoryChanged);
         eventManager.subscribe("hotbarSelectionChanged", this.onHotbarSelectionChanged);
@@ -77,9 +74,9 @@ export default class HeldItem extends Component {
 
         this.mesh.rotation.copy(this.camera.rotation);
 
-        if (this.isFlatMesh) {
-            // Tilt the sprite so it reads as a held object rather than a floating card.
-            this.mesh.quaternion.multiply(this.flatTiltQuaternion);
+        if (this.applyItemTilt) {
+            // Tilt the item so it reads as a held object rather than a flat slab facing the camera.
+            this.mesh.quaternion.multiply(this.heldTiltQuaternion);
         }
     }
 
@@ -91,7 +88,6 @@ export default class HeldItem extends Component {
             this.mesh = null;
         }
         this.boxGeometry.dispose();
-        this.flatGeometry.dispose();
     }
 
     private syncMesh(): void {
@@ -129,11 +125,11 @@ export default class HeldItem extends Component {
                 materials = [sideMaterial, sideMaterial, topMaterial, sideMaterial, sideMaterial, sideMaterial];
             }
             this.mesh = new THREE.Mesh(this.boxGeometry, materials);
-            this.isFlatMesh = false;
+            this.applyItemTilt = false;
         } else {
-            // Non-block items (e.g. coal) are rendered as flat sprites.
-            this.mesh = new THREE.Mesh(this.flatGeometry, TextureManager.getFlatItemMaterial(newItem.type));
-            this.isFlatMesh = true;
+            // Non-block items render as voxelized 3D meshes (geometry built at boot).
+            this.mesh = new THREE.Mesh(VoxelItemMeshes.getGeometry(newItem.type), VoxelItemMeshes.getMaterial());
+            this.applyItemTilt = true;
         }
         // Frustum culling is based on the bounding sphere in world space, which is never updated
         // for a mesh that moves every frame — disable it to prevent spurious disappearance.
