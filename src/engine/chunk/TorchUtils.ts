@@ -17,7 +17,7 @@ export const TORCH_ATTACHMENT_OFFSETS: ReadonlyArray<readonly [number, number, n
 const TORCH_WALL_TILT_RADIANS = THREE.MathUtils.degToRad(22.5);
 // How far the torch centre sits from the block centre toward the wall (negative = toward the wall
 // face at -0.5) and how far it drops below centre, so the base mounts low on the wall.
-const TORCH_WALL_OUT_SHIFT = -0.3;
+const TORCH_WALL_OUT_SHIFT = -0.4;
 const TORCH_WALL_UP_SHIFT = 0.1;
 
 // Orientation matrix per blockMeta (0 = floor, 1-4 = walls), built lazily on first use because it
