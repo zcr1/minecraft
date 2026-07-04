@@ -82,9 +82,14 @@ interface MeshBuffers {
 // Builds a voxelized BufferGeometry from decoded RGBA pixels. Each opaque pixel is one
 // cube in a single (depth-1) layer; interior faces between adjacent opaque pixels are
 // culled, front/back faces are always emitted. Per-vertex color carries the pixel's RGB.
+// Warm-amber flame colour shared with the held-torch PointLight so placed torches glow the same.
+const TORCH_EMISSIVE_COLOR = 0xffaa44;
+const TORCH_EMISSIVE_INTENSITY = 0.6;
+
 class VoxelItemMeshes {
     private readonly geometries = new Map<ItemType, THREE.BufferGeometry>();
     private material: THREE.MeshStandardMaterial | null = null;
+    private torchMaterial: THREE.MeshStandardMaterial | null = null;
 
     // Decodes every item texture and builds its voxel geometry. Reading pixels from a PNG
     // requires the image to decode first (an inherently async browser step), so this must be
@@ -115,6 +120,20 @@ class VoxelItemMeshes {
             this.material = material;
         }
         return this.material;
+    }
+
+    // Vertex-colored material for placed torches: same shading as getMaterial() but self-illuminates
+    // with the warm amber flame colour so placed torches stay visibly lit (matching the old flat
+    // torch sprite's emissive glow). aLight still attenuates it via applyVertexLighting.
+    getTorchVoxelMaterial(): THREE.MeshStandardMaterial {
+        if (!this.torchMaterial) {
+            const material = new THREE.MeshStandardMaterial({ vertexColors: true });
+            material.emissive.setHex(TORCH_EMISSIVE_COLOR);
+            material.emissiveIntensity = TORCH_EMISSIVE_INTENSITY;
+            applyVertexLighting(material);
+            this.torchMaterial = material;
+        }
+        return this.torchMaterial;
     }
 
     private async decodeAndBuild(itemType: ItemType, url: string): Promise<void> {

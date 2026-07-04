@@ -1,10 +1,12 @@
 import * as THREE from "three";
 import textureManager from "../TextureManager";
 import { BlockType, INDESTRUCTIBLE_BLOCKS } from "../block/BlockType";
-import Component from "../core/Component";
+import { ItemType } from "../items/ItemType";
+import voxelItemMeshes from "../items/VoxelItemMeshes";
 import type { VoxelDelta } from "../persistence/SaveData";
 import type ChunkManager from "./ChunkManager";
 import type TerrainGenerator from "./TerrainGenerator";
+import { getTorchOrientationMatrix } from "./TorchUtils";
 
 // Each face: 4 vertices (x,y,z relative to block center), outward normal, neighbor offset to check
 const FACES = [
@@ -48,88 +50,23 @@ const FACES = [
 
 const FACE_UVS = [0, 0, 1, 0, 1, 1, 0, 1];
 
-// Torch geometry keyed by the direction of the solid block the torch is attached to.
-// Each entry lists one or more quads (12 floats = 4 vertices × xyz) relative to the block center.
-// Wall cases: a single flat quad pressed against the attachment face.
-// Floor case: two narrow crossed vertical quads sitting on the block floor.
-const TORCH_QUADS: ReadonlyArray<{
-    readonly offset: readonly [number, number, number];
-    readonly quads: ReadonlyArray<ReadonlyArray<number>>;
-}> = [
-    {
-        // Floor — solid below. Cross of two narrow vertical quads; bottom flush with the block floor.
-        offset: [0, -1, 0],
-        quads: [
-            [-0.1, -0.5, 0, 0.1, -0.5, 0, 0.1, 0.05, 0, -0.1, 0.05, 0],
-            [0, -0.5, -0.1, 0, -0.5, 0.1, 0, 0.05, 0.1, 0, 0.05, -0.1],
-        ],
-    },
-    {
-        // Wall −X — solid to the left. Flat quad pressed against the −X face.
-        offset: [-1, 0, 0],
-        quads: [[-0.45, -0.3, -0.25, -0.45, -0.3, 0.25, -0.45, 0.3, 0.25, -0.45, 0.3, -0.25]],
-    },
-    {
-        // Wall +X — solid to the right. Flat quad pressed against the +X face.
-        offset: [1, 0, 0],
-        quads: [[0.45, -0.3, -0.25, 0.45, -0.3, 0.25, 0.45, 0.3, 0.25, 0.45, 0.3, -0.25]],
-    },
-    {
-        // Wall −Z — solid behind. Flat quad pressed against the −Z face.
-        offset: [0, 0, -1],
-        quads: [[-0.25, -0.3, -0.45, 0.25, -0.3, -0.45, 0.25, 0.3, -0.45, -0.25, 0.3, -0.45]],
-    },
-    {
-        // Wall +Z — solid in front. Flat quad pressed against the +Z face.
-        offset: [0, 0, 1],
-        quads: [[-0.25, -0.3, 0.45, 0.25, -0.3, 0.45, 0.25, 0.3, 0.45, -0.25, 0.3, 0.45]],
-    },
-];
-
-// The 5 possible attachment-offset directions, one per TORCH_QUADS entry (index = blockMeta value).
-// Exported so ChunkManager can walk adjacent positions when a support block is destroyed.
-export const TORCH_ATTACHMENT_OFFSETS: ReadonlyArray<readonly [number, number, number]> = TORCH_QUADS.map(
-    ({ offset }) => offset,
-);
-
-// Maps a placement hit-normal to the TORCH_QUADS index for that attachment direction.
-// The hit normal is the outward face of the clicked block; the torch attaches on the opposite
-// side, so its support offset equals −hitNormal. Returns −1 for the bottom face (ceiling),
-// which has no geometry entry and should be rejected at the call site.
-export function torchQuadIndexFromHitNormal(normalX: number, normalY: number, normalZ: number): number {
-    if (normalY === 1) {
-        return 0; // top face hit → torch sits on floor (solid below)
-    }
-    if (normalX === 1) {
-        return 1; // +X face hit → torch on −X wall (solid to its left)
-    }
-    if (normalX === -1) {
-        return 2; // −X face hit → torch on +X wall (solid to its right)
-    }
-    if (normalZ === 1) {
-        return 3; // +Z face hit → torch on −Z wall (solid behind)
-    }
-    if (normalZ === -1) {
-        return 4; // −Z face hit → torch on +Z wall (solid in front)
-    }
-    return -1; // bottom face hit (ceiling) — no torch geometry for this case
-}
-
 // Per-material vertex buffers accumulated during meshing, then handed to a single BufferGeometry.
+// A submesh carries either uvs (textured block faces) or colors (vertex-coloured voxel torches),
+// never both; buildGeometry emits whichever channel was populated.
 interface SubMesh {
     positions: number[];
     normals: number[];
     uvs: number[];
+    colors: number[];
     lights: number[];
     indices: number[];
 }
 
 function createSubMesh(): SubMesh {
-    return { positions: [], normals: [], uvs: [], lights: [], indices: [] };
+    return { positions: [], normals: [], uvs: [], colors: [], lights: [], indices: [] };
 }
 
-// todo doesn't need to be Component?
-export default class ChunkComponent extends Component {
+export default class ChunkComponent {
     readonly mesh: THREE.Group;
     readonly width: number;
     readonly height: number;
@@ -146,7 +83,7 @@ export default class ChunkComponent extends Component {
     // bytes instead of doubling it when block-light gets implemented.
     private readonly lightLevels: Uint8Array;
     // Auxiliary byte per voxel for block-type-specific data. For torches this stores the
-    // TORCH_QUADS index (0-4) set at placement time via torchQuadIndexFromHitNormal, locking
+    // attachment index (0-4) set at placement time via torchQuadIndexFromHitNormal, locking
     // the visual orientation to the face the player actually clicked rather than re-inferring it
     // from whichever neighbour happens to be solid at the next mesh rebuild. For water it stores
     // current flow distance
@@ -160,8 +97,6 @@ export default class ChunkComponent extends Component {
         worldOriginY: number,
         worldOriginZ: number,
     ) {
-        super();
-
         this.width = width;
         this.height = height;
         this.depth = depth;
@@ -197,62 +132,53 @@ export default class ChunkComponent extends Component {
         subMesh.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
 
-    // Appends a single quad from TORCH_QUADS to subMesh. The material must be DoubleSide because
-    // each quad must be visible from both faces. Called once per quad in the attachment entry.
-    //
-    // The normal is derived analytically from the quad's own vertex data via (v1−v0) × (v3−v0)
-    // so that directional-light shading in applyVertexLighting runs on the correct axis for each
-    // quad orientation (floor cross-quads get ±X / ±Z normals; wall quads get their inward normal).
-    // Using the hardcoded upward (0,1,0) previously caused vertical torch quads to receive no
-    // directional-sun contribution and rendered them purely by ambient + aLight.
-    private pushCrossQuad(
-        vertices: ReadonlyArray<number>,
-        x: number,
-        y: number,
-        z: number,
-        subMesh: SubMesh,
-        lightValue: number,
-    ) {
-        // Compute face normal from two edge vectors: edge1 = v1−v0, edge2 = v3−v0.
-        // All four vertices of a flat quad share the same normal so we compute it once.
-        const edge1X = vertices[3] - vertices[0];
-        const edge1Y = vertices[4] - vertices[1];
-        const edge1Z = vertices[5] - vertices[2];
-        const edge2X = vertices[9] - vertices[0];
-        const edge2Y = vertices[10] - vertices[1];
-        const edge2Z = vertices[11] - vertices[2];
-        const crossX = edge1Y * edge2Z - edge1Z * edge2Y;
-        const crossY = edge1Z * edge2X - edge1X * edge2Z;
-        const crossZ = edge1X * edge2Y - edge1Y * edge2X;
-        const crossLength = Math.sqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
-        const normalX = crossX / crossLength;
-        const normalY = crossY / crossLength;
-        const normalZ = crossZ / crossLength;
+    // Bakes the voxelized torch geometry (from VoxelItemMeshes) into subMesh for the torch at
+    // (x, y, z), oriented by the attachment direction stored in blockMeta at placement time. The
+    // shared torch geometry is transformed by the per-meta orientation matrix (upright on a floor,
+    // tilted out from a wall) and then translated to the block position. Per-vertex colours are
+    // copied through and normals are rotated so applyVertexLighting shades each face correctly.
+    private pushTorchVoxels(x: number, y: number, z: number, subMesh: SubMesh, lightValue: number) {
+        const meta = this.getBlockMeta(x, y, z);
+        const matrix = getTorchOrientationMatrix(meta);
+        const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix);
+
+        const geometry = voxelItemMeshes.getGeometry(ItemType.Torch);
+        const sourcePositions = geometry.getAttribute("position");
+        const sourceNormals = geometry.getAttribute("normal");
+        const sourceColors = geometry.getAttribute("color");
+        const sourceIndex = geometry.getIndex();
 
         const base = subMesh.positions.length / 3;
-        for (let v = 0; v < 4; v++) {
-            subMesh.positions.push(vertices[v * 3] + x, vertices[v * 3 + 1] + y, vertices[v * 3 + 2] + z);
-            subMesh.normals.push(normalX, normalY, normalZ);
-            subMesh.uvs.push(FACE_UVS[v * 2], FACE_UVS[v * 2 + 1]);
+        const position = new THREE.Vector3();
+        const normal = new THREE.Vector3();
+        for (let i = 0; i < sourcePositions.count; i++) {
+            position.fromBufferAttribute(sourcePositions, i).applyMatrix4(matrix);
+            subMesh.positions.push(position.x + x, position.y + y, position.z + z);
+            normal.fromBufferAttribute(sourceNormals, i).applyMatrix3(normalMatrix).normalize();
+            subMesh.normals.push(normal.x, normal.y, normal.z);
+            subMesh.colors.push(sourceColors.getX(i), sourceColors.getY(i), sourceColors.getZ(i));
             subMesh.lights.push(lightValue);
         }
-        subMesh.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
-    }
 
-    // Returns the quad vertices for a torch at (x, y, z) using the attachment direction
-    // stored in blockMeta (set at placement time via torchQuadIndexFromHitNormal). This locks
-    // the orientation to the face the player clicked and prevents it from silently flipping when
-    // neighbours change (e.g. after a relight-rebuild triggered by a different block).
-    private getTorchQuads(x: number, y: number, z: number): ReadonlyArray<ReadonlyArray<number>> {
-        const meta = this.getBlockMeta(x, y, z);
-        return (TORCH_QUADS[meta] ?? TORCH_QUADS[0]).quads;
+        if (sourceIndex) {
+            for (let i = 0; i < sourceIndex.count; i++) {
+                subMesh.indices.push(base + sourceIndex.getX(i));
+            }
+        }
     }
 
     private buildGeometry(subMesh: SubMesh) {
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(subMesh.positions, 3));
         geo.setAttribute("normal", new THREE.Float32BufferAttribute(subMesh.normals, 3));
-        geo.setAttribute("uv", new THREE.Float32BufferAttribute(subMesh.uvs, 2));
+        // A submesh is either textured (uvs) or vertex-coloured (colors), never both. Emit only the
+        // populated channel so we never attach a zero-length attribute (which three.js rejects).
+        if (subMesh.uvs.length > 0) {
+            geo.setAttribute("uv", new THREE.Float32BufferAttribute(subMesh.uvs, 2));
+        }
+        if (subMesh.colors.length > 0) {
+            geo.setAttribute("color", new THREE.Float32BufferAttribute(subMesh.colors, 3));
+        }
         geo.setAttribute("aLight", new THREE.Float32BufferAttribute(subMesh.lights, 1));
         geo.setIndex(subMesh.indices);
         return geo;
@@ -366,7 +292,7 @@ export default class ChunkComponent extends Component {
             tntSide: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, 0) },
             tntTop: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, 1) },
             tntBottom: { subMesh: createSubMesh(), material: () => textureManager.getMaterial(BlockType.TNT, -1) },
-            torch: { subMesh: createSubMesh(), material: () => textureManager.getTorchMaterial() },
+            torch: { subMesh: createSubMesh(), material: () => voxelItemMeshes.getTorchVoxelMaterial() },
             // Water renderOrder=1 is it is rendered after all opaque geometry and alpha blending sorts correctly.
             water: { subMesh: createSubMesh(), material: () => textureManager.getWaterMaterial(), renderOrder: 1 },
         };
@@ -379,13 +305,12 @@ export default class ChunkComponent extends Component {
                         continue;
                     }
 
-                    // Torch renders as a surface-affixed sprite rather than cube faces.
-                    // Attachment direction is stored in blockMeta at placement time.
+                    // Torch renders as a voxelized 3D pixel mesh (from VoxelItemMeshes) that sticks
+                    // out from its support surface, rather than cube faces. Attachment direction is
+                    // stored in blockMeta at placement time.
                     if (block === BlockType.Torch) {
                         const lightValue = Math.max(this.getSkyLight(x, y, z), this.getBlockLight(x, y, z));
-                        for (const quadVerts of this.getTorchQuads(x, y, z)) {
-                            this.pushCrossQuad(quadVerts, x, y, z, meshes.torch.subMesh, lightValue);
-                        }
+                        this.pushTorchVoxels(x, y, z, meshes.torch.subMesh, lightValue);
                         continue;
                     }
 
@@ -695,6 +620,4 @@ export default class ChunkComponent extends Component {
             this.blockMeta[i] = m;
         }
     }
-
-    update() {}
 }

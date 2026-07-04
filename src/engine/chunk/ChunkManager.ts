@@ -5,9 +5,10 @@ import Transform from "../components/Transform";
 import Component from "../core/Component";
 import type { ChunkDelta, VoxelDelta } from "../persistence/SaveData";
 import GameObjectName from "../utils/gameObjectNames";
-import ChunkComponent, { TORCH_ATTACHMENT_OFFSETS } from "./ChunkComponent";
+import ChunkComponent from "./ChunkComponent";
 import lightingSystem, { MAX_LIGHT } from "./LightingSystem";
 import TerrainGenerator from "./TerrainGenerator";
+import { TORCH_ATTACHMENT_OFFSETS } from "./TorchUtils";
 
 const GENERATION_BUDGET_PER_FRAME = 2;
 const WATER_TICK_INTERVAL = 1.0;

@@ -22,7 +22,6 @@ import tntBottomUrl from "assets/textures/blocks/tnt_bottom.png";
 import tntSideUrl from "assets/textures/blocks/tnt_side.png";
 import tntTopUrl from "assets/textures/blocks/tnt_top.png";
 import waterUrl from "assets/textures/blocks/water.png";
-import torchUrl from "assets/textures/items/torch.png";
 import desetroy0Url from "assets/textures/misc/destroy_0.png";
 import desetroy1Url from "assets/textures/misc/destroy_1.png";
 import desetroy2Url from "assets/textures/misc/destroy_2.png";
@@ -79,9 +78,6 @@ class TextureManager {
     private dirtSnowSideMat!: THREE.MeshStandardMaterial;
     private dirtSnowBottomMat!: THREE.MeshStandardMaterial;
 
-    // Separate instance from the held-item flat material so the two can diverge independently.
-    private torchCrossMat!: THREE.MeshStandardMaterial;
-
     private waterMat!: THREE.MeshStandardMaterial;
 
     // Oak leaves use two textures distributed randomly by world position to break up repetition.
@@ -130,14 +126,7 @@ class TextureManager {
             [BlockType.Snow]: this.loadMat(loader, snowUrl),
         };
 
-        this.torchCrossMat = this.loadFlatMat(loader, torchUrl);
         this.waterMat = this.loadWaterMat(loader, waterUrl);
-        // Emissive warm-amber tint so placed torches glow with the same colour as the held-item
-        // PointLight (0xffaa44). Without this, applyVertexLighting multiplies by a greyscale
-        // aLight and the sprite renders under neutral ambient/sun — matching the held version
-        // requires the material to self-illuminate with the torch-flame colour.
-        this.torchCrossMat.emissive.setHex(0xffaa44);
-        this.torchCrossMat.emissiveIntensity = 0.6;
 
         this.desetroyTextures = DESTROY_STAGE_URLS.map(url => {
             const tex = loader.load(url);
@@ -235,11 +224,6 @@ class TextureManager {
         }
     }
 
-    // Returns the DoubleSide transparent material used for torch cross-quad geometry in chunks.
-    getTorchMaterial(): THREE.MeshStandardMaterial {
-        return this.torchCrossMat;
-    }
-
     private loadMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
         const tex = loader.load(url);
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -256,20 +240,6 @@ class TextureManager {
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.magFilter = THREE.NearestFilter;
         const material = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.5 });
-        applyVertexLighting(material);
-        return material;
-    }
-
-    private loadFlatMat(loader: THREE.TextureLoader, url: string): THREE.MeshStandardMaterial {
-        const tex = loader.load(url);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.magFilter = THREE.NearestFilter;
-        const material = new THREE.MeshStandardMaterial({
-            map: tex,
-            transparent: true,
-            alphaTest: 0.5,
-            side: THREE.DoubleSide,
-        });
         applyVertexLighting(material);
         return material;
     }
