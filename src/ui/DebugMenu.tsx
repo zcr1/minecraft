@@ -56,10 +56,6 @@ export default function DebugMenu() {
             chunkBoundaryOverlay.showBoundaries = value;
         });
 
-        pane.addButton({ title: "Spawn TNT" }).on("click", () => {
-            inventory.add({ kind: "block", type: BlockType.TNT }, 64);
-        });
-
         pane.addBinding(dayNightCycle, "timeOfDay", {
             label: "Time of Day",
             min: 0,
@@ -70,6 +66,10 @@ export default function DebugMenu() {
                 const minutes = Math.floor((value * 24 - hours) * 60);
                 return `${hours}:${minutes.toString().padStart(2, "0")}`;
             },
+        });
+
+        pane.addButton({ title: "Spawn TNT" }).on("click", () => {
+            inventory.add({ kind: "block", type: BlockType.TNT }, 64);
         });
 
         const refreshId = setInterval(() => pane.refresh(), 100);
