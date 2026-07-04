@@ -178,6 +178,19 @@ function matchShapeless3x3(grid: CraftingGrid3x3, recipe: CraftingRecipe3x3): bo
     return true;
 }
 
+// If every ingredient in the normalized 3×3 grid fits within the top-left 2×2 area,
+// extract that region as a 2×2 grid. Returns null when anything spills outside it.
+function extract2x2FromNormalized3x3(grid: CraftingGrid3x3): CraftingGrid | null {
+    // Indices outside the top-left 2×2 block (row/col 2) must all be empty.
+    const outsideIndices = [2, 5, 6, 7, 8];
+    for (const index of outsideIndices) {
+        if (grid[index] !== null) {
+            return null;
+        }
+    }
+    return [grid[0], grid[1], grid[3], grid[4]];
+}
+
 export function matchRecipe3x3(grid: CraftingGrid3x3): CraftingRecipe3x3 | null {
     for (const recipe of CRAFTING_TABLE_RECIPES) {
         const matches = recipe.shapeless ? matchShapeless3x3(grid, recipe) : matchShaped3x3(grid, recipe);
@@ -185,6 +198,18 @@ export function matchRecipe3x3(grid: CraftingGrid3x3): CraftingRecipe3x3 | null 
             return recipe;
         }
     }
+
+    // A crafting table can also make anything the 2×2 inventory grid can, as long as
+    // the ingredients fit inside a 2×2 area. Fall back to the 2×2 recipes.
+    const normalized = normalizeGrid3x3(grid);
+    const subGrid = extract2x2FromNormalized3x3(normalized);
+    if (subGrid) {
+        const recipe = matchRecipe(subGrid);
+        if (recipe) {
+            return { ...recipe, pattern: [null, null, null, null, null, null, null, null, null] };
+        }
+    }
+
     return null;
 }
 
