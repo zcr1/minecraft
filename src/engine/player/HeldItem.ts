@@ -44,7 +44,7 @@ export default class HeldItem extends Component {
 
     // Pre-allocated scratch vectors to avoid per-frame allocation.
     private readonly scratchForward = new THREE.Vector3();
-    private readonly worldUp = new THREE.Vector3(0, 1, 0);
+    private readonly scratchUp = new THREE.Vector3();
 
     // Tilt for flat-ish items (coal, stick, torch): a small lean so they read as held rather than
     // as a card facing the camera. Precomputed once so update() doesn't allocate each frame.
@@ -84,13 +84,14 @@ export default class HeldItem extends Component {
         }
 
         this.camera.getWorldDirection(this.scratchForward);
+        this.scratchUp.set(0, 1, 0).applyQuaternion(this.camera.quaternion);
 
         // Anchor the item to the arm's hand so it reads as gripped rather than
-        // floating, then nudge it forward/up so it rests in the hand.
+        // floating, then nudge it forward/up (in camera space) so it rests in the hand.
         this.playerArm.getHandWorldPosition(this.mesh.position);
         this.mesh.position
             .addScaledVector(this.scratchForward, GRIP_OFFSET_FORWARD)
-            .addScaledVector(this.worldUp, GRIP_OFFSET_UP + this.gripOffsetDown);
+            .addScaledVector(this.scratchUp, GRIP_OFFSET_UP + this.gripOffsetDown);
 
         this.mesh.rotation.copy(this.camera.rotation);
 
