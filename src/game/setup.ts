@@ -14,6 +14,7 @@ import TNTFuseAnimation from "engine/effects/TNTFuseAnimation";
 import TNTManager from "engine/effects/TNTManager";
 import DayNightCycle from "engine/environment/DayNightCycle";
 import DroppedItems from "engine/items/DroppedItems";
+import MobManager from "engine/mobs/MobManager";
 import type { SaveData } from "engine/persistence/SaveData";
 import HeldItem from "engine/player/HeldItem";
 import Inventory from "engine/player/Inventory";
@@ -78,6 +79,10 @@ export function setupScene(save: SaveData | null): void {
     const managerObj = new GameObject(GameObjectName.ChunkManager);
     managerObj.addComponent(chunkManager);
     game.add(managerObj);
+
+    const mobManagerObj = new GameObject(GameObjectName.MobManager);
+    mobManagerObj.addComponent(new MobManager());
+    game.add(mobManagerObj);
 
     game.camera.threeCamera.position.set(12, 64, 50);
 

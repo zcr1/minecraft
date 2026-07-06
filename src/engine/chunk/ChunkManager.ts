@@ -7,7 +7,7 @@ import type { ChunkDelta, VoxelDelta } from "../persistence/SaveData";
 import GameObjectName from "../utils/gameObjectNames";
 import ChunkComponent from "./ChunkComponent";
 import lightingSystem, { MAX_LIGHT } from "./LightingSystem";
-import TerrainGenerator from "./TerrainGenerator";
+import TerrainGenerator, { BiomeType } from "./TerrainGenerator";
 import { TORCH_ATTACHMENT_OFFSETS } from "./TorchUtils";
 
 const GENERATION_BUDGET_PER_FRAME = 2;
@@ -385,6 +385,68 @@ export default class ChunkManager extends Component {
 
     getSeed(): number {
         return this.terrainGenerator.seed;
+    }
+
+    getChunkWidth(): number {
+        return this.chunkWidth;
+    }
+
+    getChunkDepth(): number {
+        return this.chunkDepth;
+    }
+
+    getTerrainColumn(worldX: number, worldZ: number): { surface: number; biome: BiomeType } {
+        return this.terrainGenerator.getColumn(worldX, worldZ);
+    }
+
+    // Returns every chunk column currently inside the visible render radius (mirrors the same
+    // square-distance test reconcileVisibility uses to flip chunk.mesh.visible), filtered to
+    // columns whose vertical chunks have all streamed in (generation is budgeted per frame, so a
+    // column can have some chunkY layers loaded and others still pending). Returns [] before the
+    // player's chunk column has been established (i.e. before the first updateLoadedChunks() call).
+    getVisibleChunkColumns(): Array<{ chunkX: number; chunkZ: number; worldOriginX: number; worldOriginZ: number }> {
+        if (this.previousCenterX === null || this.previousCenterZ === null) {
+            return [];
+        }
+
+        const columns: Array<{ chunkX: number; chunkZ: number; worldOriginX: number; worldOriginZ: number }> = [];
+        for (let deltaX = -this.renderRadius; deltaX <= this.renderRadius; deltaX++) {
+            for (let deltaZ = -this.renderRadius; deltaZ <= this.renderRadius; deltaZ++) {
+                const chunkX = this.previousCenterX + deltaX;
+                const chunkZ = this.previousCenterZ + deltaZ;
+
+                const baseChunk = this.getFullyLoadedColumnBase(chunkX, chunkZ);
+                if (!baseChunk) {
+                    continue;
+                }
+
+                columns.push({
+                    chunkX,
+                    chunkZ,
+                    worldOriginX: baseChunk.worldOriginX,
+                    worldOriginZ: baseChunk.worldOriginZ,
+                });
+            }
+        }
+        return columns;
+    }
+
+    // Returns the chunkY=0 chunk for the column if every vertical layer has streamed in, or null
+    // otherwise (generation is budgeted per frame, so a column can have some chunkY layers loaded
+    // and others still pending).
+    private getFullyLoadedColumnBase(chunkX: number, chunkZ: number): ChunkComponent | null {
+        const baseChunk = this.chunks.get(this.getChunkKey(chunkX, 0, chunkZ));
+        if (!baseChunk) {
+            return null;
+        }
+
+        for (let chunkY = 1; chunkY < this.worldHeightChunks; chunkY++) {
+            if (!this.chunks.has(this.getChunkKey(chunkX, chunkY, chunkZ))) {
+                return null;
+            }
+        }
+
+        return baseChunk;
     }
 
     // Stage saved chunk edits by chunk key. Idempotent per key; deltas are consumed in
