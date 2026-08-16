@@ -3,9 +3,9 @@
 An MVP Minecraft clone that runs in the browser, written in TypeScript with React and Three.js on a small
 component-entity engine (no off the shelf engine or physics library).
 
-Play it at [zcr1.github.io/minecraft](https://zcr1.github.io/minecraft/).
-
 It covers the basics: procedural terrain, mining and placing blocks, item drops, crafting, torches and lighting, a day/night cycle, water, and saving. A few extras on top of that, mostly TNT so things go BOOM.
+
+Play it at [zcr1.github.io/minecraft](https://zcr1.github.io/minecraft/).
 
 ## Running it
 
