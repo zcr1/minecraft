@@ -3,13 +3,21 @@ import { pluginReact } from "@rsbuild/plugin-react";
 import { pluginSass } from "@rsbuild/plugin-sass";
 import path from "path";
 
-// Docs: https://rsbuild.rs/config/
+const isProduction = process.env.NODE_ENV === "production";
+const basePath = isProduction ? "/minecraft/" : "/";
+
 export default defineConfig({
     plugins: [pluginReact(), pluginSass()],
     resolve: {
         alias: {
             engine: path.resolve(__dirname, "src/engine"),
         },
+    },
+    output: {
+        assetPrefix: basePath,
+    },
+    server: {
+        base: basePath,
     },
     html: {
         title: "MineCraft",
@@ -22,15 +30,6 @@ export default defineConfig({
                 },
                 head: true,
             },
-            // {
-            // 	tag: 'script',
-            // 	attrs: {
-            // 		src: 'https://www.googletagmanager.com/gtag/js?id=G-ZT5KEBKGMT"',
-            // 		type: 'text/javascript',
-            // 		async: true,
-            // 	},
-            // 	head: true,
-            // },
         ],
     },
 });
