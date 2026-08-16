@@ -1,6 +1,6 @@
 # Minecraft
 
-An MVP Minecraft clone that runs in the browser, written in TypeScript with React and Three.js on a small
+An MVP Minecraft clone that runs in the browser, written in TypeScript with React and Three.js using a small, custom
 component-entity engine (no off the shelf engine or physics library).
 
 It covers the basics: procedural terrain, mining and placing blocks, item drops, crafting, torches and lighting, a day/night cycle, water, and saving. A few extras on top of that, mostly TNT so things go BOOM.
