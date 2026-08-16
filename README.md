@@ -1,4 +1,4 @@
-# Craft
+# Minecraft
 
 An MVP Minecraft clone that runs in the browser, written in TypeScript with React and Three.js on a small
 component-entity engine (no off the shelf engine or physics library).
