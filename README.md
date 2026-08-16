@@ -87,7 +87,9 @@ seeded random walk that converts the stone it lands on, and trees are placed.
 Everything is seeded, so any chunk always generates identically. That matters in two places. Trees are the first: a
 canopy can spill across a chunk border, so each chunk also generates the trees of all 8 neighbours and keeps whichever
 blocks land inside its own bounds. Because the neighbour's tree positions are derived deterministically from its
-origin, both chunks agree on the result without needing to talk to each other.
+origin, both chunks agree on the result without needing to talk to each other. Saving is the second: because generation
+is reproducible, a save only needs the seed plus the blocks you changed, which is what [Persistence](#persistence)
+below builds on.
 
 Streaming keeps a radius of 6 chunks around the player. Chunks that leave the radius are hidden rather than deleted, so
 walking back is a free visibility toggle, and new chunks are generated nearest-first at a budget of 2 per frame to
