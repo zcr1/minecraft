@@ -1,9 +1,9 @@
 # Craft
 
 An MVP Minecraft clone that runs in the browser, written in TypeScript with React and Three.js on a small
-component-entity engine (no game engine or physics library).
+component-entity engine (no off the shelf engine or physics library).
 
-It covers the basics: procedural terrain, mining and placing blocks, item drops, crafting, torches and lighting, a day/night cycle, water, and saving. A few extras on top of that, mostly TNT with chain detonation.
+It covers the basics: procedural terrain, mining and placing blocks, item drops, crafting, torches and lighting, a day/night cycle, water, and saving. A few extras on top of that, mostly TNT so things go BOOM.
 
 ## Running it
 
@@ -38,35 +38,35 @@ Dragging a stack out of the inventory window and releasing it drops the item int
 each other, with snow above y=60 in the mountains, water pooling at sea level, 3D noise caves, coal veins and three
 shapes of oak tree.
 
-**Blocks and items.** 15 block types plus a handful of non-block items (coal, sticks, torches, pickaxes, swords).
+**Blocks and items:** 15 block types plus a handful of non-block items (coal, sticks, torches, pickaxes, swords).
 Blocks take time to break based on their material and the tool in your hand, with a crack overlay that advances through
 10 stages and particle puffs at each stage. Broken blocks drop item entities that fall, bounce, spin and get sucked
 toward the player when you walk near them. Some blocks drop something other than themselves (stone drops cobblestone,
 leaves occasionally drop sticks).
 
-**Crafting.** A 2x2 grid in the inventory and a 3x3 grid when you right click a crafting table. Recipes are matched
+**Crafting:** A 2x2 grid in the inventory and a 3x3 grid when you right click a crafting table. Recipes are matched
 either shaped or shapeless, and shaped patterns are normalized to the top left corner so it does not matter where in
 the grid you place the ingredients. The 3x3 table also falls back to the 2x2 recipe list when everything fits in a 2x2
 area.
 
-**Lighting.** Voxel sky light and torch block light, both flood filled and baked into the chunk mesh as a per-vertex
+**Lighting:** Voxel sky light and torch block light, both flood filled and baked into the chunk mesh as a per-vertex
 attribute. On top of that there is a real day/night cycle using the Three.js atmospheric sky shader, a star field that
 fades in after dusk, distance fog that shifts between day, sunset and night colors, and a point light that follows you
 when you are holding a torch.
 
-**Water.** Water generates below sea level and flows. Placing or breaking a block wakes the water next to it, which
+**Water:** Water generates below sea level and flows. Placing or breaking a block wakes the water next to it, which
 then spreads down first and sideways up to 7 blocks from its source. Swimming has its own movement mode and there is a
 blue overlay when your head goes under.
 
-**TNT.** Place it and you get a 4 second fuse with a flashing block, then a spherical blast that clears everything in a
+**TNT:** Place it and you get a 4 second fuse with a flashing block, then a spherical blast that clears everything in a
 radius of 4, drops the broken blocks as items, and chain-primes any other TNT it touches with a short fuse so the
 explosions cascade.
 
-**UI.** Hotbar and 36 slot inventory with drag and drop, stack merging and splitting, crafting panels, a crosshair,
+**UI:** Hotbar and 36 slot inventory with drag and drop, stack merging and splitting, crafting panels, a crosshair,
 first-person arm and held-item rendering with a swing animation, and a Tweakpane debug menu with FPS graph, player
 position, no-clip, instant break, chunk boundary wireframes, a time-of-day slider and a TNT spawn button.
 
-**Persistence.** Autosave every 30 seconds to IndexedDB, plus manual save from the pause menu or Ctrl+S.
+**Persistence:** Autosave every 30 seconds to IndexedDB, plus manual save from the pause menu or Ctrl+S.
 
 ## How the interesting parts work
 
