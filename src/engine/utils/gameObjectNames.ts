@@ -6,7 +6,6 @@ enum GameObjectName {
     ChunkManager = "ChunkManager",
     DroppedItems = "DroppedItems",
     ExplosionParticles = "ExplosionParticles",
-    MobManager = "MobManager",
     Player = "Player",
     Sky = "Sky",
     TNTFuseAnimation = "TNTFuseAnimation",

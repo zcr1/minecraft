@@ -17,8 +17,6 @@ const SKY_SUN_ELEVATION_EXPONENT = 2.5;
 const STAR_COUNT = 2000;
 const STAR_RADIUS = 900;
 const SKY_SCALE = 450000;
-// Sun height below which the sky shader switches to a solid night background (see updateLighting).
-const NIGHT_SUN_Y_THRESHOLD = -0.1;
 
 export default class DayNightCycle extends Component {
     private _timeOfDay = 0.5;
@@ -30,10 +28,6 @@ export default class DayNightCycle extends Component {
 
     get timeOfDay(): number {
         return this._timeOfDay;
-    }
-
-    get isNight(): boolean {
-        return Math.cos((this._timeOfDay - 0.5) * Math.PI * 2) < NIGHT_SUN_Y_THRESHOLD;
     }
 
     set timeOfDay(value: number) {
@@ -149,7 +143,7 @@ export default class DayNightCycle extends Component {
 
         // The Sky shader can't produce a blue night sky — it just renders grey/black
         // once the sun is below the horizon. Switch to a solid background color at night.
-        if (sunY < NIGHT_SUN_Y_THRESHOLD) {
+        if (sunY < -0.1) {
             this.sky.visible = false;
             game.threeScene.background = new THREE.Color(0x080e1f);
         } else {
